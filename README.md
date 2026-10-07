@@ -91,7 +91,7 @@ LICENSE               MIT
 
 ## Build history and downloads
 
-Every build, from the first prototype through the 009 hotfixes to 014b, has a [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) with its notes and the original source zip. The **014b** release also includes the Web export (`web-beta-014b.zip`), so you can host the playable game yourself: unzip it and serve `index.html` from any web server. The full history is in [docs/DEVLOG.md](docs/DEVLOG.md).
+Every build, from the first prototype through the 009 hotfixes to 014b, has a [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) with its notes and the original source zip. The releases for **007, 008, 009d and 010 through 014b** also include that build's playable Web export (`web-beta-<build>.zip`), so you can host any of those versions yourself: unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c, so those releases have source only. The full history is in [docs/DEVLOG.md](docs/DEVLOG.md).
 
 ## Assets
 

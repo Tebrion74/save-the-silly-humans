@@ -2,6 +2,8 @@
 
 The full build-by-build history of the game, from the first prototype to the current live build. Every build's original source zip is attached to its [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) (tags `build-000-prototype`, `build-001` … `build-014b`, including hotfixes 009b–009d).
 
+**Playable Web exports** (`web-beta-<build>.zip`) are attached to the releases for **007, 008, 009d and 010 through 014b**. To self-host one, unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c; those releases have source only.
+
 Times are Mountain Time (Calgary). Build times come from when each source zip was uploaded; live times are from the deploy notes.
 
 ## Timeline
@@ -188,6 +190,8 @@ SpriteFrames regions and speeds match those grids. Character sprites are offset 
 
 Silhouettes: wide-hat rancher with a whip, big-headed silly humans (scarf, bright tunic), horned red-eyed sheep. Shading is local highlight plus a cool rim, not flat NES blocks.
 
+_Web export: `web-beta-007.zip` is the unlabelled `web-beta/` folder from the project. Its game data (scenes, resources, textures and script identifiers) matches the 007 source exactly, and 006 and 008 don't match._
+
 _Also attached: `stsh-game-007-backup-src.zip`, a working-folder backup of the 007 source taken before build 008. It matches the 007 zip except for an `export_presets.cfg` (Web preset), a regenerated `.import` file for the terrain atlas, and `infection_alarm.gd.uid`. The `.godot/` editor cache is left out._
 
 ## Build 008 — painted terrain (grassland, woods, paths, ponds)
@@ -290,7 +294,7 @@ Web build: `web-beta-008/` (single-threaded "Web" preset). Not deployed when the
 <a id="build-009d"></a>
 
 **Date:** 2026-10-05 ~00:12 MT  
-**Status:** Live hotfix for 009. Final 009 source; the local `Save-the-Silly-Humans-Godot-009.zip` is byte-identical to 009d.
+**Status:** Live hotfix for 009. Final 009 source; the local `Save-the-Silly-Humans-Godot-009.zip` is byte-identical to 009d. Web export: `web-beta-009d.zip` (the project's `web-beta-009/` folder, whose contents match 009d, not the original 009).
 
 - 009 hotfix (facing whip): on touch, whip and grab aim along the rancher's facing
   direction (WHIP / playfield tap crack forward, GRAB throws behind). Mouse aim and
