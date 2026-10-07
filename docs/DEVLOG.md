@@ -1,157 +1,103 @@
 # Save The Silly Humans — Development Log
 
-> Build-by-build development notes, kept as-is for reference. "Not deployed" / "stays live" lines
-> describe the status at the time each build was made; **build 014b is the current live build**.
-> `web-beta-*/` export folders and the temporary `tools/_test_*.gd` / `_logic*.gd` suites mentioned below
-> are not included in this repository. For the public overview see the [README](../README.md).
+The full build-by-build history of the game, from the first prototype to the current live build. Every build's original source zip is attached to its [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) (tags `build-000-prototype`, `build-001` … `build-014b`, including hotfixes 009b–009d).
 
----
+Times are Mountain Time (Calgary). Build times come from when each source zip was uploaded; live times are from the deploy notes.
 
-# Save the Silly Humans
+## Timeline
 
-Zelda-style 2D action-herding prototype in **Godot 4.7.2**.
+| Build | Date (MT) | Status | Headline |
+|---|---|---|---|
+| [000-prototype](#build-000prototype) | 2026-09-16 19:28 → 2026-09-17 00:21 MT | Pre-release | Prototypes 1–3 |
+| [001](#build-001) | 2026-09-17 ~21:55 MT | Pre-release | tile-anchored spawns |
+| [002](#build-002) | 2026-09-17 ~22:12 MT | Pre-release | false-win fix, humans avoid the safe zone |
+| [003](#build-003) | 2026-09-17 ~22:19 MT | Pre-release | rescues locked until spawns settle |
+| [004](#build-004) | 2026-09-17 ~22:43 MT | Pre-release | human HP, possession, win/lose accounting, infection alarm |
+| [005](#build-005) | 2026-09-17 ~23:05 MT | Pre-release | RMB grab & throw |
+| [006](#build-006) | 2026-09-19 ~03:20 MT | Pre-release | layout: safe zone bottom-right, sheep den |
+| [007](#build-007) | 2026-10-04 ~18:11 MT | Web beta | whip animation and 32-bit art |
+| [008](#build-008) | 2026-10-04 ~22:22 MT | Web beta | painted terrain (grassland, woods, paths, ponds) |
+| [009](#build-009) | 2026-10-04 ~22:53 MT | Live | mobile touch controls (PC controls unchanged) |
+| [009b](#build-009b) | 2026-10-04 ~23:48 MT | Live hotfix | PLAY AGAIN button (hotfix) |
+| [009c](#build-009c) | 2026-10-04 ~23:57 MT | Live hotfix | touch joystick freeze fix (hotfix) |
+| [009d](#build-009d) | 2026-10-05 ~00:12 MT | Live hotfix | touch whip aims along facing (hotfix) |
+| [010](#build-010) | 2026-10-05 ~20:41 MT | Live | rounds & levels, human camp, diagonal touch whip, directional throw |
+| [011](#build-011) | 2026-10-05 ~21:22 MT | Live | title screen, mobile aim assist, fixed joystick, square buttons, spawn tuning |
+| [012](#build-012) | 2026-10-05 ~22:08 MT | Live | immediate win, scoring, Genesis-style HUD, How to Play |
+| [013](#build-013) | 2026-10-06 ~00:16 MT | Live | Karens, camp hold, power-ups |
+| [014](#build-014) | 2026-10-07 ~04:17 MT | Not deployed (superseded by 014b) | MSM Cam, inventory (no power-up timers), corner-wedge touch controls |
+| [014b](#build-014b) | 2026-10-07 ~04:41 MT | Live | aim reticle (PC) and reach crosshair (touch) |
 
-You are a slightly questionable rancher. Silly humans wander on their own,
-flee nearby sheep, and steer clear of the green safe zone. Killer sheep
-**roam** until something enters their interest/attention ranges, then hunt.
-**Whip-herd** humans into the safe zone and crack sheep (and possessed
-humans) into explosions. Sheep bites chip human HP — five hits convert a
-silly human into a purple **possessed** hunter.
+## Prototypes (before build 001)
+<a id="build-000prototype"></a>
 
-## Requirements
+**Date:** 2026-09-16 19:28 → 2026-09-17 00:21 MT  
+**Status:** Pre-release. Editor prototype, not published.
 
-- Godot **4.7.2** (project feature tag `4.7`)
-- Open the project folder in the Godot Project Manager
+Three unnumbered `Save-the-Silly-Humans-Godot.zip` snapshots came before build 001. They're attached to the `build-000-prototype` release as `-proto-1`, `-proto-2` and `-proto-3`.
 
-Main scene: `scenes/Main.tscn` (thin shell that instances `scenes/levels/Level01.tscn`).
+### Prototype 1 (2026-09-16 ~19:28 MT)
+- First playable skeleton in **Godot 4.7.2**: `scenes/Main.tscn` is a thin shell that instances `scenes/levels/Level01.tscn`.
+- Rancher with WASD movement (isometric Y compression), mouse aim, **LMB whip** (shove humans along the aim ray, explode sheep), **R** to restart after a win or loss.
+- Silly humans wander the field and flee sheep. Killer sheep hunt humans and the player, and prefer humans when both are in range.
+- Win: rescue every living human into the green safe zone. Lose: every human dies or the rancher runs out of HP.
+- HUD: rescued count, player HP and a short objective line.
+- Terrain: `stsh_terrain_atlas.png` with five 32×32 tiles (grass, dirt, path, rock, wall). Rock and wall collide on the World layer. `terrain_painter.gd` paints a default bordered pasture when `Ground` is empty.
+- Collision layers 1–5: World, Player, Humans, Sheep, SafeZone. Groups: `player`, `humans`, `sheep`, `whippable`, `safe_zones`, `level_controller`.
+- Art: STSH Pixel Pack v1 (32×32 sheets for the rancher, human and sheep, plus whip crack and explosion FX).
 
-## Controls
+### Prototype 2 (2026-09-16 ~23:16 MT)
+- Level01 became a larger open ranch (~72×48 tiles) with walls only on the outer border.
+- Terrain atlas grew to eight cells: tree, bush and decor rock were added and don't collide. A second non-colliding `Decor` TileMapLayer holds trees, bushes and scenic rocks.
+- Player scene and TileSet updated to match.
 
-| Input | Action |
-|-------|--------|
-| WASD | Move (isometric Y compression) |
-| Mouse | Aim (build 014b: in-game reticle replaces the pointer during play) |
-| LMB | Crack whip — shove silly humans / explode sheep & possessed |
-| RMB | Grab & throw — fling target **180° opposite aim** |
-| R | Restart after win or lose |
-| Q / wheel / 1-2 | Swap weapon (build 014: with the MSM Cam, LMB = hold REC, RMB = SWING) |
+### Prototype 3 (2026-09-17 ~00:21 MT) — 16-bit art pass and sheep AI ranges
+- **STSH Pixel Pack v2 (16-bit pass):** character sheets, terrain atlas and FX redrawn toward a SNES/Genesis ranch look (clearer silhouettes, limited palettes, dither and shading). Frame layouts stay 32×32.
+- Silly humans now drift toward the rancher with silly pauses and path noise, and flee sheep within `flee_range` **160** px (5 tiles).
+- Killer sheep **roam** by default (`roam_speed` 60), make a soft approach inside `interest_range` **256** (8 tiles), and fully chase and attack inside `attention_range` **160** (5 tiles). They prefer humans over the player.
 
-Touch layout and dual-mode weapons: see **Build 014** below. Aim reticle / touch crosshair: see **Build 014b**.
+## Build 001 — tile-anchored spawns
+<a id="build-001"></a>
 
-## Gameplay loop
+**Date:** 2026-09-17 ~21:55 MT  
+**Status:** Pre-release (editor build, not published).
 
-1. **Herd** silly humans into the **green safe zone** with the whip — they will not walk in on purpose (and they never chase you).
-2. **LMB** crack: shove silly humans along the aim ray; explode sheep & possessed. The lash is a multi-segment arc that extends to the aim point, with a tip spark and a short afterimage.
-3. **RMB** grab/throw: latch a whippable along aim and fling them **opposite** the aim direction (`throw_force` ~800). Teal grab plays a coil wind-up, an extending lash, then a follow-through opposite aim (gameplay still resolves on the click).
-4. Sheep deal **1 damage** per bite. Humans have **5 HP**. At 0 HP they **convert in place** into possessed hunters (purple tint) — not deleted.
-5. Possessed hunt like killer sheep. **LMB** explodes them. **Throw them into the green zone** to **save** them (rescue credit, no death) — they will not casually walk in.
-6. Thrown sheep that pass within ~40px of another living sheep → **both explode**. Possessed–sheep / possessed–possessed mutual destroy while thrown is also supported.
-7. Win / lose uses rescue + possession accounting (see Build 004 / grab-throw).
+- **Spawns are tile-anchored inside the wall ring** (local slots → `map_to_local`). Scene positions are overwritten at runtime.
+- `level_controller.gd` places the safe zone, player, 5 humans and 3 sheep from authoritative local tile slots on `Ground` once the terrain painter has run (`_place_entities_from_tiles`, deferred). Every slot is asserted to sit at least 4 tiles inside the border, and the slots are kept in sync with `CLEARINGS` in `terrain_painter.gd`.
+  - Safe zone `(36, 24)`, player `(28, 28)`, humans `(12,10) (32,37) (49,35) (52,19) (13,32)`, sheep `(21,16) (50,12) (54,33)`.
+- Humans and sheep get a soft interior clamp (`_soft_clamp_interior`), so nothing can be pushed through or outside the wall ring.
+- `terrain_painter.gd` gained the helpers the spawner needs (`tile_center`, `is_interior_local`, `clamp_to_interior`).
 
-### AI distances (tile = 32px)
+## Build 002 — false-win fix, humans avoid the safe zone
+<a id="build-002"></a>
 
-| Actor | Behavior | Default |
-|-------|----------|---------|
-| Silly humans | Flee sheep | `flee_range` **160** (5 tiles) |
-| Silly humans | Avoid safe zone (too dumb to enter on purpose) | `avoid_safe_range` **288** (9 tiles) |
-| Silly humans | Wander (silly pauses) | after flee/avoid — **no rancher follow** |
-| Killer sheep / possessed | Roam by default | `roam_speed` 60 |
-| Killer sheep / possessed | Soft interest (slow approach) | `interest_range` **256** (8 tiles) |
-| Killer sheep / possessed | Full chase / attack | `attention_range` **160** (5 tiles) |
+**Date:** 2026-09-17 ~22:12 MT  
+**Status:** Pre-release (editor build, not published).
 
-Priority for silly humans: flee sheep → avoid safe zone → wander. Whip `external_velocity` still shoves them into the zone.
+- **False-win fix:** SafeZone stays `monitoring=false` until tile placement finishes. Humans spawn in map corners (≥12 tiles Chebyshev from the safe zone), and `GameState.setup_complete` gates win and loss. The instant "all rescued" at t=0 is fixed, so herding with the whip is required. At level start the HUD should read **0/5** rescued.
+- Humans **avoid** the green zone on purpose ("too dumb to enter"): they steer away from it within `avoid_safe_range` **288** px (9 tiles). Overlap still rescues them, and a whip shove (`external_velocity`) is the intended rescue path.
+- Human AI priority: flee sheep → avoid safe zone → follow rancher → wander.
+- Shipping mindset for zip **002**: lock the herding mechanic (no auto-rescue, no empty win) and keep spawn slots synced with `CLEARINGS` in `terrain_painter.gd`.
 
-Sheep prefer normal `humans` over the player. Possessed are not in `humans` (not rescue targets) and hunt player / silly humans.
+## Build 003 — rescues locked until spawns settle
+<a id="build-003"></a>
 
-HUD shows rescued X/Y, living humans, living sheep, converted/possessed, and player HP. Damaged (infected) humans get a pulsing red/magenta feet ring; off-screen ones get an edge chevron (`InfectionAlarm`). At level start you should see **0/5** rescued — never an instant win.
-
-## Project layout
-
-```
-assets/
-  characters/          pixel sheets (rancher, human, sheep)
-  fx/                  whip crack + explosion
-  spriteframes/        AnimatedSprite2D definitions
-  tiles/               terrain atlas + TileSet
-scenes/
-  Main.tscn            entry shell → Level01
-  levels/Level01.tscn  TileMapLayer + entities + HUD
-  player/ Player.tscn
-  humans/ Human.tscn
-  sheep/  Sheep.tscn
-  world/  SafeZone.tscn
-  ui/     HUD.tscn
-scripts/
-  level_controller.gd  win/lose, GameState, HUD wiring
-  game_state.gd
-  player/  player.gd, whip.gd
-  humans/  human.gd
-  sheep/   sheep.gd
-  world/   safe_zone.gd, terrain_painter.gd, sheep_spawner.gd
-  ui/      hud.gd, infection_alarm.gd
-```
-
-## Collision layers
-
-| Layer | Name | Used by |
-|-------|------|---------|
-| 1 | World | Tile walls/rocks |
-| 2 | Player | Player body |
-| 3 | Humans | Silly humans |
-| 4 | Sheep | Killer sheep |
-| 5 | SafeZone | Rescue Area2D |
-
-Characters mask the World layer so they collide with painted wall/rock tiles.
-
-Groups: `player`, `humans`, `sheep`, `possessed`, `whippable`, `safe_zones`, `level_controller`.
-
-## TileSet / editable maps
-
-Terrain tiles live in:
-
-- `assets/tiles/stsh_terrain_atlas.png` — 32×32 tiles in a row: **grass, dirt, path, rock, wall, tree, bush, decor rock**
-- `assets/tiles/stsh_terrain_tileset.tres` — TileSet with physics on **rock** and **wall** only (World layer); tree/bush/decor rock have no collision
-
-`Level01` is a larger open ranch (~72×48 tiles) with walls only on the outer border.
-It uses `Ground` plus a non-colliding `Decor` TileMapLayer (trees/bushes/scenic rocks).
-On first run, `scripts/world/terrain_painter.gd` paints both if `Ground` is empty.
-**Spawns are tile-anchored inside the wall ring** (local slots → `map_to_local`); scene positions are overwritten at runtime.
-
-### Paint a new level in the editor
-
-1. Duplicate `scenes/levels/Level01.tscn` → e.g. `Level02.tscn`.
-2. Open the copy. Select the `Ground` TileMapLayer.
-3. Optional: set `paint_on_ready = false` on the terrain painter (Inspector), or remove that script once your painted cells are saved — otherwise an empty layer will be auto-filled again.
-4. Paint with the TileSet (`grass` / `dirt` / `path` walkable; `rock` / `wall` block movement).
-5. Move `Entities/Player`, `Entities/Humans/*`, `Entities/Sheep/*`, and `Entities/SafeZone` markers/instances.
-6. Point `scenes/Main.tscn` at your new level (change the instanced scene), or set **Project → Project Settings → Application → Run → Main Scene** to your level scene.
-
-### Create a level from scratch
-
-1. New scene → root `Node2D` with `scripts/level_controller.gd`.
-2. Add `TileMapLayer`, assign `assets/tiles/stsh_terrain_tileset.tres`, paint tiles.
-3. Instance Player, Humans, Sheep, SafeZone under an `Entities` node.
-4. Instance `scenes/ui/HUD.tscn` as a child of the root.
-5. Save under `scenes/levels/` and set it as the main scene (or instance it from `Main.tscn`).
-
-## Notes
-
-- **False-win fix (build 002):** SafeZone stays `monitoring=false` until tile placement finishes; humans spawn in map corners (≥12 tiles Chebyshev from the safe zone); `GameState.setup_complete` gates win/lose. Instant “all rescued” at t=0 is fixed — herding via whip is required.
-- Humans **avoid** the green zone on purpose (“too dumb to enter”); whip shove is the intended rescue path.
-- **16-bit art pass:** character sheets, terrain atlas, and FX refreshed toward a classic SNES/Genesis ranch look (clearer silhouettes, limited palettes, dither/shade). Frame layouts stay 32×32 so existing `.tres` spriteframes/tileset keep working.
-- Level01 is a larger open ranch with decor tiles; collision walls only on the border.
-- Pixel art uses nearest-neighbor filtering (project default).
-- Whip targeting is forgiving along the aim ray, not only near the cursor.
-- Sheep AI: `attention_range` **160** (5 tiles) for chase/attack; `interest_range` **256** (8 tiles) for soft approach; prefer humans over player in attention range.
-- No multiplayer.
-
-## Build 003 note
+**Date:** 2026-09-17 ~22:19 MT  
+**Status:** Pre-release (editor build, not published).
 
 Rescues stay locked until physics syncs spawn teleports (fixes false 5/5 at start).
 Humans spawn in corners and avoid the green zone; whip-herd them in.
-Gates kept in build 004: `rescues_unlocked`, baked tile positions, deferred SafeZone monitoring.
 
-## Build 004 mechanics
+- New `rescues_unlocked` gate in `level_controller.gd`. Spawn positions are baked to tiles, and SafeZone monitoring stays deferred.
+- **Two 003 zips exist.** The original upload, kept on Drive, is attached as `Save-the-Silly-Humans-Godot-003.zip`. A repack made the same minute (`-003-rev.zip`) adds one more guard in `sheep.gd`: the sheep's interior clamp waits until `can_rescue_humans()` is true, so it can't fight the spawn teleports.
+
+## Build 004 — human HP, possession, win/lose accounting, infection alarm
+<a id="build-004"></a>
+
+**Date:** 2026-09-17 ~22:43 MT  
+**Status:** Pre-release (editor build, not published).
+
+Gates kept in build 004: `rescues_unlocked`, baked tile positions, deferred SafeZone monitoring.
 
 ### Humans
 - **No rancher attraction** — AI is flee sheep → avoid safe zone → wander only.
@@ -174,7 +120,22 @@ Gates kept in build 004: `rescues_unlocked`, baked tile positions, deferred Safe
 - Counts refresh ~every 0.25s from `level_controller`.
 - `InfectionAlarm` (HUD child): pulsing red/magenta ring under humans with `health < maximum_health` still in `humans`; edge chevron if off-screen.
 
-## Grab / throw (RMB)
+- Humans no longer follow the rancher: their AI is flee sheep → avoid safe zone → wander.
+- New `scripts/ui/infection_alarm.gd`.
+
+## Build 005 — RMB grab & throw
+<a id="build-005"></a>
+
+**Date:** 2026-09-17 ~23:05 MT  
+**Status:** Pre-release (editor build, not published).
+
+- New **RMB grab & throw**: latch a whippable along the aim and fling it **180° opposite the aim** (`throw_force` ~800). It shows a brief teal grab line.
+- **LMB** crack still shoves silly humans and explodes sheep and possessed humans.
+- Possessed humans thrown into the green zone are **saved** (rescue credit, no death). They won't casually walk in.
+- Thrown sheep that pass within ~40 px of another living sheep → **both explode**. Possessed–sheep and possessed–possessed mutual destruction while thrown also works.
+- `project.godot` gains the `whip_grab` input action.
+
+### Grab / throw (RMB)
 
 - Input action `whip_grab` = mouse button 2 (right click).
 - Same `find_target` ray/cursor targeting as LMB; does **not** zip (no parent-to-target reel).
@@ -183,7 +144,11 @@ Gates kept in build 004: `rescues_unlocked`, baked tile positions, deferred Safe
 - Sheep–sheep collision radius while thrown: `throw_collide_radius` **40**.
 - Possessed flung into green → saved via `add_possession_save()` (not kill).
 
-## Build 006 layout
+## Build 006 — layout: safe zone bottom-right, sheep den
+<a id="build-006"></a>
+
+**Date:** 2026-09-19 ~03:20 MT  
+**Status:** Pre-release (editor build, not published).
 
 - **Safe zone** moved to **bottom-right** interior (`SLOT_SAFE` local `(60, 38)`), path pad painted around it.
 - Humans repositioned away from BR (≥12 Chebyshev): `(8,8)`, `(8,40)`, `(40,8)`, `(20,20)`, `(12,32)`.
@@ -191,8 +156,13 @@ Gates kept in build 004: `rescues_unlocked`, baked tile positions, deferred Safe
 - **Sheep den** top-left (`SLOT_SHEEP_SPAWNER` `(8, 10)`): `scripts/world/sheep_spawner.gd` instances `Sheep.tscn` under `Entities/Sheep` every **60s** after `rescues_unlocked`, with ±16px jitter and soft cap **20** living sheep.
 - Initial sheep: `(18,14)`, `(45,12)`, `(50,30)` (not on the den cell).
 - Builds 003–005 kept: rescue unlock, HP/possession, grab/throw, HUD/alarm.
+- New `scripts/world/sheep_spawner.gd`.
 
 ## Build 007 — whip animation and 32-bit art
+<a id="build-007"></a>
+
+**Date:** 2026-10-04 ~18:11 MT  
+**Status:** Web beta (playable test build, not the live page).
 
 Gameplay numbers are unchanged from build 006: LMB shove/explode, RMB grab and throw 180° opposite aim, `whip_force` 520, `throw_force` 800, cooldowns 0.35 / 0.40, the same targeting radii, HP, ranges, spawn slots, and sheep spawner timing (60s, cap 20). Hits still resolve on the click. Only the whip drawing and the art changed.
 
@@ -218,7 +188,13 @@ SpriteFrames regions and speeds match those grids. Character sprites are offset 
 
 Silhouettes: wide-hat rancher with a whip, big-headed silly humans (scarf, bright tunic), horned red-eyed sheep. Shading is local highlight plus a cool rim, not flat NES blocks.
 
+_Also attached: `stsh-game-007-backup-src.zip`, a working-folder backup of the 007 source taken before build 008. It matches the 007 zip except for an `export_presets.cfg` (Web preset), a regenerated `.import` file for the terrain atlas, and `infection_alarm.gd.uid`. The `.godot/` editor cache is left out._
+
 ## Build 008 — painted terrain (grassland, woods, paths, ponds)
+<a id="build-008"></a>
+
+**Date:** 2026-10-04 ~22:22 MT  
+**Status:** Web beta (`web-beta-008/`, not the live page).
 
 The old flat VIC-20-style terrain is gone. Level01 (72x48 tiles, 32 px, outer
 stone wall) is now painted procedurally at runtime by
@@ -260,9 +236,13 @@ and `python3 tools/gen_props.py`, then
 
 Gameplay numbers, whip, character art and the no-false-win gates
 (`rescues_unlocked`, deferred SafeZone monitoring) are unchanged.
-Web build: `web-beta-008/` (single-threaded "Web" preset), not deployed.
+Web build: `web-beta-008/` (single-threaded "Web" preset). Not deployed when these notes were written; see **Status** above.
 
 ## Build 009 — mobile touch controls (PC controls unchanged)
+<a id="build-009"></a>
+
+**Date:** 2026-10-04 ~22:53 MT  
+**Status:** **LIVE** — first build on https://savethesillyhumans.org/game.php, about 2026-10-04 23:50 MT. Hotfixes 009b–009d followed that night.
 
 - New autoload `TouchInput` (`scripts/ui/touch_input.gd`) and `scenes/ui/TouchControls.tscn`
   (CanvasLayer 11, `scripts/ui/touch_controls.gd`), instanced in Level01.
@@ -279,9 +259,24 @@ Web build: `web-beta-008/` (single-threaded "Web" preset), not deployed.
   returns to mouse aim; touching the screen turns it back on.
 - Gameplay numbers, terrain, art and win/lose logic unchanged.
 - Web build: `web-beta-009/` (single-threaded "Web" preset).
+
+## Build 009b — PLAY AGAIN button (hotfix)
+<a id="build-009b"></a>
+
+**Date:** 2026-10-04 ~23:48 MT  
+**Status:** Live hotfix for 009.
+
 - End screen: big PLAY AGAIN button under the win/lose message (works with mouse click
   and touch tap); R still restarts on keyboard. End messages no longer say "Press R".
   While the game is over, touches only hit PLAY AGAIN (joystick/WHIP/GRAB hidden).
+- Files: `game_state.gd`, `level_controller.gd`, `hud.gd`, `touch_controls.gd`.
+
+## Build 009c — touch joystick freeze fix (hotfix)
+<a id="build-009c"></a>
+
+**Date:** 2026-10-04 ~23:57 MT  
+**Status:** Live hotfix for 009.
+
 - 009 hotfix (joystick): phone browsers send fake mouse events around touches, which the
   hybrid-laptop check treated as a real mouse and switched touch mode off mid-drag (rancher
   froze). Now mouse input is ignored while a finger is down and for 2 s after the last touch,
@@ -289,11 +284,24 @@ Web build: `web-beta-008/` (single-threaded "Web" preset), not deployed.
   with a renumbered finger id on the left side still drive the joystick, the joystick has a
   small dead zone and reaches full speed at ~70% deflection, and the player reads the touch
   vector whenever the keyboard vector is zero.
+- Files: `player.gd`, `touch_controls.gd`, `touch_input.gd`.
+
+## Build 009d — touch whip aims along facing (hotfix)
+<a id="build-009d"></a>
+
+**Date:** 2026-10-05 ~00:12 MT  
+**Status:** Live hotfix for 009. Final 009 source; the local `Save-the-Silly-Humans-Godot-009.zip` is byte-identical to 009d.
+
 - 009 hotfix (facing whip): on touch, whip and grab aim along the rancher's facing
   direction (WHIP / playfield tap crack forward, GRAB throws behind). Mouse aim and
   LMB/RMB on non-touch stay exactly as before. Touch targeting uses the facing ray only.
+- Files: `player.gd`, `whip.gd`, `hud.gd`, `touch_controls.gd`, `touch_input.gd`.
 
 ## Build 010 — rounds & levels, human camp, diagonal touch whip, directional throw
+<a id="build-010"></a>
+
+**Date:** 2026-10-05 ~20:41 MT  
+**Status:** **LIVE** 2026-10-05 ~20:50 MT.
 
 PC keyboard + mouse stay as before: WASD move, mouse aim, LMB crack, RMB grab, R restart.
 Mouse aim and targeting are untouched (`TouchInput.get_aim_world()` still returns
@@ -389,9 +397,13 @@ speed at ≈70% deflection), plus the existing `JOYSTICK_RADIUS` (90). Values ma
   grab ghost on/off and restore on death, directional throw (touch E/NE/still, PC W, W+A,
   still), camp stopping at 20 while the den keeps spawning, no early round end, win/lose
   screens, NEXT LEVEL / PLAY AGAIN via touch, mouse, N, Enter and R, level scaling, and PC mouse aim.
-- Web build: `web-beta-010/` (single-threaded "Web" preset). Not deployed.
+- Web build: `web-beta-010/` (single-threaded "Web" preset). Not deployed when these notes were written; see **Status** above.
 
 ## Build 011 — title screen, mobile aim assist, fixed joystick, square buttons, spawn tuning
+<a id="build-011"></a>
+
+**Date:** 2026-10-05 ~21:22 MT  
+**Status:** **LIVE** 2026-10-05 ~21:25 MT.
 
 PC keyboard + mouse are unchanged: WASD, mouse aim, LMB crack, RMB grab (and the 010
 steer-throw), R restart, N/Enter next level. With touch inactive, the mouse aim and
@@ -483,9 +495,13 @@ targeting code runs exactly as in 010.
   - the camp threshold, minimum interval and 20 cap, and the round end
   - den 90 / 82.8 s, targets, and NEXT LEVEL straight into the game
 - `tools/verify_layout.gd`: PASS. 515/3456 cells blocked, all 2941 free cells connected.
-- Web build: `web-beta-011/`. Not deployed.
+- Web build: `web-beta-011/`. Not deployed when these notes were written; see **Status** above.
 
 ## Build 012: immediate win, scoring, Genesis-style HUD, How to Play
+<a id="build-012"></a>
+
+**Date:** 2026-10-05 ~22:08 MT  
+**Status:** **LIVE** 2026-10-05 ~22:15 MT.
 
 PC keyboard + mouse are unchanged (WASD, mouse aim, LMB crack, RMB grab/throw with WASD
 steering, R restart and N/Enter next level on the end screen). The 011 touch controls are
@@ -579,9 +595,13 @@ possessed human, in this order:
   - 011 PC regressions: D/W movement, LMB toward the mouse, RMB, no assist and old mouse targeting
   - 011 touch regressions: assist 40° hit / 120° ignored / out of range ignored, buttons-only, WHIP straight crack, GRAB, the fixed joystick, the camp threshold 5 and 5 s interval, den 90 / 82.8 s
 - `tools/verify_layout.gd`: PASS (515/3456 cells blocked, all 2941 free cells connected).
-- Web build: `web-beta-012/`. Not deployed.
+- Web build: `web-beta-012/`. Not deployed when these notes were written; see **Status** above.
 
 ## Build 013: Karens, camp hold, power-ups
+<a id="build-013"></a>
+
+**Date:** 2026-10-06 ~00:16 MT  
+**Status:** **LIVE** 2026-10-06 ~06:40 MT.
 
 PC keyboard and mouse controls are unchanged: WASD, mouse aim, LMB crack, RMB grab and throw, R to restart, N/Enter for the next level. `project.godot` (including `[input]`) is byte-identical to 012. The 011/012 touch controls are unchanged too: fixed joystick, WHIP/GRAB buttons, aim assist. All 012 rules still apply: immediate win, out-of-reach loss, scoring, HUD, How to Play, high score.
 
@@ -691,9 +711,13 @@ The temporary suites were deleted after the run.
 - `tools/verify_layout.gd`: PASS.
 
 ### Web build
-`web-beta-013/`, exported with the same preset. **Not deployed.** Build 012 stays live.
+`web-beta-013/`, exported with the same preset. Not deployed when these notes were written (Build 012 stays live. See **Status** above.)
 
 ## Build 014: MSM Cam, inventory (no power-up timers), corner-wedge touch controls
+<a id="build-014"></a>
+
+**Date:** 2026-10-07 ~04:17 MT  
+**Status:** Not deployed on its own; build 014b (014 plus the aim reticle) replaced it before going live.
 
 All new numbers are in the **build 014** sections of `scripts/level_config.gd`.
 
@@ -809,10 +833,14 @@ All scripts parse with no errors, and the release web export loads in headless C
 - **Audio:** the battery-swap beep is procedural (`scripts/sfx.gd`), and browsers play audio only after the first tap or click.
 
 ### Web build
-`web-beta-014/`, exported with the same Web preset (`--export-release`). **Not deployed.** Build 013 stays live.
-
+`web-beta-014/`, exported with the same Web preset (`--export-release`). Not deployed when these notes were written (Build 013 stays live. See **Status** above.)
 
 ## Build 014b: aim reticle (PC) and reach crosshair (touch)
+<a id="build-014b"></a>
+
+**Date:** 2026-10-07 ~04:41 MT  
+**Status:** **LIVE** 2026-10-07 ~06:41 MT. Current build.
+
 Everything from 014, plus the aim reticle. The in-game label reads `BUILD 014B`.
 
 ### What it does
@@ -878,3 +906,142 @@ Whip, aim assist, facing, weapons and touch-control code is unchanged in 014b.
 ### Web build
 `web-beta-014b/`, exported with the same Web preset (`--export-release`). Now the live build at https://savethesillyhumans.org/game.php.
 
+## Appendix: project reference notes
+
+These general notes (requirements, controls, gameplay loop, layout, collision layers, TileSet workflow) headed the project README during development. They are kept as they stood at build 014b.
+
+Zelda-style 2D action-herding prototype in **Godot 4.7.2**.
+
+You are a slightly questionable rancher. Silly humans wander on their own,
+flee nearby sheep, and steer clear of the green safe zone. Killer sheep
+**roam** until something enters their interest/attention ranges, then hunt.
+**Whip-herd** humans into the safe zone and crack sheep (and possessed
+humans) into explosions. Sheep bites chip human HP — five hits convert a
+silly human into a purple **possessed** hunter.
+
+### Requirements
+
+- Godot **4.7.2** (project feature tag `4.7`)
+- Open the project folder `stsh-game` in the Godot Project Manager
+
+Main scene: `scenes/Main.tscn` (thin shell that instances `scenes/levels/Level01.tscn`).
+
+### Controls
+
+| Input | Action |
+|-------|--------|
+| WASD | Move (isometric Y compression) |
+| Mouse | Aim (build 014b: in-game reticle replaces the pointer during play) |
+| LMB | Crack whip — shove silly humans / explode sheep & possessed |
+| RMB | Grab & throw — fling target **180° opposite aim** |
+| R | Restart after win or lose |
+| Q / wheel / 1-2 | Swap weapon (build 014: with the MSM Cam, LMB = hold REC, RMB = SWING) |
+
+Touch layout and dual-mode weapons: see **Build 014** below. Aim reticle / touch crosshair: see **Build 014b**.
+
+### Gameplay loop
+
+1. **Herd** silly humans into the **green safe zone** with the whip — they will not walk in on purpose (and they never chase you).
+2. **LMB** crack: shove silly humans along the aim ray; explode sheep & possessed. The lash is a multi-segment arc that extends to the aim point, with a tip spark and a short afterimage.
+3. **RMB** grab/throw: latch a whippable along aim and fling them **opposite** the aim direction (`throw_force` ~800). Teal grab plays a coil wind-up, an extending lash, then a follow-through opposite aim (gameplay still resolves on the click).
+4. Sheep deal **1 damage** per bite. Humans have **5 HP**. At 0 HP they **convert in place** into possessed hunters (purple tint) — not deleted.
+5. Possessed hunt like killer sheep. **LMB** explodes them. **Throw them into the green zone** to **save** them (rescue credit, no death) — they will not casually walk in.
+6. Thrown sheep that pass within ~40px of another living sheep → **both explode**. Possessed–sheep / possessed–possessed mutual destroy while thrown is also supported.
+7. Win / lose uses rescue + possession accounting (see Build 004 / grab-throw).
+
+#### AI distances (tile = 32px)
+
+| Actor | Behavior | Default |
+|-------|----------|---------|
+| Silly humans | Flee sheep | `flee_range` **160** (5 tiles) |
+| Silly humans | Avoid safe zone (too dumb to enter on purpose) | `avoid_safe_range` **288** (9 tiles) |
+| Silly humans | Wander (silly pauses) | after flee/avoid — **no rancher follow** |
+| Killer sheep / possessed | Roam by default | `roam_speed` 60 |
+| Killer sheep / possessed | Soft interest (slow approach) | `interest_range` **256** (8 tiles) |
+| Killer sheep / possessed | Full chase / attack | `attention_range` **160** (5 tiles) |
+
+Priority for silly humans: flee sheep → avoid safe zone → wander. Whip `external_velocity` still shoves them into the zone.
+
+Sheep prefer normal `humans` over the player. Possessed are not in `humans` (not rescue targets) and hunt player / silly humans.
+
+HUD shows rescued X/Y, living humans, living sheep, converted/possessed, and player HP. Damaged (infected) humans get a pulsing red/magenta feet ring; off-screen ones get an edge chevron (`InfectionAlarm`). At level start you should see **0/5** rescued — never an instant win.
+
+### Project layout
+
+```
+assets/
+  characters/          pixel sheets (rancher, human, sheep)
+  fx/                  whip crack + explosion
+  spriteframes/        AnimatedSprite2D definitions
+  tiles/               terrain atlas + TileSet
+scenes/
+  Main.tscn            entry shell → Level01
+  levels/Level01.tscn  TileMapLayer + entities + HUD
+  player/ Player.tscn
+  humans/ Human.tscn
+  sheep/  Sheep.tscn
+  world/  SafeZone.tscn
+  ui/     HUD.tscn
+scripts/
+  level_controller.gd  win/lose, GameState, HUD wiring
+  game_state.gd
+  player/  player.gd, whip.gd
+  humans/  human.gd
+  sheep/   sheep.gd
+  world/   safe_zone.gd, terrain_painter.gd, sheep_spawner.gd
+  ui/      hud.gd, infection_alarm.gd
+```
+
+### Collision layers
+
+| Layer | Name | Used by |
+|-------|------|---------|
+| 1 | World | Tile walls/rocks |
+| 2 | Player | Player body |
+| 3 | Humans | Silly humans |
+| 4 | Sheep | Killer sheep |
+| 5 | SafeZone | Rescue Area2D |
+
+Characters mask the World layer so they collide with painted wall/rock tiles.
+
+Groups: `player`, `humans`, `sheep`, `possessed`, `whippable`, `safe_zones`, `level_controller`.
+
+### TileSet / editable maps
+
+Terrain tiles live in:
+
+- `assets/tiles/stsh_terrain_atlas.png` — 32×32 tiles in a row: **grass, dirt, path, rock, wall, tree, bush, decor rock**
+- `assets/tiles/stsh_terrain_tileset.tres` — TileSet with physics on **rock** and **wall** only (World layer); tree/bush/decor rock have no collision
+
+`Level01` is a larger open ranch (~72×48 tiles) with walls only on the outer border.
+It uses `Ground` plus a non-colliding `Decor` TileMapLayer (trees/bushes/scenic rocks).
+On first run, `scripts/world/terrain_painter.gd` paints both if `Ground` is empty.
+**Spawns are tile-anchored inside the wall ring** (local slots → `map_to_local`); scene positions are overwritten at runtime.
+
+#### Paint a new level in the editor
+
+1. Duplicate `scenes/levels/Level01.tscn` → e.g. `Level02.tscn`.
+2. Open the copy. Select the `Ground` TileMapLayer.
+3. Optional: set `paint_on_ready = false` on the terrain painter (Inspector), or remove that script once your painted cells are saved — otherwise an empty layer will be auto-filled again.
+4. Paint with the TileSet (`grass` / `dirt` / `path` walkable; `rock` / `wall` block movement).
+5. Move `Entities/Player`, `Entities/Humans/*`, `Entities/Sheep/*`, and `Entities/SafeZone` markers/instances.
+6. Point `scenes/Main.tscn` at your new level (change the instanced scene), or set **Project → Project Settings → Application → Run → Main Scene** to your level scene.
+
+#### Create a level from scratch
+
+1. New scene → root `Node2D` with `scripts/level_controller.gd`.
+2. Add `TileMapLayer`, assign `assets/tiles/stsh_terrain_tileset.tres`, paint tiles.
+3. Instance Player, Humans, Sheep, SafeZone under an `Entities` node.
+4. Instance `scenes/ui/HUD.tscn` as a child of the root.
+5. Save under `scenes/levels/` and set it as the main scene (or instance it from `Main.tscn`).
+
+### Notes
+
+- **False-win fix (build 002):** SafeZone stays `monitoring=false` until tile placement finishes; humans spawn in map corners (≥12 tiles Chebyshev from the safe zone); `GameState.setup_complete` gates win/lose. Instant “all rescued” at t=0 is fixed — herding via whip is required.
+- Humans **avoid** the green zone on purpose (“too dumb to enter”); whip shove is the intended rescue path.
+- **16-bit art pass:** character sheets, terrain atlas, and FX refreshed toward a classic SNES/Genesis ranch look (clearer silhouettes, limited palettes, dither/shade). Frame layouts stay 32×32 so existing `.tres` spriteframes/tileset keep working.
+- Level01 is a larger open ranch with decor tiles; collision walls only on the border.
+- Pixel art uses nearest-neighbor filtering (project default).
+- Whip targeting is forgiving along the aim ray, not only near the cursor.
+- Sheep AI: `attention_range` **160** (5 tiles) for chase/attack; `interest_range` **256** (8 tiles) for soft approach; prefer humans over player in attention range.
+- No multiplayer.
