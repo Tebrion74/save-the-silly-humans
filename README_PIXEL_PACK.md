@@ -4,7 +4,7 @@ Late-90s 2D look: 32-bit color, local shading, highlights, and rim light. Not an
 
 Character sheets (file names kept):
 
-- `characters/rancher_32.png`, `human_32.png`, `sheep_32.png`
+- `characters/rancher_32.png`, `human_32.png`, `sheep_32.png` (and `human_karen_32.png`, added in build 013)
 - 64×64 frames, 6 columns × 4 rows
 - row 0 down, row 1 left, row 2 right, row 3 up
 - transparent background, hard pixels (nearest-neighbor)
@@ -14,6 +14,10 @@ FX:
 - `fx/whip_crack_32.png` — 8 frames of 64×64 tip spark
 - `fx/explosion_32.png` — 8 frames of 96×96
 
-Terrain (`tiles/stsh_terrain_atlas.png`) stays a 32×32 grid, eight cells: grass, dirt, path, rock, wall, tree, bush, decor rock. Only rock and wall collide.
+Terrain (builds 007 and earlier: `tiles/stsh_terrain_atlas.png`, a 32×32 grid of eight cells: grass, dirt, path, rock, wall, tree, bush, decor rock. Only rock and wall collided).
+
+> **Superseded in build 008.** `stsh_terrain_atlas.png` was replaced by procedurally generated atlases: `tiles/stsh_ground_atlas.png`, `stsh_dirt_atlas.png`, `stsh_path_atlas.png`, `stsh_forest_atlas.png`, `stsh_water_atlas.png`, `stsh_props_atlas.png` and `stsh_details_atlas.png`, with metadata in `terrain_meta.json` / `props_meta.json` and the TileSet in `stsh_terrain_tileset.tres`. Regenerate them with `python3 tools/gen_terrain.py && python3 tools/gen_props.py`, then `godot --headless --path . -s res://tools/build_tileset.gd`. See build 008 in `docs/DEVLOG.md`.
 
 SpriteFrames live in `assets/spriteframes/`.
+
+All sheets and atlases are original art made for Save The Silly Humans and are MIT-licensed with the rest of the project (see `LICENSE` and the Assets section of `README.md`).
