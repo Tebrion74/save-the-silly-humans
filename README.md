@@ -111,4 +111,4 @@ Created by Robert J. Morris. Published by **Echelon Publishers Group**, Calgary,
 
 ## Licence
 
-[MIT](LICENSE) © 2026 Robert J. Morris (Echelon Publishers Group). The licence covers the code **and** all art and assets. You're free to use, modify and redistribute them as long as you keep the copyright and licence notice.
+[MIT](LICENSE) © 2026 Robert J. Morris (Echelon Publishers Group). The licence covers the code **and** all art and assets: sprites, sprite sheets, FX, terrain and prop atlases, TileSets, SpriteFrames, shaders, procedural sound, the pixel font and the documentation. In `LICENSE`, "the Software" means everything in this repository. You're free to use, modify and redistribute them as long as you keep the copyright and licence notice.

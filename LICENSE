@@ -19,11 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Scope: "the Software" above covers everything in this repository: the source
-code, scenes and project files, and all art and assets (sprites, sprite sheets,
-FX, terrain and prop atlases, TileSets, SpriteFrames, shaders, procedural sound
-and the pixel font), plus the documentation. See the "Assets" section of
-README.md for provenance.
