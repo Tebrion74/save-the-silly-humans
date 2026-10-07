@@ -1,0 +1,37 @@
+# Godot 4 cache and generated files
+.godot/
+.import/
+*.tmp
+*.translation
+
+# Exports / builds
+export/
+build/
+web-beta*/
+*.zip
+*.pck
+*.wasm
+
+# Godot-specific ignores for C#/mono (not used, kept for safety)
+.mono/
+data_*/
+mono_crash.*.json
+
+# Secrets / local config
+.env
+.env.*
+*.keystore
+*.jks
+
+# Python
+__pycache__/
+*.pyc
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.swp
+.vscode/
+.idea/

@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://hwyl6us006cs"]
+
+[ext_resource type="Script" uid="uid://dk3t8b77dumku" path="res://scripts/sheep/sheep.gd" id="1"]
+[ext_resource type="SpriteFrames" uid="uid://u33f06iybu1f" path="res://assets/spriteframes/sheep_frames.tres" id="2_ti18m"]
+[ext_resource type="SpriteFrames" uid="uid://ueups2fcvbrk" path="res://assets/spriteframes/explosion_frames.tres" id="3_3vt4k"]
+
+[sub_resource type="CircleShape2D" id="1"]
+radius = 17.0
+
+[node name="Sheep" type="CharacterBody2D" unique_id=617436809]
+collision_layer = 8
+collision_mask = 7
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=335578850]
+shape = SubResource("1")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=1397526050]
+position = Vector2(0, -8)
+sprite_frames = ExtResource("2_ti18m")
+animation = &"down"
+
+[node name="Explosion" type="AnimatedSprite2D" parent="." unique_id=1942792969]
+visible = false
+sprite_frames = ExtResource("3_3vt4k")
+animation = &"explode"

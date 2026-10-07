@@ -1,0 +1,38 @@
+[gd_scene load_steps=6 format=3 uid="uid://puposb8l5wj6"]
+
+[ext_resource type="Script" uid="uid://dmhjh0smt7oj7" path="res://scripts/player/player.gd" id="1"]
+[ext_resource type="Script" uid="uid://n2sobbouowcx" path="res://scripts/player/whip.gd" id="2"]
+[ext_resource type="SpriteFrames" uid="uid://dwdv80epubd5q" path="res://assets/spriteframes/rancher_frames.tres" id="3_4kuee"]
+[ext_resource type="SpriteFrames" path="res://assets/spriteframes/whip_crack_frames.tres" id="4_crack"]
+
+[sub_resource type="CapsuleShape2D" id="1"]
+radius = 16.0
+height = 38.0
+
+[node name="Player" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 13
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1")
+
+[node name="Whip" type="Node2D" parent="."]
+script = ExtResource("2")
+
+[node name="Crack" type="AnimatedSprite2D" parent="Whip"]
+visible = false
+z_index = 20
+sprite_frames = ExtResource("4_crack")
+animation = &"crack"
+top_level = true
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(1.0, 1.0)
+position_smoothing_enabled = true
+position_smoothing_speed = 8.0
+
+[node name="Sprite" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -8)
+sprite_frames = ExtResource("3_4kuee")
+animation = &"down"

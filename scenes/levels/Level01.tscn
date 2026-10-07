@@ -1,0 +1,110 @@
+[gd_scene load_steps=12 format=3 uid="uid://clevel01stsh001"]
+
+[ext_resource type="Script" path="res://scripts/level_controller.gd" id="1_ctrl"]
+[ext_resource type="TileSet" uid="uid://bstshterrainset01" path="res://assets/tiles/stsh_terrain_tileset.tres" id="2_tiles"]
+[ext_resource type="Script" path="res://scripts/world/terrain_painter.gd" id="2b_paint"]
+[ext_resource type="PackedScene" uid="uid://puposb8l5wj6" path="res://scenes/player/Player.tscn" id="3_player"]
+[ext_resource type="PackedScene" uid="uid://difup70e7qa4j" path="res://scenes/humans/Human.tscn" id="4_human"]
+[ext_resource type="PackedScene" uid="uid://hwyl6us006cs" path="res://scenes/sheep/Sheep.tscn" id="5_sheep"]
+[ext_resource type="PackedScene" path="res://scenes/world/SafeZone.tscn" id="6_safe"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="7_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/TouchControls.tscn" id="9_touch"]
+[ext_resource type="Script" uid="uid://bstshsheepspawn01" path="res://scripts/world/sheep_spawner.gd" id="8_spawner"]
+[ext_resource type="Script" path="res://scripts/world/human_camp.gd" id="10_camp"]
+
+[node name="Level01" type="Node2D"]
+script = ExtResource("1_ctrl")
+
+[node name="Ground" type="TileMapLayer" parent="."]
+z_index = -10
+tile_set = ExtResource("2_tiles")
+script = ExtResource("2b_paint")
+map_width = 72
+map_height = 48
+
+[node name="ForestFloor" type="TileMapLayer" parent="."]
+z_index = -9
+tile_set = ExtResource("2_tiles")
+
+[node name="Dirt" type="TileMapLayer" parent="."]
+z_index = -8
+tile_set = ExtResource("2_tiles")
+
+[node name="Path" type="TileMapLayer" parent="."]
+z_index = -7
+tile_set = ExtResource("2_tiles")
+
+[node name="Water" type="TileMapLayer" parent="."]
+z_index = -6
+tile_set = ExtResource("2_tiles")
+
+[node name="Tint" type="Sprite2D" parent="."]
+z_index = -5
+centered = false
+
+[node name="Detail" type="TileMapLayer" parent="."]
+z_index = -4
+tile_set = ExtResource("2_tiles")
+collision_enabled = false
+
+[node name="Entities" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Props" type="TileMapLayer" parent="Entities"]
+y_sort_enabled = true
+tile_set = ExtResource("2_tiles")
+
+[node name="Player" parent="Entities" instance=ExtResource("3_player")]
+position = Vector2(16, 16)
+
+[node name="SafeZone" parent="Entities" instance=ExtResource("6_safe")]
+position = Vector2(784, 464)
+
+[node name="Humans" type="Node2D" parent="Entities"]
+y_sort_enabled = true
+
+[node name="Human1" parent="Entities/Humans" instance=ExtResource("4_human")]
+position = Vector2(-880, -496)
+
+[node name="Human2" parent="Entities/Humans" instance=ExtResource("4_human")]
+position = Vector2(-880, 528)
+
+[node name="Human3" parent="Entities/Humans" instance=ExtResource("4_human")]
+position = Vector2(144, -496)
+
+[node name="Human4" parent="Entities/Humans" instance=ExtResource("4_human")]
+position = Vector2(-496, -112)
+
+[node name="Human5" parent="Entities/Humans" instance=ExtResource("4_human")]
+position = Vector2(-752, 272)
+
+[node name="Sheep" type="Node2D" parent="Entities"]
+y_sort_enabled = true
+
+[node name="Sheep1" parent="Entities/Sheep" instance=ExtResource("5_sheep")]
+position = Vector2(-560, -304)
+
+[node name="Sheep2" parent="Entities/Sheep" instance=ExtResource("5_sheep")]
+position = Vector2(304, -368)
+
+[node name="Sheep3" parent="Entities/Sheep" instance=ExtResource("5_sheep")]
+position = Vector2(464, 208)
+
+[node name="Sheep4" parent="Entities/Sheep" instance=ExtResource("5_sheep")]
+position = Vector2(752, -432)
+
+[node name="Sheep5" parent="Entities/Sheep" instance=ExtResource("5_sheep")]
+position = Vector2(-464, 592)
+
+[node name="HumanCamp" type="Node2D" parent="Entities"]
+y_sort_enabled = true
+position = Vector2(-848, 528)
+script = ExtResource("10_camp")
+
+[node name="SheepSpawner" type="Node2D" parent="Entities"]
+position = Vector2(-880, -432)
+script = ExtResource("8_spawner")
+
+[node name="HUD" parent="." instance=ExtResource("7_hud")]
+
+[node name="TouchControls" parent="." instance=ExtResource("9_touch")]
