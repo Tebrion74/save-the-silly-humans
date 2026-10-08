@@ -8,7 +8,7 @@ extends Control
 ## Mouse emulation from touch is off, so touches are hit-tested by hand.
 
 const GAME_SCENE := "res://scenes/Main.tscn"
-const BUILD_LABEL := "BUILD 014B"
+const BUILD_LABEL := "BUILD 015"
 const COPYRIGHT := "© 2026 ECHELON PUBLISHERS GROUP"
 const HORIZON := 440.0
 const TITLE_SHADER := preload("res://assets/shaders/title_text.gdshader")
@@ -16,6 +16,9 @@ const TITLE_SHADER := preload("res://assets/shaders/title_text.gdshader")
 var start_button: Button
 var howto_button: Button
 var back_button: Button
+## Build 015: jump straight to the Trustin Judeau boss fight (title + How to Play).
+var boss_button: Button
+var howto_boss_button: Button
 ## Full-screen How to Play overlay (hidden until opened).
 var howto_panel: Control
 var _press_label: Label
@@ -55,7 +58,10 @@ func _ready() -> void:
 	tw.tween_property(_flash, "color:a", 0.0, 0.6)
 	# Build 014 debug scenarios (debug builds only): skip the title.
 	var progress := get_node_or_null("/root/GameProgress")
-	if OS.is_debug_build() and progress != null and "debug_scenario" in progress and progress.debug_scenario != "" \
+	if OS.is_debug_build() and progress != null and "debug_scenario" in progress and String(progress.debug_scenario).begins_with("boss"):
+		progress.start_at_boss()
+		get_tree().change_scene_to_file.call_deferred(LevelConfig.BOSS_SCENE)
+	elif OS.is_debug_build() and progress != null and "debug_scenario" in progress and progress.debug_scenario != "" \
 			and progress.debug_scenario != "howto":
 		get_tree().change_scene_to_file.call_deferred(GAME_SCENE)
 	elif OS.is_debug_build() and progress != null and "debug_scenario" in progress and progress.debug_scenario == "howto":
@@ -70,12 +76,16 @@ func _input(event: InputEvent) -> void:
 		TouchInput.note_touch(t.index, t.pressed, false)
 		if t.pressed:
 			if is_howto_open():
-				if get_back_rect().grow(24.0).has_point(t.position):
+				if get_back_rect().grow(16.0).has_point(t.position):
 					close_howto()
+				elif _rect_of(howto_boss_button).grow(16.0).has_point(t.position):
+					start_boss()
 			elif get_start_rect().grow(24.0).has_point(t.position):
 				start_game()
-			elif get_howto_rect().grow(16.0).has_point(t.position):
+			elif get_howto_rect().grow(12.0).has_point(t.position):
 				open_howto()
+			elif get_boss_rect().grow(12.0).has_point(t.position):
+				start_boss()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventScreenDrag:
 		var d := event as InputEventScreenDrag
@@ -89,6 +99,9 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		elif k == KEY_H or kc == KEY_H:
 			open_howto()
+			get_viewport().set_input_as_handled()
+		elif k == KEY_B or kc == KEY_B:
+			start_boss()
 			get_viewport().set_input_as_handled()
 		elif k in [KEY_ESCAPE, KEY_BACKSPACE] or kc in [KEY_ESCAPE, KEY_BACKSPACE]:
 			close_howto()
@@ -105,6 +118,16 @@ func get_howto_rect() -> Rect2:
 	if howto_button == null or not howto_button.is_visible_in_tree():
 		return Rect2()
 	return howto_button.get_global_rect()
+
+
+func get_boss_rect() -> Rect2:
+	return _rect_of(boss_button)
+
+
+func _rect_of(b: Control) -> Rect2:
+	if b == null or not b.is_visible_in_tree():
+		return Rect2()
+	return b.get_global_rect()
 
 
 func get_back_rect() -> Rect2:
@@ -134,7 +157,7 @@ func close_howto() -> void:
 
 
 func _set_menu_visible(v: bool) -> void:
-	for n in [start_button, howto_button, _press_label, _hiscore_label]:
+	for n in [start_button, howto_button, boss_button, _press_label, _hiscore_label]:
 		if n != null:
 			n.visible = v
 
@@ -154,6 +177,23 @@ func start_game() -> void:
 	tw.tween_property(_flash, "color", Color(1, 1, 1, 0.85), 0.08)
 	tw.tween_property(_flash, "color", Color(0, 0, 0, 1.0), 0.18)
 	tw.tween_callback(func() -> void: get_tree().change_scene_to_file(GAME_SCENE))
+
+
+## Build 015: straight to the boss fight (a fresh run that starts at the boss;
+## CONTINUE after beating him goes to level 3).
+func start_boss() -> void:
+	if _starting:
+		return
+	_starting = true
+	var progress := get_node_or_null("/root/GameProgress")
+	if progress != null and progress.has_method("start_at_boss"):
+		progress.start_at_boss()
+	close_howto()
+	_flash.color = Color(1, 1, 1, 0.0)
+	var tw := create_tween()
+	tw.tween_property(_flash, "color", Color(1, 0.85, 0.85, 0.85), 0.08)
+	tw.tween_property(_flash, "color", Color(0, 0, 0, 1.0), 0.18)
+	tw.tween_callback(func() -> void: get_tree().change_scene_to_file(LevelConfig.BOSS_SCENE))
 
 
 # ------------------------------------------------------------------ build
@@ -267,6 +307,14 @@ func _build_menu() -> void:
 	howto_button.pressed.connect(open_howto)
 	add_child(howto_button)
 
+	boss_button = _menu_button("BossButton", "BOSS FIGHT", 22,
+		Color(0.55, 0.06, 0.1, 0.95), Color(0.72, 0.1, 0.14, 1.0), Color(1.0, 0.86, 0.45))
+	boss_button.position = Vector2(640 - 140, 614)
+	boss_button.size = Vector2(280, 46)
+	boss_button.add_to_group("boss_button")
+	boss_button.pressed.connect(start_boss)
+	add_child(boss_button)
+
 	_hiscore_label = Label.new()
 	_hiscore_label.name = "HiScoreLabel"
 	_hiscore_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -310,9 +358,9 @@ func _menu_button(node_name: String, text: String, font_size: int, bg: Color, bg
 	return b
 
 
-const HOWTO_PC := "WASD  —  move   ·   MOUSE  —  aim the reticle\nLEFT CLICK  —  WHIP   ·   cam: hold REC\nRIGHT CLICK  —  GRAB & throw   ·   cam: SWING\nQ / WHEEL / 1-2  —  swap weapon\nR  —  restart   ·   N / ENTER  —  next level"
+const HOWTO_PC := "WASD  —  move   ·   MOUSE  —  aim the reticle\nLEFT CLICK  —  WHIP   ·   cam: hold REC\nRIGHT CLICK  —  GRAB & throw   ·   cam: SWING\nQ / WHEEL / 1-2  —  swap weapon   ·   B  —  boss\nR  —  restart   ·   N / ENTER  —  next level"
 const HOWTO_TOUCH := "JOYSTICK (bottom left)  —  move\nBOTTOM-RIGHT  —  WHIP   ·   cam: hold REC\nTOP-RIGHT  —  GRAB   ·   cam: SWING\nTOP-LEFT  —  swap weapon\nWHIP auto-aims  ·  crosshair = weapon reach"
-const HOWTO_RULES := "• Herd silly humans into the green SAFE ZONE. Throw POSSESSED humans in to save them too.\n• The CAMP sends humans, the SHEEP DEN breeds sheep. Hit the SAVE TARGET; lose if the rancher falls.\n• LEVEL 3+: 4 possessed together become KARENS: they mob you, convert humans, shut the camp.\n• POWER-UPS never time out. Whip mods stay till you grab another. FIRE: 10 lashes. SHOCKWAVE: 3.\n• MSM CAM (rare): hold REC to film a 39° cone. Filmed humans walk to safety; filmed Karens go VIRAL!\n• Filming drains the BATTERY (spares auto-load, carry 3), breeds sheep, and Karens LOVE it.\n• Two moves per weapon: WHIP / GRAB, or MSM CAM REC / SWING (shove + stun, no damage, no battery).\n• SCORE: 200 per human · 50 per sheep or possessed · 100 per Karen. Sheep speed up each level!\n• RETICLE / crosshair turns GREEN when a target's in range (whip reach or cam cone); RED = nothing to hit."
+const HOWTO_RULES := "• Herd silly humans into the green SAFE ZONE. Throw POSSESSED humans in to save them too.\n• The CAMP sends humans, the SHEEP DEN breeds sheep. Hit the SAVE TARGET; lose if the rancher falls.\n• LEVEL 3+: 4 possessed together become KARENS: they mob you, convert humans, shut the camp.\n• POWER-UPS never time out. Whip mods stay till you grab another. FIRE: 10 lashes. SHOCKWAVE: 3.\n• MSM CAM (rare): hold REC to film a 39° cone. Filmed humans walk to safety; filmed Karens go VIRAL!\n• Filming drains the BATTERY (spares auto-load, carry 3), breeds sheep, and Karens LOVE it.\n• Two moves per weapon: WHIP / GRAB, or MSM CAM REC / SWING (shove + stun, no damage, no battery).\n• SCORE: 200 per human · 50 per sheep or possessed · 100 per Karen. Sheep speed up each level!\n• RETICLE / crosshair turns GREEN when a target's in range (whip reach or cam cone); RED = nothing to hit.\n• BOSS after LEVEL 2: TRUSTIN JUDEAU, 10 hearts. Dodge poutine, WHIP him, CAM = pose. Die = retry boss."
 
 
 func _build_howto() -> void:
@@ -356,20 +404,27 @@ func _build_howto() -> void:
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	howto_panel.add_child(line)
 	howto_panel.add_child(_howto_heading("OBJECTIVE", Vector2(110, 312), Color(1.0, 0.55, 0.12)))
-	var rules := _howto_body(HOWTO_RULES, Vector2(110, 350), Vector2(1060, 250), 18)
+	var rules := _howto_body(HOWTO_RULES, Vector2(110, 346), Vector2(1060, 260), 17)
 	rules.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	howto_panel.add_child(rules)
 	back_button = _menu_button("BackButton", "BACK", 30,
 		Color(0.8, 0.3, 0.12, 0.95), Color(0.92, 0.42, 0.16, 1.0), Color(1.0, 0.86, 0.45))
-	back_button.position = Vector2(640 - 110, 610)
-	back_button.size = Vector2(220, 62)
+	back_button.position = Vector2(640 - 230, 612)
+	back_button.size = Vector2(220, 58)
 	back_button.add_to_group("back_button")
 	back_button.pressed.connect(close_howto)
 	howto_panel.add_child(back_button)
-	var keys_l := _small_label("ESC / BACKSPACE: BACK", 15, Vector2(110, 646), Vector2(380, 22), HORIZONTAL_ALIGNMENT_LEFT)
+	howto_boss_button = _menu_button("HowToBossButton", "BOSS FIGHT", 24,
+		Color(0.55, 0.06, 0.1, 0.95), Color(0.72, 0.1, 0.14, 1.0), Color(1.0, 0.86, 0.45))
+	howto_boss_button.position = Vector2(650, 612)
+	howto_boss_button.size = Vector2(220, 58)
+	howto_boss_button.add_to_group("boss_button")
+	howto_boss_button.pressed.connect(start_boss)
+	howto_panel.add_child(howto_boss_button)
+	var keys_l := _small_label("ESC / BACKSPACE: BACK", 15, Vector2(110, 646), Vector2(280, 22), HORIZONTAL_ALIGNMENT_LEFT)
 	keys_l.label_settings.font_color = Color(0.8, 0.85, 1.0, 0.8)
 	howto_panel.add_child(keys_l)
-	var keys_r := _small_label("ENTER / SPACE: START", 15, Vector2(790, 646), Vector2(380, 22), HORIZONTAL_ALIGNMENT_RIGHT)
+	var keys_r := _small_label("ENTER / SPACE: START · B: BOSS", 15, Vector2(890, 646), Vector2(280, 22), HORIZONTAL_ALIGNMENT_RIGHT)
 	keys_r.label_settings.font_color = Color(0.8, 0.85, 1.0, 0.8)
 	howto_panel.add_child(keys_r)
 

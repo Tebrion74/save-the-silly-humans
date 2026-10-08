@@ -114,6 +114,13 @@ const PONDS := [
 	{"c": Vector2(29.5, 36.5), "r": Vector2(2.6, 1.9)},
 ]
 
+## Build 015: "ranch" (Level01) or "boss_arena" (Parliament-lawn clearing).
+@export var layout: String = "ranch"
+var _arena := false
+var _woods_v: Array = WOODS
+var _trails_v: Array = TRAILS
+var _ponds_v: Array = PONDS
+var _clear_v: Array = CLEARINGS
 var _vw := 0
 var _vh := 0
 var _forest := PackedByteArray()
@@ -133,7 +140,10 @@ func _ready() -> void:
 		return
 	if get_used_cells().size() > 0:
 		return
-	paint_level01()
+	if layout == "boss_arena":
+		paint_boss_arena()
+	else:
+		paint_level01()
 
 
 func get_map_origin() -> Vector2i:
@@ -254,7 +264,7 @@ func _seg_dist(p: Vector2, a: Vector2, b: Vector2) -> float:
 
 func _trail_dist(p: Vector2) -> float:
 	var best := 999.0
-	for tr in TRAILS:
+	for tr in _trails_v:
 		var pts: Array = tr["p"]
 		for i in range(pts.size() - 1):
 			best = minf(best, _seg_dist(p, pts[i], pts[i + 1]) - float(tr["w"]))
@@ -264,13 +274,16 @@ func _trail_dist(p: Vector2) -> float:
 ## Vertex (corner) clearance from every spawn slot cell, in Chebyshev cells.
 func _slot_cheb(p: Vector2) -> float:
 	var best := 999.0
-	for c in CLEARINGS:
+	for c in _clear_v:
 		var cc := Vector2(c.x + 0.5, c.y + 0.5)
 		best = minf(best, maxf(absf(p.x - cc.x), absf(p.y - cc.y)))
 	return best
 
 
 func _layout_vertices() -> void:
+	if _arena:
+		_layout_arena_vertices()
+		return
 	for y in range(1, _vh - 1):
 		for x in range(1, _vw - 1):
 			var p := Vector2(x, y)
@@ -313,8 +326,8 @@ func _layout_vertices() -> void:
 
 func _woods_at(cell: Vector2i) -> int:
 	var p := Vector2(cell.x + 0.5, cell.y + 0.5)
-	for i in WOODS.size():
-		if _blob(WOODS[i]["c"], WOODS[i]["r"], p, 0.35):
+	for i in _woods_v.size():
+		if _blob(_woods_v[i]["c"], _woods_v[i]["r"], p, 0.35):
 			return i
 	return -1
 
@@ -332,7 +345,7 @@ func _near(g: PackedByteArray, c: Vector2i, r: int) -> bool:
 
 
 func _in_clearing(cell: Vector2i, radius: int) -> bool:
-	for c in CLEARINGS:
+	for c in _clear_v:
 		var dx: int = cell.x - c.x
 		var dy: int = cell.y - c.y
 		if dx * dx + dy * dy <= radius * radius:
@@ -342,6 +355,8 @@ func _in_clearing(cell: Vector2i, radius: int) -> bool:
 
 ## Build 010: camp footprint (tents, fire, pennant) — no props of any kind.
 func _in_camp(c: Vector2i) -> bool:
+	if _arena:
+		return false
 	var dx := float(c.x - CAMP_CELL.x) / 6.0
 	var dy := float(c.y - CAMP_CELL.y) / 4.2
 	return dx * dx + dy * dy <= 1.0
@@ -468,8 +483,11 @@ func _paint_props(layer: TileMapLayer, origin: Vector2i) -> void:
 			continue
 		if _near(_path, c, 1):
 			continue
-		_put(layer, origin, c, _pick_tree(WOODS[wi]["mix"]), 1, true)
+		_put(layer, origin, c, _pick_tree(_woods_v[wi]["mix"]), 1, true)
 		_trunks.append(c)
+	if _arena:
+		_paint_arena_props(layer, origin, cand)
+		return
 	# --- lone meadow trees
 	var lone := 0
 	for c in cand:
@@ -602,6 +620,9 @@ func _paint_details(layer: TileMapLayer, origin: Vector2i) -> void:
 					layer.set_cell(origin + c, SRC_DETAIL, D_PEBBLES)
 				continue
 			if _cell_has(_dirt, c):
+				if _arena:
+					layer.set_cell(origin + c, SRC_DETAIL, D_FLOWERS[h % 4])
+					continue
 				if h < 60:
 					layer.set_cell(origin + c, SRC_DETAIL, D_PEBBLES)
 				continue
@@ -633,6 +654,10 @@ func _paint_tint(origin: Vector2i) -> void:
 			if _mask(_forest, x, y) == 15:
 				f = 1.0
 			col = col.lerp(Color(0.78, 0.84, 0.82), f * 0.8)
+			if _arena and f < 0.5:
+				# Build 015: mown-lawn stripes on the Parliament lawn
+				col = col * (1.0 if (x / 2) % 2 == 0 else 0.9)
+				col.a = 1.0
 			img.set_pixel(x, y, col)
 	spr.texture = ImageTexture.create_from_image(img)
 	spr.centered = false
@@ -654,3 +679,81 @@ func _apply_camera_limits() -> void:
 	cam.limit_top = int(tl.y)
 	cam.limit_right = int(br.x)
 	cam.limit_bottom = int(br.y)
+
+
+# ------------------------------------------------------------------ build 015 boss arena
+
+## Parliament-lawn clearing for the Trustin Judeau fight (42x28 cells): mown
+## lawn, an oval promenade, tree groves in the corners, flower beds, and a
+## clear cell band at the top for the Parliament building (placed by
+## boss_level.gd). The fighting area in the middle has no blocking props.
+const ARENA_WOODS := [
+	{"c": Vector2(4.0, 4.0), "r": Vector2(5.0, 4.0), "mix": "oak_pine"},
+	{"c": Vector2(38.0, 4.0), "r": Vector2(5.0, 4.0), "mix": "oak_pine"},
+	{"c": Vector2(3.0, 25.0), "r": Vector2(4.0, 3.0), "mix": "oak_birch"},
+	{"c": Vector2(39.0, 25.0), "r": Vector2(4.0, 3.0), "mix": "oak_birch"},
+	{"c": Vector2(1.5, 15.0), "r": Vector2(1.6, 5.0), "mix": "pine"},
+	{"c": Vector2(40.5, 15.0), "r": Vector2(1.6, 5.0), "mix": "pine"},
+]
+const ARENA_CLEARINGS: Array[Vector2i] = [
+	Vector2i(16, 4), Vector2i(21, 4), Vector2i(26, 4),   # Parliament building
+	Vector2i(21, 11),   # boss start
+	Vector2i(21, 16),   # centre
+	Vector2i(21, 22),   # player start
+	Vector2i(10, 16), Vector2i(32, 16),
+]
+
+
+func paint_boss_arena() -> void:
+	_arena = true
+	_woods_v = ARENA_WOODS
+	_ponds_v = []
+	_clear_v = ARENA_CLEARINGS
+	var ring: Array = []
+	for i in 21:
+		var a := float(i) / 20.0 * TAU
+		ring.append(Vector2(21.0 + cos(a) * 13.5, 16.0 + sin(a) * 7.5))
+	_trails_v = [
+		{"w": 0.75, "p": ring},
+		{"w": 0.9, "p": [Vector2(21.0, 7.2), Vector2(21.0, 8.6)]},
+		{"w": 0.6, "p": [Vector2(21.0, 23.5), Vector2(21.0, 27.0)]},
+	]
+	paint_level01()
+
+
+func _layout_arena_vertices() -> void:
+	for y in range(1, _vh - 1):
+		for x in range(1, _vw - 1):
+			var p := Vector2(x, y)
+			var i := _vi(x, y)
+			for w in _woods_v:
+				if _blob(w["c"], w["r"] + Vector2(1.0, 1.0), p, 0.4):
+					_forest[i] = 1
+			var wob := _noise2.get_noise_2d(x * 2.0, y * 2.0) * 0.1
+			if _trail_dist(p) + wob < 0.0:
+				_path[i] = 1
+			# forecourt in front of the building
+			if absf(p.x - 21.0) < 6.5 and p.y > 6.0 and p.y < 8.6:
+				_path[i] = 1
+			# flower beds: two round beds left/right of the centre (dirt + flowers)
+			for bc in [Vector2(12.0, 16.0), Vector2(30.0, 16.0)]:
+				if p.distance_to(bc) < 1.9:
+					_dirt[i] = 1
+
+
+func _paint_arena_props(layer: TileMapLayer, origin: Vector2i, cand: Array[Vector2i]) -> void:
+	# bushes on the woodland fringe only; the lawn stays open for dodging
+	for c in cand:
+		if _occupied.has(c) or _cell_has(_path, c) or _in_clearing(c, 3):
+			continue
+		if not is_interior_local(c, 1):
+			continue
+		var fringe := _cell_has(_forest, c) and _woods_at(c) < 0
+		var h := _hash(c.x + 17, c.y * 3) % 100
+		if fringe and h < 35:
+			_put(layer, origin, c, BUSHES[h % 4], 1, false)
+	# hedge-row fence posts along the bottom
+	for x in [8, 9, 10, 31, 32, 33]:
+		var c := Vector2i(x, 26)
+		if _free(c, 1, 2, false):
+			_put(layer, origin, c, FENCE_M if x != 8 and x != 31 else FENCE_L, 1, false)

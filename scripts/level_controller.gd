@@ -450,6 +450,11 @@ func request_next_level() -> void:
 		return
 	_transitioning = true
 	var progress := get_node_or_null("/root/GameProgress")
+	# Build 015: clearing level BOSS_AFTER_LEVEL leads into the boss fight.
+	if GameProgressCheck.boss_follows(level_number) and progress != null and progress.has_method("enter_boss"):
+		progress.enter_boss(level_number + 1)
+		get_tree().change_scene_to_file(LevelConfig.BOSS_SCENE)
+		return
 	if progress != null and progress.has_method("advance_level"):
 		progress.advance_level()
 	get_tree().reload_current_scene()
@@ -710,6 +715,7 @@ func score_breakdown() -> Dictionary:
 		"high_score": int(progress.high_score) if progress != null and "high_score" in progress else current_score(),
 		"new_high": bool(progress.new_high_score) if progress != null and "new_high_score" in progress else false,
 		"time": round_time,
+		"next_is_boss": GameProgressCheck.boss_follows(level_number),
 	}
 
 

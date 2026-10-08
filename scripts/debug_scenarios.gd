@@ -11,6 +11,11 @@ extends RefCounted
 ## Build 014b reticle: reticle_pc (whip, sheep + Karen-free; move the mouse),
 ## reticle_pc_karen (level 3: whip, Karens in reach), reticle_touch_whip,
 ## reticle_touch_cam (use with touch=1).
+## Build 015 boss (the title jumps straight to the boss arena): boss_title,
+## boss_attack (spread + lob in the air, 6 hearts), boss_hearts (whip hit at
+## 4 -> 3 hearts, reticle on him), boss_pose (MSM Cam filming him),
+## boss_win (last heart -> defeat -> win screen), boss_volley (rage attacks).
+## Add touch=1 / --touch for the mobile layout.
 
 
 const START_DELAY := 2.9
@@ -172,3 +177,66 @@ class AutoSwing extends Node:
 		if _t <= 0.0 and cam != null and is_instance_valid(cam):
 			_t = 0.75
 			cam.swing()
+
+
+# ------------------------------------------------------------------ build 015 boss
+
+static func run_boss(lvl: Node, scenario: String) -> void:
+	if not OS.is_debug_build():
+		return
+	var p := lvl.get_node_or_null("Entities/Player") as Node2D
+	var boss: TrustinJudeau = lvl.boss
+	if p == null or boss == null:
+		return
+	print("[debug] boss scenario ", scenario)
+	p.begin_grab_ghost(600.0)   # invulnerable for the shot
+	if scenario == "boss_title":
+		return
+	# skip the intro card
+	if lvl.hud != null and lvl.hud.title_card != null:
+		lvl.hud.title_card.visible = false
+		lvl.hud.title_card.position.x = 5000.0
+	boss._set_state(TrustinJudeau.S.MOVE)
+	boss._gap = 99.0
+	boss._dash_in = 99.0
+	boss.global_position = p.global_position + Vector2(-40, -250)
+	p.global_position += Vector2(60, 0)
+	var tree := lvl.get_tree()
+	match scenario:
+		"boss_attack":
+			boss.hearts = 6
+			lvl.hud.set_boss_hearts(6, boss.max_hearts)
+			boss.force_attack("lob")
+			await tree.create_timer(0.62).timeout
+			boss.force_attack("spread")
+			boss._gap = 99.0
+		"boss_volley":
+			boss.hearts = 2
+			lvl.hud.set_boss_hearts(2, boss.max_hearts)
+			boss.force_attack("radial")
+		"boss_hearts":
+			boss.hearts = 4
+			lvl.hud.set_boss_hearts(4, boss.max_hearts)
+			lvl.weapons.select_id("whip")
+			p.global_position = boss.global_position + Vector2(150, 110)
+			boss.ai_enabled = false
+			await tree.create_timer(0.3).timeout
+			var target_screen: Vector2 = lvl.get_viewport().get_canvas_transform() * (boss.global_position + Vector2(0, -40))
+			Input.warp_mouse(target_screen)
+			p.get_viewport().warp_mouse(target_screen)
+			await tree.create_timer(0.2).timeout
+			p.get_node("Whip").fire_whip()
+		"boss_pose":
+			var pu: PowerUps = lvl.power_ups
+			pu.grant("msm_cam")
+			lvl.cam.battery = 14.0
+			p.global_position = boss.global_position + Vector2(-60, 260)
+			lvl.cam.debug_aim = p.global_position.direction_to(boss.global_position)
+			lvl.cam.debug_force_film = true
+			pu.changed.emit()
+		"boss_win":
+			boss.hearts = 1
+			lvl.hud.set_boss_hearts(1, boss.max_hearts)
+			boss.ai_enabled = false
+			await tree.create_timer(0.3).timeout
+			boss.take_hit(1, "whip", p.global_position)

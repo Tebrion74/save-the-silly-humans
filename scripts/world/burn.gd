@@ -26,6 +26,9 @@ static func is_burning(node: Node) -> bool:
 
 ## Set `node` on fire (or refresh its fire). Returns true if it is burning now.
 static func ignite(node: Node) -> bool:
+	# Build 015: the boss handles fire itself (one delayed burn tick).
+	if node != null and is_instance_valid(node) and node.has_method("boss_ignite"):
+		return node.boss_ignite()
 	if not can_burn(node):
 		return false
 	var b := node.get_node_or_null("Burn") as Burn

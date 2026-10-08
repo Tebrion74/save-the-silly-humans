@@ -130,7 +130,7 @@ func swing() -> int:
 	var cos_half := cos(deg_to_rad(LevelConfig.SWING_HALF_ARC_DEG))
 	var push := LevelConfig.SWING_PUSH_PX * LevelConfig.SWING_PUSH_DAMPING
 	var n := 0
-	for group in ["sheep", "possessed"]:
+	for group in ["sheep", "possessed", "boss"]:
 		for c in get_tree().get_nodes_in_group(group):
 			if not is_instance_valid(c) or not c is Node2D or ("exploding" in c and c.exploding):
 				continue
@@ -146,6 +146,8 @@ func swing() -> int:
 				var stars := StaggerStars.new()
 				stars.life = LevelConfig.SWING_STAGGER
 				c.add_child(stars)
+				if c.is_in_group("boss"):
+					stars.position = Vector2(0, -116)
 				_spawn_impact((c as Node2D).global_position + Vector2(0, -18))
 	swing_hits += n
 	return n
@@ -275,6 +277,11 @@ func _film(delta: float) -> void:
 		if in_cone((h as Node2D).global_position) and h.has_method("cam_film"):
 			h.cam_film(delta)
 			humans_in_cone += 1
+	# Build 015: the boss poses for the camera (TrustinJudeau.cam_film).
+	for b in tree.get_nodes_in_group("boss"):
+		if is_instance_valid(b) and not ("exploding" in b and b.exploding) and in_cone((b as Node2D).global_position) \
+				and b.has_method("cam_film"):
+			b.cam_film(delta)
 	var living := 0
 	for k in tree.get_nodes_in_group("karens"):
 		if not is_instance_valid(k) or k.is_queued_for_deletion() or ("exploding" in k and k.exploding):

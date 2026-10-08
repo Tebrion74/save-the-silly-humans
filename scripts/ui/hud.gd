@@ -64,6 +64,10 @@ var _time: float = 0.0
 var _help_t: float = 0.0
 var _left: VBoxContainer
 var _right: VBoxContainer
+## Build 015 boss fight: heart bar (top centre) and the title card.
+var boss_bar: BossBar
+var title_card: Control
+var boss_mode := false
 
 
 func _ready() -> void:
@@ -343,6 +347,8 @@ func apply_layout(touch: bool, vs: Vector2) -> void:
 		objective_label.offset_left = -400
 		objective_label.offset_right = 400
 	inventory_panel.position = Vector2(22, _left.position.y + 154.0)
+	if boss_bar != null:
+		_place_boss_bar(touch, vs)
 
 
 func _build_callout(root: Control) -> void:
@@ -515,6 +521,10 @@ func show_end(won: bool, message: String, breakdown: Dictionary = {}) -> void:
 		play_again_button.visible = not won
 	if next_level_button:
 		next_level_button.visible = won
+		# Build 015: clearing level 2 leads into the boss fight.
+		if won and bool(breakdown.get("next_is_boss", false)):
+			next_level_button.text = "BOSS FIGHT!"
+			end_label.text = message + "\nNEXT: " + LevelConfig.BOSS_NAME + "!"
 
 
 func _breakdown_row(a: String, b: String, c: String, value_col := NUM_COL) -> void:
@@ -543,6 +553,150 @@ func breakdown_text() -> String:
 		if c is Label and not c.is_queued_for_deletion():
 			parts.append((c as Label).text)
 	return " | ".join(parts)
+
+
+# ------------------------------------------------------------------ build 015 boss
+
+## Boss fight HUD: hides the round stats (SAVED/ARRIVING/...), LEVEL reads
+## BOSS, and a Genesis-style heart bar with the boss's name sits top centre.
+func set_boss_mode(boss_name: String, boss_title: String, hearts_left: int, max_hearts: int) -> void:
+	boss_mode = true
+	_right.visible = false
+	level_value_label.text = "BOSS"
+	level_label.text = ""
+	boss_bar = BossBar.new()
+	boss_bar.name = "BossBar"
+	boss_bar.boss_name = boss_name
+	boss_bar.set_hearts(hearts_left, max_hearts, false)
+	$Root.add_child(boss_bar)
+	_build_title_card(boss_name, boss_title)
+	_place_boss_bar(TouchInput.active, get_viewport().get_visible_rect().size)
+
+
+func set_boss_hearts(hearts_left: int, max_hearts: int) -> void:
+	if boss_bar != null:
+		boss_bar.set_hearts(hearts_left, max_hearts, true)
+
+
+func _place_boss_bar(touch: bool, vs: Vector2) -> void:
+	var w := boss_bar.bar_size().x
+	var cx := vs.x * 0.5
+	if touch:
+		# centred in the free strip between the swap wedge and the SECONDARY wedge
+		var left := TouchLayout.swap_dims(vs).z
+		var right := vs.x - TouchLayout.wedge_dims(vs).z
+		cx = (left + right) * 0.5
+	boss_bar.position = Vector2(roundf(cx - w * 0.5), 12.0)
+	boss_bar.size = boss_bar.bar_size()
+
+
+func _build_title_card(boss_name: String, boss_title: String) -> void:
+	title_card = Control.new()
+	title_card.name = "BossTitleCard"
+	title_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_card.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	title_card.visible = false
+	$Root.add_child(title_card)
+	var band := TitleBand.new()
+	band.name = "Band"
+	band.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	title_card.add_child(band)
+	var portrait := TextureRect.new()
+	portrait.name = "Portrait"
+	var at := AtlasTexture.new()
+	at.atlas = TrustinJudeau.SHEET
+	at.region = Rect2(6 * 96, 0, 96, 84)
+	portrait.texture = at
+	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	portrait.stretch_mode = TextureRect.STRETCH_SCALE
+	portrait.position = Vector2(70, 222)
+	portrait.size = Vector2(288, 252)
+	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_card.add_child(portrait)
+	var tag := Label.new()
+	tag.name = "Tag"
+	tag.text = "BOSS BATTLE!"
+	tag.label_settings = PixelFont.settings(3, LABEL_COL)
+	tag.position = Vector2(390, 262)
+	title_card.add_child(tag)
+	var nm := Label.new()
+	nm.name = "BossName"
+	nm.text = boss_name
+	nm.label_settings = PixelFont.settings(6, Color(1, 1, 1))
+	nm.label_settings.font_color = Color(1.0, 0.96, 0.9)
+	nm.position = Vector2(386, 312)
+	title_card.add_child(nm)
+	var sub := Label.new()
+	sub.name = "BossTitle"
+	sub.text = boss_title
+	sub.label_settings = PixelFont.settings(3, Color(1.0, 0.55, 0.12))
+	sub.position = Vector2(390, 392)
+	title_card.add_child(sub)
+	var hint := Label.new()
+	hint.name = "Hint"
+	hint.text = "DODGE THE POUTINE · WHIP HIM 10 TIMES"
+	hint.label_settings = PixelFont.settings(2, Color(0.85, 0.95, 1.0))
+	hint.position = Vector2(390, 438)
+	title_card.add_child(hint)
+
+
+## Slides the boss title card in, holds it, slides it out (BOSS_INTRO_TIME).
+func show_boss_title_card() -> void:
+	if title_card == null:
+		return
+	title_card.visible = true
+	title_card.modulate.a = 1.0
+	title_card.position = Vector2(1280, 0)
+	var hold := maxf(LevelConfig.BOSS_INTRO_TIME - 0.7, 0.5)
+	var tw := title_card.create_tween()
+	tw.tween_property(title_card, "position:x", 0.0, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(hold)
+	tw.tween_property(title_card, "position:x", -1280.0, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func() -> void: title_card.visible = false)
+
+
+func is_title_card_showing() -> bool:
+	return title_card != null and title_card.visible
+
+
+## Boss end screen. Won: BOSS DEFEATED! + PLAY AGAIN (rematch) and CONTINUE
+## (next level). Lost: GAME OVER + PLAY AGAIN (restarts the boss fight).
+func show_boss_end(won: bool, message: String, breakdown: Dictionary = {}) -> void:
+	end_panel.visible = true
+	level_label.visible = false
+	objective_label.visible = false
+	if title_card != null:
+		title_card.visible = false
+	end_label.text = message
+	end_label.label_settings.font_color = GOOD_COL if won else Color(1.0, 0.75, 0.7)
+	end_title_label.text = "BOSS DEFEATED!" if won else "GAME OVER"
+	end_title_label.label_settings.font_color = LABEL_COL if won else BAD_COL
+	for c in breakdown_box.get_children():
+		c.queue_free()
+	var hh := int(breakdown.get("hearts_hit", 0))
+	_breakdown_row("HEARTS", "%d x%d" % [hh, LevelConfig.BOSS_POINTS_PER_HEART], str(int(breakdown.get("hearts_points", 0))))
+	if won:
+		_breakdown_row("DEFEAT BONUS", "", str(int(breakdown.get("defeat_bonus", 0))))
+		var hb := int(breakdown.get("health_bonus", 0))
+		_breakdown_row("HEALTH", "%d x%d" % [hb / maxi(LevelConfig.BOSS_HEALTH_BONUS, 1), LevelConfig.BOSS_HEALTH_BONUS], str(hb))
+		_breakdown_row("TIME", format_time(float(breakdown.get("time", 0.0))), str(int(breakdown.get("time_bonus", 0))))
+	else:
+		_breakdown_row("BOSS LEFT", "%d HEARTS" % int(breakdown.get("boss_hearts", 0)), "-")
+	_breakdown_row("LEVEL TOTAL", "", str(int(breakdown.get("level_total", 0))), GOOD_COL)
+	_breakdown_row("SCORE", "", pad_score(int(breakdown.get("score", 0))))
+	var hi_note := "NEW!" if bool(breakdown.get("new_high", false)) else ""
+	_breakdown_row("HI-SCORE", hi_note, pad_score(int(breakdown.get("high_score", 0))), LABEL_COL_ALT)
+	play_again_button.visible = true
+	next_level_button.visible = won
+	if won:
+		next_level_button.text = "CONTINUE"
+		play_again_button.offset_left = -350.0
+		play_again_button.offset_right = -14.0
+		next_level_button.offset_left = 14.0
+		next_level_button.offset_right = 350.0
+	else:
+		play_again_button.offset_left = -170.0
+		play_again_button.offset_right = 170.0
 
 
 ## Build 014: compact Genesis-style inventory panel (top-left, under the
@@ -802,3 +956,98 @@ class HeartBar extends Control:
 					if SHAPE[y][x] == "#":
 						draw_rect(Rect2(o + Vector2((x + 1) * PX, (y + 1) * PX), Vector2(PX, PX)), fill)
 			draw_rect(Rect2(o + Vector2(2 * PX, 2 * PX), Vector2(PX, PX)), shine)
+
+
+## Build 015: boss heart bar (Genesis style): name + 10 hearts in a bordered
+## panel. A heart that was just lost flashes white.
+class BossBar extends Control:
+	const SHAPE := [
+		".##.##.",
+		"#######",
+		"#######",
+		".#####.",
+		"..###..",
+		"...#...",
+	]
+	const PX := 3
+	const STEP := 26.0
+	var boss_name := "BOSS"
+	var hearts := 10
+	var max_hearts := 10
+	var _flash := 0.0
+	var _lost_index := -1
+	var _t := 0.0
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func bar_size() -> Vector2:
+		return Vector2(maxf(max_hearts * STEP + 24.0, PixelFont.text_width(boss_name, 2) + 70.0), 66.0)
+
+	func set_hearts(h: int, m: int, animate: bool) -> void:
+		if animate and h < hearts:
+			_lost_index = h
+			_flash = 0.5
+		hearts = h
+		max_hearts = maxi(m, 1)
+		size = bar_size()
+		queue_redraw()
+
+	func _process(delta: float) -> void:
+		_t += delta
+		if _flash > 0.0:
+			_flash = maxf(_flash - delta, 0.0)
+			queue_redraw()
+		elif hearts <= LevelConfig.BOSS_RAGE_HEARTS and hearts > 0:
+			queue_redraw()
+
+	func _draw() -> void:
+		var sz := bar_size()
+		draw_rect(Rect2(Vector2(5, 5), sz), Color(0, 0, 0.05, 0.45))
+		draw_rect(Rect2(Vector2.ZERO, sz), Color(0.04, 0.05, 0.16, 0.85))
+		var border := Color(1.0, 0.55, 0.12)
+		if hearts <= LevelConfig.BOSS_RAGE_HEARTS and hearts > 0 and fmod(_t, 0.5) < 0.25:
+			border = Color(1.0, 0.3, 0.25)
+		draw_rect(Rect2(Vector2.ZERO, sz), border, false, 3.0)
+		var f := PixelFont.get_font()
+		draw_string(f, Vector2(10, 24), "BOSS", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(1.0, 0.38, 0.3))
+		draw_string(f, Vector2(10 + PixelFont.text_width("BOSS ", 2), 24), boss_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(1.0, 0.82, 0.12))
+		var x0 := (sz.x - max_hearts * STEP) * 0.5 + 2.0
+		for i in max_hearts:
+			var o := Vector2(x0 + i * STEP, 34)
+			var full := i < hearts
+			var fill := Color(0.92, 0.14, 0.2) if full else Color(0.25, 0.2, 0.3)
+			var shine := Color(1, 0.8, 0.75) if full else Color(0.38, 0.33, 0.45)
+			if i == _lost_index and _flash > 0.0 and fmod(_flash, 0.12) > 0.06:
+				fill = Color(1, 1, 1)
+			for y in SHAPE.size():
+				for x in 7:
+					if SHAPE[y][x] == "#":
+						draw_rect(Rect2(o + Vector2(x * PX, y * PX), Vector2(PX * 3, PX * 3)), Color(0.06, 0.03, 0.08))
+			for y in SHAPE.size():
+				for x in 7:
+					if SHAPE[y][x] == "#":
+						draw_rect(Rect2(o + Vector2((x + 1) * PX, (y + 1) * PX), Vector2(PX, PX)), fill)
+			draw_rect(Rect2(o + Vector2(2 * PX, 2 * PX), Vector2(PX, PX)), shine)
+
+
+## Build 015: red/white title-card band (drawn, no assets).
+class TitleBand extends Control:
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var w := size.x
+		draw_rect(Rect2(0, 0, w, size.y), Color(0, 0, 0, 0.35))
+		draw_rect(Rect2(0, 214, w, 270), Color(0.06, 0.03, 0.08, 0.92))
+		draw_rect(Rect2(0, 222, w, 254), Color(0.55, 0.06, 0.1, 0.95))
+		draw_rect(Rect2(0, 222, w, 8), Color(1, 1, 1, 0.9))
+		draw_rect(Rect2(0, 468, w, 8), Color(1, 1, 1, 0.9))
+		# diagonal speed stripes
+		for i in 14:
+			var x := float(i) * 100.0 - 40.0
+			draw_colored_polygon(PackedVector2Array([Vector2(x, 230), Vector2(x + 30, 230), Vector2(x - 40, 468), Vector2(x - 70, 468)]), Color(1, 1, 1, 0.05))
+		# portrait plate
+		draw_rect(Rect2(60, 212, 308, 272), Color(0.06, 0.03, 0.08))
+		draw_rect(Rect2(64, 216, 300, 264), Color(0.95, 0.85, 0.55))
+		draw_rect(Rect2(70, 222, 288, 252), Color(0.32, 0.55, 0.78))

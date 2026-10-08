@@ -27,6 +27,10 @@ var level_start_inventory: Dictionary = {}
 ## Native: -- --scenario=NAME [--level=N] [--touch]
 ## Web (debug export only): index.html?scenario=NAME&level=N&touch=1
 var debug_scenario: String = ""
+## Build 015: level to go to after the Trustin Judeau boss fight (0 = not in
+## a boss fight). The fight sits between LevelConfig.BOSS_AFTER_LEVEL and the
+## next level.
+var boss_return_level: int = 0
 
 
 func _ready() -> void:
@@ -67,6 +71,25 @@ func advance_level() -> void:
 	current_level += 1
 
 
+## Build 015: enter the boss arena; CONTINUE afterwards goes to `return_level`.
+## current_level stays on the level just cleared while the boss is fought.
+func enter_boss(return_level: int) -> void:
+	boss_return_level = return_level
+
+
+## Title-screen BOSS button: a fresh run that starts at the boss fight.
+func start_at_boss() -> void:
+	reset_progress()
+	current_level = LevelConfig.BOSS_AFTER_LEVEL
+	boss_return_level = LevelConfig.BOSS_AFTER_LEVEL + 1
+
+
+## Boss beaten: on to the level after it.
+func finish_boss() -> void:
+	current_level = boss_return_level if boss_return_level > 0 else current_level + 1
+	boss_return_level = 0
+
+
 ## START from the title: level 1, score 0.
 func reset_progress() -> void:
 	current_level = 1
@@ -75,6 +98,7 @@ func reset_progress() -> void:
 	new_high_score = false
 	inventory = {}
 	level_start_inventory = {}
+	boss_return_level = 0
 
 
 ## Called when a level scene starts: remember the score to restore on retry.

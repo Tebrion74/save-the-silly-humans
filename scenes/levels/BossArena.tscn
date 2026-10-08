@@ -1,0 +1,59 @@
+[gd_scene load_steps=7 format=3 uid="uid://cbossarena015"]
+
+[ext_resource type="Script" path="res://scripts/boss/boss_level.gd" id="1_ctrl"]
+[ext_resource type="TileSet" uid="uid://bstshterrainset01" path="res://assets/tiles/stsh_terrain_tileset.tres" id="2_tiles"]
+[ext_resource type="Script" path="res://scripts/world/terrain_painter.gd" id="2b_paint"]
+[ext_resource type="PackedScene" uid="uid://puposb8l5wj6" path="res://scenes/player/Player.tscn" id="3_player"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="7_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/TouchControls.tscn" id="9_touch"]
+
+[node name="BossArena" type="Node2D"]
+script = ExtResource("1_ctrl")
+
+[node name="Ground" type="TileMapLayer" parent="."]
+z_index = -10
+tile_set = ExtResource("2_tiles")
+script = ExtResource("2b_paint")
+map_width = 42
+map_height = 28
+map_seed = 1515
+layout = "boss_arena"
+
+[node name="ForestFloor" type="TileMapLayer" parent="."]
+z_index = -9
+tile_set = ExtResource("2_tiles")
+
+[node name="Dirt" type="TileMapLayer" parent="."]
+z_index = -8
+tile_set = ExtResource("2_tiles")
+
+[node name="Path" type="TileMapLayer" parent="."]
+z_index = -7
+tile_set = ExtResource("2_tiles")
+
+[node name="Water" type="TileMapLayer" parent="."]
+z_index = -6
+tile_set = ExtResource("2_tiles")
+
+[node name="Tint" type="Sprite2D" parent="."]
+z_index = -5
+centered = false
+
+[node name="Detail" type="TileMapLayer" parent="."]
+z_index = -4
+tile_set = ExtResource("2_tiles")
+collision_enabled = false
+
+[node name="Entities" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Props" type="TileMapLayer" parent="Entities"]
+y_sort_enabled = true
+tile_set = ExtResource("2_tiles")
+
+[node name="Player" parent="Entities" instance=ExtResource("3_player")]
+position = Vector2(16, 192)
+
+[node name="HUD" parent="." instance=ExtResource("7_hud")]
+
+[node name="TouchControls" parent="." instance=ExtResource("9_touch")]

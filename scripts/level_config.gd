@@ -263,3 +263,91 @@ const RETICLE_PULSE := 0.35
 const RETICLE_REACH_DOT_ALPHA := 0.75
 ## CanvasLayer: under the HUD (10) and the touch wedges (11).
 const RETICLE_LAYER := 9
+
+
+# ---------------------------------------------------------------- build 015 boss
+## Boss battle: TRUSTIN JUDEAU (scripts/boss/, scenes/levels/BossArena.tscn).
+## The fight sits BETWEEN level BOSS_AFTER_LEVEL and the next level: clearing
+## level 2 leads into the boss arena, beating him advances to level 3. Dying
+## in the arena retries the boss (score + inventory restored to the boss start).
+const BOSS_AFTER_LEVEL := 2
+const BOSS_SCENE := "res://scenes/levels/BossArena.tscn"
+const GAME_SCENE := "res://scenes/Main.tscn"
+const BOSS_NAME := "TRUSTIN JUDEAU"
+const BOSS_TITLE := "PRIME MINISTER OF POUTINE"
+## Hearts and hit rules.
+const BOSS_HEARTS := 10
+const BOSS_IFRAMES := 0.6               ## seconds of invulnerability after any heart lost
+const BOSS_HIT_PUSH := 260.0            ## knock-back velocity on a whip hit (decays at SWING_PUSH_DAMPING/s, ~85 px)
+## FIRE WHIP: a fire crack on him burns for one extra heart after this delay
+## (once per fire crack, it never stacks; delay > i-frames so it always lands).
+const BOSS_FIRE_DELAY := 0.75
+## MSM Cam: filming him makes him POSE (stops, cancels a wind-up, grins at the
+## lens). No damage. He holds the pose while filmed, up to BOSS_POSE_MAX, keeps
+## it BOSS_POSE_LINGER after the cam stops (swap to the whip and crack him!),
+## then he's camera-shy for BOSS_POSE_COOLDOWN.
+const BOSS_POSE_MAX := 2.2
+const BOSS_POSE_LINGER := 0.8
+const BOSS_POSE_COOLDOWN := 6.0
+## SWING (cam) and GRAB (whip) shove him (he's too heavy to throw) and stagger
+## him; both can cancel a wind-up, at most once per BOSS_INTERRUPT_COOLDOWN.
+const BOSS_SWING_PUSH_MULT := 0.6       ## x the normal swing push (~120 px)
+const BOSS_GRAB_TUG := 300.0            ## tug velocity toward the throw direction (~100 px)
+const BOSS_STAGGER := 0.6
+const BOSS_INTERRUPT_COOLDOWN := 3.0
+## Movement: strafes around the rancher inside whip-able range, short dashes.
+const BOSS_STRAFE_SPEED := 95.0
+const BOSS_STRAFE_SPEED_RAGE := 125.0   ## at <= BOSS_RAGE_HEARTS
+const BOSS_PREF_DIST := 250.0           ## orbit distance (whip reach is 210)
+const BOSS_RETREAT_DIST := 120.0        ## backs off (slower than you) when closer
+const BOSS_DASH_SPEED := 620.0
+const BOSS_DASH_TIME := 0.26            ## ~160 px
+const BOSS_DASH_TELL := 0.25            ## crouch + dust before a dash
+const BOSS_DASH_EVERY := Vector2(3.0, 5.0)
+## Attacks. Every attack is telegraphed by a wind-up (arm up, poutine in hand,
+## "!" and an aim line / landing ring) of BOSS_WINDUP seconds.
+const BOSS_WINDUP := 0.5
+const BOSS_WINDUP_RAGE := 0.42
+const BOSS_INTRO_TIME := 2.8            ## title card; he waves and doesn't attack
+## Phases by hearts left: 10-8 single aimed shots; 7-5 adds 3-way spreads;
+## 4-3 adds the lobbed poutine; 2-1 (rage) adds fast volleys + radial bursts.
+const BOSS_PHASE2_HEARTS := 7
+const BOSS_PHASE3_HEARTS := 4
+const BOSS_RAGE_HEARTS := 2
+## Pause between attacks (after the throw) per phase 1..4.
+const BOSS_ATTACK_GAP := [1.5, 1.3, 1.15, 1.0]
+## Poutine projectiles.
+const POUTINE_SPEED := 290.0            ## single aimed shot
+const POUTINE_SPREAD_SPEED := 270.0
+const POUTINE_SPREAD_DEG := 20.0        ## 3-way: -20 / 0 / +20 degrees
+const POUTINE_VOLLEY_SPEED := 360.0     ## rage: 3 quick aimed shots
+const POUTINE_VOLLEY_COUNT := 3
+const POUTINE_VOLLEY_GAP := 0.2
+const POUTINE_RADIAL_COUNT := 10        ## rage: ring of 10 (36 degree gaps)
+const POUTINE_RADIAL_SPEED := 220.0
+const POUTINE_LOB_TIME := 1.1           ## lob flight time; the landing ring shows all along
+const POUTINE_LOB_HEIGHT := 150.0
+const POUTINE_LOB_RADIUS := 42.0        ## splash radius on landing
+const POUTINE_HIT_RADIUS := 22.0        ## flying poutine vs the rancher's body
+const POUTINE_RANGE := 900.0
+const POUTINE_DAMAGE := 1               ## hearts, the existing 1-per-hit rule
+## The rancher can lose at most 1 heart per this many seconds to poutine (same
+## idea as the Karen mob cooldown), so a burst can never chain-hit.
+const BOSS_PLAYER_HIT_COOLDOWN := 0.8
+## Scoring.
+const BOSS_POINTS_PER_HEART := 100
+const BOSS_DEFEAT_BONUS := 2500
+const BOSS_HEALTH_BONUS := 300          ## per rancher heart left at the win
+const BOSS_TIME_PAR := 90.0             ## +BOSS_TIME_BONUS_PER_SEC for every second under par
+const BOSS_TIME_BONUS_PER_SEC := 20
+const BOSS_DEFEAT_ANIM := 1.8           ## defeat animation before the win screen
+
+
+static func boss_phase(hearts: int) -> int:
+	if hearts <= BOSS_RAGE_HEARTS:
+		return 4
+	if hearts <= BOSS_PHASE3_HEARTS:
+		return 3
+	if hearts <= BOSS_PHASE2_HEARTS:
+		return 2
+	return 1

@@ -1,8 +1,8 @@
 # Save The Silly Humans — Development Log
 
-The full build-by-build history of the game, from the first prototype to the current live build. Every build's original source zip is attached to its [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) (tags `build-000-prototype`, `build-001` … `build-014b`, including hotfixes 009b–009d).
+The full build-by-build history of the game, from the first prototype to the current live build. Every build's original source zip is attached to its [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) (tags `build-000-prototype`, `build-001` … `build-015`, including hotfixes 009b–009d).
 
-**Playable Web exports** (`web-beta-<build>.zip`) are attached to the releases for **007, 008, 009d and 010 through 014b**. To self-host one, unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c; those releases have source only.
+**Playable Web exports** (`web-beta-<build>.zip`) are attached to the releases for **007, 008, 009d and 010 through 015**. To self-host one, unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c; those releases have source only.
 
 Times are Mountain Time (Calgary). Build times come from when each source zip was uploaded; live times are from the deploy notes.
 
@@ -29,6 +29,7 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [013](#build-013) | 2026-10-06 ~00:16 MT | Live | Karens, camp hold, power-ups |
 | [014](#build-014) | 2026-10-07 ~04:17 MT | Not deployed (superseded by 014b) | MSM Cam, inventory (no power-up timers), corner-wedge touch controls |
 | [014b](#build-014b) | 2026-10-07 ~04:41 MT | Live | aim reticle (PC) and reach crosshair (touch) |
+| [015](#build-015) | 2026-10-07 ~22:22 MT | Live | boss battle: Trustin Judeau (between level 2 and level 3) |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -843,7 +844,7 @@ All scripts parse with no errors, and the release web export loads in headless C
 <a id="build-014b"></a>
 
 **Date:** 2026-10-07 ~04:41 MT  
-**Status:** **LIVE** 2026-10-07 ~06:41 MT. Current build.
+**Status:** **LIVE** 2026-10-07 ~06:41 MT. Replaced by build 015 at ~22:27 MT.
 
 Everything from 014, plus the aim reticle. The in-game label reads `BUILD 014B`.
 
@@ -908,7 +909,153 @@ Whip, aim assist, facing, weapons and touch-control code is unchanged in 014b.
 - Not tested on real phones or tablets.
 
 ### Web build
-`web-beta-014b/`, exported with the same Web preset (`--export-release`). Now the live build at https://savethesillyhumans.org/game.php.
+`web-beta-014b/`, exported with the same Web preset (`--export-release`). It was the live build at https://savethesillyhumans.org/game.php until build 015.
+
+## Build 015: boss battle, TRUSTIN JUDEAU (between level 2 and level 3)
+<a id="build-015"></a>
+
+**Date:** 2026-10-07 ~22:22 MT  
+**Status:** **LIVE** 2026-10-07 ~22:27 MT. Current build.
+
+Everything from 014b, plus a boss fight. The in-game label reads `BUILD 015`.
+
+Trustin Judeau, "Prime Minister of Poutine", is an invented, good-natured cartoon parody: swoopy side-part hair, a big toothy grin, a sharp navy suit, a maple-leaf lapel pin and red maple-leaf socks. He throws poutine (fries, gravy and cheese curds in a paper boat) that splats into gravy puddles. No real likeness, photos or third-party assets: all art comes from `tools/gen_boss.py` (MIT, same generator approach and `tools/artlib.py` shading as the other sprites). All sounds are generated in code (`scripts/sfx.gd`).
+
+### Where the boss sits in the campaign
+- **Level 1 → Level 2 → BOSS → Level 3 → …** Levels 2 and 3 already existed in `LevelConfig` (save targets **6** and **7**; Karens start at level 3), so no new level progression was needed.
+- Win level 2 and the end panel's button reads **BOSS FIGHT!** (the panel adds "NEXT: TRUSTIN JUDEAU!"). It loads `scenes/levels/BossArena.tscn`. Score and inventory carry over, exactly as they do between levels.
+- Beat him and **CONTINUE** goes to **level 3** (`GameProgress.finish_boss()`). **PLAY AGAIN** on the win screen replays the boss fight.
+- **Die in the arena:** normal GAME OVER panel. **PLAY AGAIN** (or R) restarts **the boss fight**, not level 1. Score and inventory are restored to what you had when you entered the arena (the usual `begin_level` / `restore_level_start_score` retry).
+- **Direct test entry:** a red **BOSS FIGHT** button on the title screen and on the How to Play screen (or press **B** there). It starts a fresh run at the boss (score 0, empty inventory); CONTINUE afterwards goes to level 3.
+- Flow code: `LevelConfig.BOSS_AFTER_LEVEL` (2), `GameProgressCheck.boss_follows()`, `level_controller.request_next_level()`, and `GameProgress.enter_boss()` / `start_at_boss()` / `finish_boss()`. While in the arena, `current_level` stays 2 and `boss_return_level` is 3.
+
+### The fight
+- **10 hearts**, shown in a Genesis-style boss bar (name plate and 10 hearts) at the top centre. On touch it sits between the swap wedge and the GRAB wedge. A heart flashes as it is lost, and the border blinks red in rage.
+- **Title card** on entry: the band slides in with his portrait, "BOSS BATTLE!", the name plate, "PRIME MINISTER OF POUTINE" and "DODGE THE POUTINE · WHIP HIM 10 TIMES". For 2.8 s he only waves.
+- **Hit feedback:** each heart lost gives **0.6 s of i-frames** with a white flash, a wobble, a knock-back (~85 px), a quip ("NOT THE HAIR!", "SUNNY WAYS!", …) and +100 points.
+- **Movement:** he strafes around you at about 250 px, just outside whip reach (210 px), so step in to crack him. He backs off when you're closer than 120 px, but slower than you run. Every 3–5 s he does a short dash (~160 px) after a 0.25 s crouch-and-dust tell. He never leaves the lawn.
+- **Arena:** a Parliament-lawn clearing painted by `terrain_painter.gd` with `layout = "boss_arena"` (42×28 cells, seed 1515):
+  - a mown lawn with stripes, an oval promenade path, two flower beds and a forecourt path
+  - corner groves, hedges and fences
+  - the generated Parliament building (stone, copper roofs, clock tower, flag; solid) on the north edge
+  - no humans, sheep, camp or pickups; you fight with the inventory you brought
+
+### Attack patterns (escalate with his hearts left)
+Every attack has a wind-up: his arm goes up with a poutine, a "!" appears over his head, and a dashed aim line (or landing ring) shows where it will go. The wind-up lasts **0.5 s** (**0.42 s** in rage), and the aim locks 0.15 s before release, so a sidestep always dodges. Pause after each attack: 1.5 / 1.3 / 1.15 / 1.0 s by phase.
+
+| Phase | Hearts | Attacks (weights) |
+|---|---|---|
+| 1 | 10–8 | single aimed poutine (290 px/s) |
+| 2 | 7–5 | single 40 % · **3-way spread** 60 % (±20°, 270 px/s) |
+| 3 | 4–3 | single 20 % · spread 35 % · **lob** 45 % |
+| 4 (rage) | 2–1 | **volley** 30 % (3 fast aimed shots, 360 px/s, 0.2 s apart) · **radial burst** 30 % (ring of 10, 220 px/s; never twice in a row) · lob 25 % · spread 15 %; strafe 95 → 125 px/s |
+
+- **Lob:** the target is your position when the wind-up starts. A red landing ring and a shadow show the spot for the whole 1.1 s flight (arc 150 px high). It splashes everything within 42 px.
+- **Poutine hit:** 1 rancher heart (the existing 1-per-hit rule; 5 hearts), a "GRAVY'D!" popup and a gravy splat. You can lose at most one heart per 0.8 s to poutine, so a burst can't chain-hit you. Poutine that misses splats where it lands or disappears after 900 px.
+
+### Weapons vs. the boss
+| Weapon / move | Effect |
+|---|---|
+| WHIP crack | 1 heart (normal targeting; the reticle turns GREEN when he's in reach, with lock-on brackets) |
+| WHIP SHOT bolt | 1 heart |
+| SHOCKWAVE crack | 1 heart, even if the lash itself misses, as long as he's inside the shockwave radius |
+| FIRE WHIP | the crack's heart + a burn tick of **+1 heart 0.75 s later** (once per fire crack, never stacks, waits out i-frames) |
+| GRAB (whip RMB) | "TOO HEAVY!": a short tug (~100 px) and a 0.3 s stagger. No throw, no damage |
+| MSM CAM REC | he **poses** for the camera (thumbs-up, wink, teeth sparkle): stops, cancels a wind-up, no damage. Holds while filmed (max 2.2 s) + 0.8 s after, which is time to swap to the whip and crack him. Then he's camera-shy for 6 s. Counts as a filmable target (green reticle) |
+| MSM CAM SWING | shoves him ~120 px (0.6 × normal swing) + 0.6 s stagger, no damage |
+
+Whip hits do **not** cancel a wind-up. GRAB, SWING and REC can cancel one at most once per **3 s** ("super armour"), so the fight can't be stun-locked.
+
+### Win / lose
+- **Win:** he sits down dizzy ("SORRY! I'LL BE BACK... AFTER RECESS!"), the poutine on screen splats, and you're invulnerable for the 1.8 s defeat animation. Then a fanfare and the **BOSS DEFEATED!** panel with **PLAY AGAIN** / **CONTINUE**.
+- **Score:** +100 per heart knocked off (1000 total), **+2500** defeat bonus, **+300** per rancher heart left, **+20 per second under 90 s**. The breakdown rows are HEARTS, DEFEAT BONUS, HEALTH, TIME, LEVEL TOTAL, SCORE and HI-SCORE. The hi-score updates as usual.
+- **Lose:** the normal GAME OVER panel ("Trustin Judeau wins this round! PLAY AGAIN restarts the boss fight."), with the rows HEARTS and BOSS LEFT.
+
+### Config (`LevelConfig`, "build 015 boss")
+| Constant | Value |
+|---|---|
+| `BOSS_AFTER_LEVEL` | 2 |
+| `BOSS_HEARTS` / `BOSS_IFRAMES` | 10 / 0.6 s |
+| `BOSS_HIT_PUSH` | 260 px/s (decays at `SWING_PUSH_DAMPING` 3/s ≈ 85 px) |
+| `BOSS_FIRE_DELAY` | 0.75 s |
+| `BOSS_POSE_MAX` / `_LINGER` / `_COOLDOWN` | 2.2 / 0.8 / 6.0 s |
+| `BOSS_SWING_PUSH_MULT` / `BOSS_GRAB_TUG` / `BOSS_STAGGER` | 0.6 / 300 px/s / 0.6 s |
+| `BOSS_INTERRUPT_COOLDOWN` | 3.0 s |
+| `BOSS_STRAFE_SPEED` / `_RAGE` | 95 / 125 px/s (rancher: 260) |
+| `BOSS_PREF_DIST` / `BOSS_RETREAT_DIST` | 250 / 120 px |
+| `BOSS_DASH_SPEED` / `_TIME` / `_TELL` / `_EVERY` | 620 px/s / 0.26 s / 0.25 s / 3–5 s |
+| `BOSS_WINDUP` / `BOSS_WINDUP_RAGE` | 0.5 / 0.42 s |
+| `BOSS_INTRO_TIME` | 2.8 s |
+| `BOSS_PHASE2_HEARTS` / `PHASE3` / `RAGE` | 7 / 4 / 2 |
+| `BOSS_ATTACK_GAP` | 1.5, 1.3, 1.15, 1.0 s |
+| `POUTINE_SPEED` / `_SPREAD_SPEED` / `_VOLLEY_SPEED` / `_RADIAL_SPEED` | 290 / 270 / 360 / 220 px/s |
+| `POUTINE_SPREAD_DEG` | 20° |
+| `POUTINE_VOLLEY_COUNT` / `_GAP` | 3 / 0.2 s |
+| `POUTINE_RADIAL_COUNT` | 10 |
+| `POUTINE_LOB_TIME` / `_HEIGHT` / `_RADIUS` | 1.1 s / 150 px / 42 px |
+| `POUTINE_HIT_RADIUS` / `POUTINE_RANGE` / `POUTINE_DAMAGE` | 22 px / 900 px / 1 |
+| `BOSS_PLAYER_HIT_COOLDOWN` | 0.8 s |
+| `BOSS_POINTS_PER_HEART` / `BOSS_DEFEAT_BONUS` / `BOSS_HEALTH_BONUS` | 100 / 2500 / 300 |
+| `BOSS_TIME_PAR` / `BOSS_TIME_BONUS_PER_SEC` | 90 s / 20 |
+| `BOSS_DEFEAT_ANIM` | 1.8 s |
+
+A good clear (about 60 s, full health) scores roughly 1000 + 2500 + 1500 + 600 = **5600**.
+
+### Files
+- New:
+  - `scripts/boss/judeau.gd` (boss AI, hit rules, telegraphs)
+  - `scripts/boss/poutine.gd` (projectiles, lob, gravy splat)
+  - `scripts/boss/boss_level.gd` (arena controller; extends `level_controller.gd`)
+  - `scenes/levels/BossArena.tscn`
+  - `scripts/game_progress_check.gd`
+  - `tools/gen_boss.py` → `assets/boss/judeau_96.png`, `poutine_32.png`, `gravy_splat_48.png` and `parliament.png`
+  - `tools/boss_shots.gd` (screenshot driver)
+- Boss sheet `judeau_96.png`: 10 frames of 96×112. Frames 0–1 idle, 2–3 walk, 4 wind-up, 5 throw, 6 pose, 7 hurt, 8–9 defeated.
+- Changed:
+  - `level_config.gd`
+  - `game_progress.gd`
+  - `level_controller.gd` (boss hand-off)
+  - `terrain_painter.gd` (`layout` export, arena painter)
+  - `whip.gd`, `burn.gd` and `msm_cam.gd` (boss in the fire / shockwave / swing / film loops)
+  - `reticle.gd` (boss = whip and film target)
+  - `hud.gd` (boss bar, title card, boss end panel, "BOSS FIGHT!" button)
+  - `title_screen.gd` (BOSS FIGHT buttons, B key, How to Play text)
+  - `sfx.gd` (generated throw, splat, boss hit, wind-up, pose, defeat and fanfare sounds)
+  - `debug_scenarios.gd`
+
+### How to Play
+- PC column: `B — boss`.
+- New bullet: "BOSS after LEVEL 2: TRUSTIN JUDEAU, 10 hearts. Dodge poutine, WHIP him, CAM = pose. Die = retry boss."
+- The How to Play screen has a BOSS FIGHT button next to BACK.
+
+### Debug scenarios (debug builds only; `-- --scenario=NAME [--touch]` or `?scenario=NAME&touch=1`)
+`boss_title`, `boss_attack` (lob + spread in the air, 6 hearts), `boss_volley` (radial burst, 2 hearts), `boss_hearts` (4 → 3 hearts via a real whip crack), `boss_pose` (cam filming him) and `boss_win` (last heart → win screen). Any `boss*` scenario jumps straight into the arena.
+
+Screenshots: `godot --path . --rendering-driver opengl3 -s res://tools/boss_shots.gd -- out.png <seconds> --scenario=boss_attack [--touch]` (under `xvfb-run`).
+
+### Tests
+The temporary suite `tools/_test_015.gd` was deleted after the run. It passed **55/55** checks:
+- levels 2/3 targets; the boss only follows level 2; phases by hearts
+- the arena loads with a 10-heart bar, BOSS HUD mode and the title card
+- whip `find_target` picks him; the reticle shows him as a target; whip = 1 heart and +100; i-frames block a 2nd hit; a hit lands after 0.6 s
+- fire = exactly +1 heart; shockwave near-miss = 1 heart
+- swing: stagger + wind-up cancel + no damage + push > 60 px; interrupt cooldown; a single shot fires
+- cam: pose, no damage, pose ends + camera-shy
+- poutine hit = 1 heart + gravy splat; 0.8 s mercy; spread = 3, radial = 10, lob aims at the telegraphed spot; phase-1 and rage attack sets
+- defeat → untargetable → win panel, PLAY AGAIN + CONTINUE, bonus, breakdown; CONTINUE → level 3 (Karens on)
+- level 2 win → "BOSS FIGHT!" → arena; death → GAME OVER → PLAY AGAIN restarts the boss with the entry score; level 1 → level 2 (no boss)
+- title and How to Play BOSS buttons
+
+The release web export was also smoke-tested in headless Chrome: title (BUILD 015, BOSS FIGHT button) → B → arena, poutine hit the idle rancher.
+
+### Known issues / notes
+- Not tested on real phones or tablets (the touch layout was checked with `--touch` screenshots only). Same 16:9 letterboxing note as 014.
+- Web audio starts after the first tap or click (browser rule).
+- On PC the boss bar overlaps the bottom of the Parliament sprite at the top of the screen; it's scenery only.
+- Balance is first-pass. He has no contact damage; only poutine hurts.
+
+### Web build
+`web-beta-015/`, exported with the same Web preset (`--export-release`). Cache bust: `index.html` loads `index.js?v=015` and the pack as `"mainPack":"index.pck?v=015"` (with a matching `fileSizes` entry), so link it as `…/index.html?v=015`. The `.wasm` and engine JS are byte-identical to 014b (same Godot 4.7.2 templates). **LIVE** 2026-10-07 ~22:27 MT on https://savethesillyhumans.org/game.php. Live `index.pck` sha256 `97cd07e88e2410ade30b168879f29e1d2f679dd5165e7d320c37f6a5b35d22c4` (716,124 bytes).
 
 ## Appendix: project reference notes
 

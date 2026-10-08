@@ -141,7 +141,7 @@ static func is_whip_target(n: Node) -> bool:
 		return false
 	if "exploding" in n and n.exploding:
 		return false
-	if n.is_in_group("sheep"):
+	if n.is_in_group("sheep") or n.is_in_group("boss"):
 		return true
 	return "possessed" in n and bool(n.possessed)
 
@@ -191,6 +191,10 @@ static func filmable_targets(tree: SceneTree) -> Array:
 		if "exploding" in k and k.exploding:
 			continue
 		out.append(k)
+	# Build 015: the boss loves a camera too.
+	for b in tree.get_nodes_in_group("boss"):
+		if is_instance_valid(b) and b is Node2D and not ("exploding" in b and b.exploding):
+			out.append(b)
 	return out
 
 
@@ -317,7 +321,8 @@ func _draw() -> void:
 		_draw_reach_dot(to_screen(info["reach_pos"]), col, alpha)
 	var tgt: Variant = info["target"]
 	if green and tgt != null and is_instance_valid(tgt):
-		var ts := to_screen((tgt as Node2D).global_position + Vector2(0, -6))
+		var lock_off := Vector2(0, -48) if (tgt as Node).is_in_group("boss") else Vector2(0, -6)
+		var ts := to_screen((tgt as Node2D).global_position + lock_off)
 		_draw_lock(ts, col, alpha)
 	var c2 := col.lerp(Color(1, 1, 1), 0.35 * _pulse)
 	_draw_reticle(sp.round(), 1.0 + LevelConfig.RETICLE_PULSE * _pulse, c2, alpha)
