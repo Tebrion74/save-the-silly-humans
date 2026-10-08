@@ -115,8 +115,11 @@ const PONDS := [
 ]
 
 ## Build 015: "ranch" (Level01) or "boss_arena" (Parliament-lawn clearing).
+## Build 016: + "data_plaza" (Huval Yarheyhey) and "bonus_field" (bonus stage).
 @export var layout: String = "ranch"
 var _arena := false
+## Build 016: which arena look ("lawn", "plaza", "bonus"); tint + extras.
+var _style := "lawn"
 var _woods_v: Array = WOODS
 var _trails_v: Array = TRAILS
 var _ponds_v: Array = PONDS
@@ -142,6 +145,10 @@ func _ready() -> void:
 		return
 	if layout == "boss_arena":
 		paint_boss_arena()
+	elif layout == "data_plaza":
+		paint_data_plaza()
+	elif layout == "bonus_field":
+		paint_bonus_field()
 	else:
 		paint_level01()
 
@@ -654,7 +661,17 @@ func _paint_tint(origin: Vector2i) -> void:
 			if _mask(_forest, x, y) == 15:
 				f = 1.0
 			col = col.lerp(Color(0.78, 0.84, 0.82), f * 0.8)
-			if _arena and f < 0.5:
+			if _arena and f < 0.5 and _style == "plaza":
+				# Build 016: cool data-centre plaza with a faint cyan grid
+				col = col * Color(0.86, 0.95, 1.05)
+				if x % 4 == 0 or y % 4 == 0:
+					col = col * Color(0.82, 0.92, 1.0)
+				col.a = 1.0
+			elif _arena and f < 0.5 and _style == "bonus":
+				# Build 016: sunny checker meadow for the bonus stage
+				col = col * (Color(1.06, 1.04, 0.92) if (x / 3 + y / 3) % 2 == 0 else Color(0.97, 1.0, 0.9))
+				col.a = 1.0
+			elif _arena and f < 0.5:
 				# Build 015: mown-lawn stripes on the Parliament lawn
 				col = col * (1.0 if (x / 2) % 2 == 0 else 0.9)
 				col.a = 1.0
@@ -721,6 +738,41 @@ func paint_boss_arena() -> void:
 	paint_level01()
 
 
+## Build 016: data-centre plaza for HUVAL YARHEYHEY (same 42x28 frame and
+## slots as the Parliament lawn so huval_level.gd can reuse the boss layout).
+func paint_data_plaza() -> void:
+	_arena = true
+	_style = "plaza"
+	_woods_v = [
+		{"c": Vector2(3.5, 4.0), "r": Vector2(4.0, 3.5), "mix": "pine"},
+		{"c": Vector2(38.5, 4.0), "r": Vector2(4.0, 3.5), "mix": "pine"},
+		{"c": Vector2(2.5, 25.5), "r": Vector2(3.0, 2.5), "mix": "pine"},
+		{"c": Vector2(39.5, 25.5), "r": Vector2(3.0, 2.5), "mix": "pine"},
+	]
+	_ponds_v = []
+	_clear_v = ARENA_CLEARINGS
+	_trails_v = [
+		{"w": 0.9, "p": [Vector2(21.0, 7.2), Vector2(21.0, 9.0)]},
+		{"w": 0.6, "p": [Vector2(21.0, 24.5), Vector2(21.0, 27.0)]},
+	]
+	paint_level01()
+
+
+## Build 016: the bonus-stage meadow (40x23 = the whole screen): open grass,
+## flower patches, a few trees in the top corners, nothing blocking.
+func paint_bonus_field() -> void:
+	_arena = true
+	_style = "bonus"
+	_woods_v = [
+		{"c": Vector2(1.5, 1.5), "r": Vector2(2.6, 2.0), "mix": "oak_birch"},
+		{"c": Vector2(38.5, 1.5), "r": Vector2(2.6, 2.0), "mix": "oak_birch"},
+	]
+	_ponds_v = []
+	_clear_v = [Vector2i(20, 12), Vector2i(10, 12), Vector2i(30, 12), Vector2i(20, 6), Vector2i(20, 18)]
+	_trails_v = []
+	paint_level01()
+
+
 func _layout_arena_vertices() -> void:
 	for y in range(1, _vh - 1):
 		for x in range(1, _vw - 1):
@@ -732,9 +784,20 @@ func _layout_arena_vertices() -> void:
 			var wob := _noise2.get_noise_2d(x * 2.0, y * 2.0) * 0.1
 			if _trail_dist(p) + wob < 0.0:
 				_path[i] = 1
+			if _style == "bonus":
+				continue   # Build 016: open meadow (flowers come from the detail layer)
 			# forecourt in front of the building
 			if absf(p.x - 21.0) < 6.5 and p.y > 6.0 and p.y < 8.6:
 				_path[i] = 1
+			if _style == "plaza":
+				# Build 016: paved plaza: a wide rectangle + planters (dirt squares)
+				if p.x > 5.0 and p.x < 37.0 and p.y > 9.0 and p.y < 25.0 and (int(p.x) % 8 == 1 or int(p.y) % 6 == 4 or absf(p.x - 21.0) < 1.6):
+					_path[i] = 1
+				for bc in [Vector2(10.0, 13.0), Vector2(32.0, 13.0), Vector2(10.0, 21.0), Vector2(32.0, 21.0)]:
+					if absf(p.x - bc.x) < 1.6 and absf(p.y - bc.y) < 1.2:
+						_dirt[i] = 1
+						_path[i] = 0
+				continue
 			# flower beds: two round beds left/right of the centre (dirt + flowers)
 			for bc in [Vector2(12.0, 16.0), Vector2(30.0, 16.0)]:
 				if p.distance_to(bc) < 1.9:
@@ -752,6 +815,8 @@ func _paint_arena_props(layer: TileMapLayer, origin: Vector2i, cand: Array[Vecto
 		var h := _hash(c.x + 17, c.y * 3) % 100
 		if fringe and h < 35:
 			_put(layer, origin, c, BUSHES[h % 4], 1, false)
+	if _style != "lawn":
+		return
 	# hedge-row fence posts along the bottom
 	for x in [8, 9, 10, 31, 32, 33]:
 		var c := Vector2i(x, 26)

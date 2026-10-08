@@ -6,7 +6,7 @@
 
 ▶ **Play it in your browser:** https://savethesillyhumans.org/game.php
 
-Current build: **015b** (live: harder boss, sound and music) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
+Current build: **016** (live: Galaga-style bonus stage, second boss Huval Yarheyhey) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
 
 Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://www.youtube.com/@SaveTheSillyHumans)
 
@@ -21,8 +21,10 @@ Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://
 - **MSM Cam.** A 1980s shoulder camcorder. Film silly humans to convince them to walk to safety, expose Karens to go VIRAL, or swing it to knock enemies back. Watch the battery.
 - **Power-ups and inventory.** Long Whip, Strong Throw, Whip Shot, Fire Whip, Shockwave, Health, batteries. Power-ups never time out, and your inventory carries into the next level.
 - **Rounds, levels and scoring.** Hit the save target to win, with a Genesis-style HUD and a high score.
-- **Boss battle.** Clear level 2 to face TRUSTIN JUDEAU, Prime Minister of Poutine: 10 hearts, telegraphed poutine attacks that escalate in three phases and a rage mode. Beat him to reach level 3.
-- **Sound and music (015b).** Generated sound effects for everything (whip, grabs, saves, explosions, cam, boss, UI) and two original chiptune loops, one for the levels and a tenser one for the boss. M (or the speaker icon on touch) cycles sound ON / LOW / OFF.
+- **Boss battles.** Clear level 2 to face TRUSTIN JUDEAU, Prime Minister of Poutine: 10 hearts, telegraphed poutine attacks that escalate in three phases and a rage mode. Clear level 5 to face **HUVAL YARHEYHEY, Prophet of the Algorithm (016)**: 12 hearts, telegraphed PROGRAMMED SHEEP that split into fast MICRO SHEEP when hit (a bite costs a heart, a micro nibble half a heart), a lecture ray, SYSTEM UPDATEs that speed up his flock, and rage teleports. Don't touch either boss; dying retries the fight.
+- **Bonus stage (016).** After level 1 and then every 3 levels (4, 7, 10, …): a Galaga-style 45-second challenge stage. Eight waves of flying sheep swoop across the field. Pop them before they leave. 100 per hit, +500 for a whole wave, and PERFECT! SPECIAL BONUS 10000 for all of them. You can't get hurt, and power-ups work without being used up. Each repeat brings more and faster sheep.
+- **Progression.** L1 → bonus → L2 → Trustin → L3 → L4 → bonus → L5 → Huval → L6 → L7 → bonus → … When a bonus and a boss share a slot, the bonus comes first.
+- **Sound and music (015b, 016).** Generated sound effects for everything (whip, grabs, saves, explosions, cam, bosses, UI) and four original chiptune loops: levels, Trustin, the bonus stage and Huval. M (or the speaker icon on touch) cycles sound ON / LOW / OFF.
 - **PC and touch controls.** Mouse and keyboard with an aim reticle, or a touch joystick with corner wedges and aim assist.
 
 ## Controls
@@ -82,7 +84,8 @@ export_presets.cfg    Web export preset
 scenes/               Title, Main, levels, player, humans, sheep, world, UI
 scripts/              Game logic
   player/             rancher, whip, MSM Cam, weapons, power-up inventory
-  boss/               boss arena and Trustin Judeau (build 015)
+  boss/               boss arenas, Trustin Judeau (015) and Huval Yarheyhey + programmed sheep (016)
+  bonus/              Galaga-style bonus stage: waves, flying sheep, tally (016)
   audio/              sound buses, music and the sound setting (build 015b)
   humans/ sheep/      AI for silly humans, possessed humans, Karens and sheep
   world/              safe zone, camp, sheep den, power-ups, fire, terrain painter
@@ -90,23 +93,23 @@ scripts/              Game logic
   level_config.gd     all tuning numbers
 assets/               pixel-art sheets, terrain/prop atlases, TileSet, SpriteFrames, shader
 tools/                art generators (Python + Pillow) and headless Godot checks
-docs/DEVLOG.md        full build history, prototype → 015b
+docs/DEVLOG.md        full build history, prototype → 016
 README_PIXEL_PACK.md  sprite sheet layout notes
 LICENSE               MIT
 ```
 
 ## Build history and downloads
 
-Every build, from the first prototype through the 009 hotfixes to 015b, has a [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) with its notes and the original source zip. The releases for **007, 008, 009d and 010 through 015b** also include that build's playable Web export (`web-beta-<build>.zip`), so you can host any of those versions yourself: unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c, so those releases have source only. The full history is in [docs/DEVLOG.md](docs/DEVLOG.md).
+Every build, from the first prototype through the 009 hotfixes to 016, has a [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) with its notes and the original source zip. The releases for **007, 008, 009d and 010 through 016** also include that build's playable Web export (`web-beta-<build>.zip`), so you can host any of those versions yourself: unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c, so those releases have source only. The full history is in [docs/DEVLOG.md](docs/DEVLOG.md).
 
 ## Assets
 
 All art and audio in this game is **original work, made for this project**:
 
-- **Sprites:** the rancher, silly humans, possessed humans, Karens and sheep sheets (`assets/characters/`), drawn for the game. The boss, Trustin Judeau (`assets/boss/`), is an invented, good-natured cartoon parody generated by `tools/gen_boss.py` (no real likeness or photos). STSH Pixel Pack v1 → v2 (16-bit) → v3 (build 007, 32-bit).
+- **Sprites:** the rancher, silly humans, possessed humans, Karens and sheep sheets (`assets/characters/`), drawn for the game. The boss, Trustin Judeau (`assets/boss/`), is an invented, good-natured cartoon parody generated by `tools/gen_boss.py` (no real likeness or photos). Boss 2, Huval Yarheyhey, his programmed and micro sheep and the Data Plaza arena (`assets/boss2/`, build 016) are generated the same way by `tools/gen_boss2.py`. STSH Pixel Pack v1 → v2 (16-bit) → v3 (build 007, 32-bit).
 - **FX:** whip crack and explosion sheets (`assets/fx/`), plus effects drawn in code (whip lash, reticle, fire, shockwave, camcorder, VIRAL callout).
 - **Terrain and props:** grass, dirt, paths, forest floor, water, trees, rocks, fences and decor (`assets/tiles/`), generated by the Python scripts in `tools/` (`gen_terrain.py`, `gen_props.py`, `artlib.py`) and assembled into the TileSet by `tools/build_tileset.gd`.
-- **Sound:** sound effects are generated procedurally at runtime (`scripts/sfx.gd`). The two music loops (`assets/audio/music_level.wav` "Ranch Hand Hustle" and `music_boss.wav` "Question Period", build 015b) are original chiptunes generated by `tools/gen_music.py`.
+- **Sound:** sound effects are generated procedurally at runtime (`scripts/sfx.gd`). The music loops (`assets/audio/music_level.wav` "Ranch Hand Hustle" and `music_boss.wav` "Question Period", build 015b; `music_bonus.wav` and `music_boss2.wav`, build 016) are original chiptunes generated by `tools/gen_music.py`.
 - **Font:** the pixel font is built in code (`scripts/ui/pixel_font.gd`). There are no font files.
 
 The project contains no third-party assets. All assets are covered by the same [MIT licence](LICENSE) as the code.

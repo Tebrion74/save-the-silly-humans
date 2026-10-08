@@ -22,7 +22,9 @@ const SLOT_BOSS_PLAYER := Vector2i(21, 22)
 const ARENA_CELL_MIN := Vector2i(4, 9)
 const ARENA_CELL_MAX := Vector2i(37, 25)
 
-var boss: TrustinJudeau
+## Build 016: untyped so boss 2 (HuvalYarheyhey, huval_level.gd) can reuse
+## this controller. Both bosses share the S enum values and the damage API.
+var boss
 var arena_rect := Rect2()
 ## Ground-level decals (gravy splats): under the characters, over the lawn.
 var ground_fx: Node2D
@@ -33,6 +35,14 @@ var time_bonus: int = 0
 var poutine_hits_taken: int = 0
 var _player_hit_cool := 0.0
 var _defeat_pending := false
+## Build 016: per-boss text / scoring (huval_level.gd overrides them).
+var boss_name: String = LevelConfig.BOSS_NAME
+var boss_title: String = LevelConfig.BOSS_TITLE
+var music_track := "boss"
+var points_per_heart: int = LevelConfig.BOSS_POINTS_PER_HEART
+var defeat_bonus_points: int = LevelConfig.BOSS_DEFEAT_BONUS
+var health_bonus_per_heart: int = LevelConfig.BOSS_HEALTH_BONUS
+var time_par: float = LevelConfig.BOSS_TIME_PAR
 
 
 func _ready() -> void:
@@ -84,6 +94,7 @@ func _ready() -> void:
 	reticle.level = self
 	rl.add_child(reticle)
 
+	_configure_boss()
 	_place_boss_arena()
 	state.begin_round(0, 0, 0, level_number)
 
@@ -97,14 +108,24 @@ func _ready() -> void:
 	state.lost.connect(_on_lost)
 
 	if hud and hud.has_method("set_boss_mode"):
-		hud.set_boss_mode(LevelConfig.BOSS_NAME, LevelConfig.BOSS_TITLE, boss.hearts, boss.max_hearts)
+		hud.set_boss_mode(boss_name, boss_title, boss.hearts, boss.max_hearts)
+		_customise_title_card()
 	_push_score_hud()
 	if hud and hud.has_method("set_time"):
 		hud.set_time(0.0)
 	state.mark_setup_complete()
 	_on_health_ui(state.player_health, state.player_max_health)
-	Sfx.music(self, "boss")   # build 015b
+	Sfx.music(self, music_track)   # build 015b
 	_unlock_rescues_after_physics.call_deferred()
+
+
+## Build 016 hooks for boss 2 (huval_level.gd).
+func _configure_boss() -> void:
+	pass
+
+
+func _customise_title_card() -> void:
+	pass
 
 
 func _place_boss_arena() -> void:
@@ -186,6 +207,8 @@ func _check_contact() -> void:
 		return
 	if boss.state == TrustinJudeau.S.INTRO or boss.state == TrustinJudeau.S.DEFEATED:
 		return
+	if boss.has_method("is_contact_active") and not boss.is_contact_active():
+		return
 	var p := get_node_or_null("Entities/Player") as Node2D
 	if p == null:
 		return
@@ -220,7 +243,7 @@ func _on_boss_hearts_changed(hearts: int, maximum: int) -> void:
 		hud.set_boss_hearts(hearts, maximum)
 	if _scoring_open():
 		boss_hearts_hit += 1
-		_award(LevelConfig.BOSS_POINTS_PER_HEART, boss.global_position + Vector2(0, -40), Color(1.0, 0.86, 0.25))
+		_award(points_per_heart, boss.global_position + Vector2(0, -40), Color(1.0, 0.86, 0.25))
 
 
 func _on_boss_defeated() -> void:
@@ -233,15 +256,32 @@ func _on_boss_defeated() -> void:
 	for pt in get_tree().get_nodes_in_group("poutine"):
 		if is_instance_valid(pt) and pt.has_method("splat"):
 			pt.splat()
+	_on_boss_down_extra()
 	if hud and hud.has_method("show_callout"):
-		hud.show_callout("BOSS DOWN!", "TRUSTIN JUDEAU IS OUT OF GRAVY", Color(1.0, 0.86, 0.25), 1.2)
+		hud.show_callout("BOSS DOWN!", defeat_line(), Color(1.0, 0.86, 0.25), 1.2)
 	await get_tree().create_timer(LevelConfig.BOSS_DEFEAT_ANIM).timeout
 	if is_inside_tree():
 		state.trigger_win()
 
 
+func defeat_line() -> String:
+	return "TRUSTIN JUDEAU IS OUT OF GRAVY"
+
+
+func _on_boss_down_extra() -> void:
+	pass
+
+
+func lose_text() -> String:
+	return "Trustin Judeau wins this round!  PLAY AGAIN restarts the boss fight."
+
+
+func win_text() -> String:
+	return "Trustin Judeau has left the lawn!  On to level %d." % return_level
+
+
 func _on_player_died() -> void:
-	state.trigger_lose("Trustin Judeau wins this round!  PLAY AGAIN restarts the boss fight.", "rancher")
+	state.trigger_lose(lose_text(), "rancher")
 
 
 func _on_won() -> void:
@@ -251,14 +291,14 @@ func _on_won() -> void:
 		prog.carry_inventory(power_ups.to_dict())
 	var p := get_node_or_null("Entities/Player")
 	var hp: int = maxi(int(p.health), 0) if p != null else 0
-	health_bonus = hp * LevelConfig.BOSS_HEALTH_BONUS
-	time_bonus = maxi(int(LevelConfig.BOSS_TIME_PAR - round_time), 0) * LevelConfig.BOSS_TIME_BONUS_PER_SEC
-	clear_bonus = LevelConfig.BOSS_DEFEAT_BONUS + health_bonus + time_bonus
+	health_bonus = hp * health_bonus_per_heart
+	time_bonus = maxi(int(time_par - round_time), 0) * LevelConfig.BOSS_TIME_BONUS_PER_SEC
+	clear_bonus = defeat_bonus_points + health_bonus + time_bonus
 	level_points_bonus_award()
 	_finish_round()
 	Sfx.play(self, "fanfare", -8.0)
 	if hud and hud.has_method("show_boss_end"):
-		hud.show_boss_end(true, "Trustin Judeau has left the lawn!  On to level %d." % return_level, score_breakdown())
+		hud.show_boss_end(true, win_text(), score_breakdown())
 
 
 func _on_lost(reason: String) -> void:
@@ -277,9 +317,12 @@ func score_breakdown() -> Dictionary:
 		"return_level": return_level,
 		"won": state.is_won,
 		"hearts_hit": boss_hearts_hit,
-		"hearts_points": boss_hearts_hit * LevelConfig.BOSS_POINTS_PER_HEART,
+		"hearts_points": boss_hearts_hit * points_per_heart,
+		"points_per_heart": points_per_heart,
+		"health_per_heart": health_bonus_per_heart,
+		"boss_name": boss_name,
 		"boss_hearts": boss.hearts if boss != null else 0,
-		"defeat_bonus": LevelConfig.BOSS_DEFEAT_BONUS if state.is_won else 0,
+		"defeat_bonus": defeat_bonus_points if state.is_won else 0,
 		"health_bonus": health_bonus,
 		"time_bonus": time_bonus,
 		"bonus": clear_bonus,
@@ -297,6 +340,9 @@ func request_next_level() -> void:
 		return
 	_transitioning = true
 	var progress := _progress()
-	if progress != null and progress.has_method("finish_boss"):
+	var next := LevelConfig.GAME_SCENE
+	if progress != null and progress.has_method("finish_stage"):
+		next = progress.finish_stage()   # build 016: the next queued stage or level
+	elif progress != null and progress.has_method("finish_boss"):
 		progress.finish_boss()
-	get_tree().change_scene_to_file(LevelConfig.GAME_SCENE)
+	get_tree().change_scene_to_file(next)

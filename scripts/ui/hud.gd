@@ -71,6 +71,8 @@ var sound_icon: SoundIcon
 var _sound_toast: Label
 var _sound_toast_t := 0.0
 var title_card: Control
+var title_portrait: TextureRect
+var title_hint: Label
 var boss_mode := false
 
 
@@ -393,6 +395,8 @@ func apply_layout(touch: bool, vs: Vector2) -> void:
 		sound_icon.position = Vector2(roundf(TouchLayout.swap_dims(vs).z + 12.0), 10.0)
 	if boss_bar != null:
 		_place_boss_bar(touch, vs)
+	if bonus_bar != null:
+		_place_bonus_bar(touch, vs)
 
 
 func _build_callout(root: Control) -> void:
@@ -519,6 +523,13 @@ func set_health(health: int, maximum: int) -> void:
 	hearts.set_hp(health, maximum)
 
 
+## Build 016: micro-sheep half-heart damage. chips > 0 draws the last full
+## heart half-empty (one more micro touch costs it).
+func set_heart_chip(chips: int) -> void:
+	hearts.chip = chips
+	hearts.queue_redraw()
+
+
 func set_living_humans(count: int) -> void:
 	living_humans_label.text = str(count)
 
@@ -565,10 +576,15 @@ func show_end(won: bool, message: String, breakdown: Dictionary = {}) -> void:
 		play_again_button.visible = not won
 	if next_level_button:
 		next_level_button.visible = won
-		# Build 015: clearing level 2 leads into the boss fight.
-		if won and bool(breakdown.get("next_is_boss", false)):
+		# Build 015/016: a bonus stage or a boss fight may come next.
+		next_level_button.text = "NEXT LEVEL"
+		var nxt := String(breakdown.get("next_stage", ""))
+		if won and nxt == "bonus":
+			next_level_button.text = "BONUS STAGE!"
+			end_label.text = message + "\nNEXT: BONUS STAGE!"
+		elif won and nxt != "":
 			next_level_button.text = "BOSS FIGHT!"
-			end_label.text = message + "\nNEXT: " + LevelConfig.BOSS_NAME + "!"
+			end_label.text = message + "\nNEXT: " + GameProgressCheck.stage_label(nxt) + "!"
 
 
 func _breakdown_row(a: String, b: String, c: String, value_col := NUM_COL) -> void:
@@ -597,6 +613,132 @@ func breakdown_text() -> String:
 		if c is Label and not c.is_queued_for_deletion():
 			parts.append((c as Label).text)
 	return " | ".join(parts)
+
+
+# ------------------------------------------------------------------ build 016 bonus stage
+
+var bonus_bar: PanelContainer
+var bonus_time_label: Label
+var bonus_hits_label: Label
+var bonus_mode := false
+var _bonus_last_sec := -1
+
+
+## Bonus-stage HUD: round stats hidden, LEVEL reads BONUS, a top-centre bar
+## with the stage number, the countdown and HITS x/N.
+func set_bonus_mode(stage_n: int, total: int) -> void:
+	bonus_mode = true
+	_right.visible = false
+	level_value_label.text = "BONUS"
+	level_label.text = ""
+	bonus_bar = PanelContainer.new()
+	bonus_bar.name = "BonusBar"
+	bonus_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.04, 0.05, 0.16, 0.82)
+	sb.border_color = LABEL_COL
+	sb.set_border_width_all(4)
+	sb.content_margin_left = 16
+	sb.content_margin_right = 16
+	sb.content_margin_top = 8
+	sb.content_margin_bottom = 8
+	bonus_bar.add_theme_stylebox_override("panel", sb)
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 22)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bonus_bar.add_child(h)
+	var t := Label.new()
+	t.text = "BONUS %d" % stage_n
+	t.label_settings = PixelFont.settings(3, LABEL_COL)
+	h.add_child(t)
+	bonus_time_label = Label.new()
+	bonus_time_label.name = "BonusTime"
+	bonus_time_label.text = format_time(LevelConfig.BONUS_TIME)
+	bonus_time_label.label_settings = PixelFont.settings(3, NUM_COL)
+	h.add_child(bonus_time_label)
+	bonus_hits_label = Label.new()
+	bonus_hits_label.name = "BonusHits"
+	bonus_hits_label.text = "HITS 0/%d" % total
+	bonus_hits_label.label_settings = PixelFont.settings(3, GOOD_COL)
+	h.add_child(bonus_hits_label)
+	$Root.add_child(bonus_bar)
+	_place_bonus_bar(TouchInput.active, get_viewport().get_visible_rect().size)
+
+
+func set_bonus_status(time_left: float, hits: int, total: int) -> void:
+	if bonus_bar == null:
+		return
+	var sec := int(ceil(maxf(time_left, 0.0)))
+	if sec != _bonus_last_sec:
+		_bonus_last_sec = sec
+		bonus_time_label.text = "%d:%02d" % [sec / 60, sec % 60]
+		bonus_time_label.label_settings.font_color = BAD_COL if sec <= 5 else NUM_COL
+	bonus_hits_label.text = "HITS %d/%d" % [hits, total]
+
+
+func _place_bonus_bar(touch: bool, vs: Vector2) -> void:
+	if bonus_bar == null:
+		return
+	var w := bonus_bar.get_combined_minimum_size().x
+	# PC: top right (the round stats are hidden here), clear of the score
+	var x := vs.x - w - 20.0
+	if touch:
+		var left := TouchLayout.swap_dims(vs).z + SoundIcon.SIZE.x + 20.0
+		var right := vs.x - TouchLayout.wedge_dims(vs).z
+		x = (left + right) * 0.5 - w * 0.5
+	bonus_bar.position = Vector2(roundf(x), 12.0)
+
+
+## "BONUS STAGE" title card (the big callout, held BONUS_INTRO_TIME).
+func show_bonus_title_card(stage_n: int) -> void:
+	show_callout("BONUS STAGE", "STAGE %d · POP THE FLYING SHEEP!" % stage_n if stage_n > 1 else "POP THE FLYING SHEEP!", LABEL_COL, LevelConfig.BONUS_INTRO_TIME - 0.5)
+
+
+## Galaga-style tally: NUMBER OF HITS counts up, then the bonus, then (on a
+## perfect stage) PERFECT! + SPECIAL BONUS. CONTINUE only.
+func show_bonus_tally(breakdown: Dictionary) -> void:
+	end_panel.visible = true
+	level_label.visible = false
+	objective_label.visible = false
+	var hits := int(breakdown.get("hits", 0))
+	var total := int(breakdown.get("total", 0))
+	var perfect := bool(breakdown.get("perfect", false))
+	end_title_label.text = "PERFECT!" if perfect else "BONUS STAGE %d" % int(breakdown.get("stage", 1))
+	end_title_label.label_settings.font_color = Color(1.0, 0.45, 0.8) if perfect else LABEL_COL
+	end_label.text = "NUMBER OF HITS: 0"
+	end_label.label_settings.font_color = NUM_COL
+	for c in breakdown_box.get_children():
+		c.queue_free()
+	_breakdown_row("HITS", "%d x%d" % [hits, LevelConfig.BONUS_POINTS_PER_HIT], str(int(breakdown.get("hit_points", 0))))
+	_breakdown_row("WAVE PERFECTS", "%d x%d" % [int(breakdown.get("wave_perfects", 0)), LevelConfig.BONUS_WAVE_PERFECT], str(int(breakdown.get("wave_points", 0))))
+	if perfect:
+		_breakdown_row("SPECIAL BONUS", "PERFECT!", str(LevelConfig.BONUS_PERFECT_BONUS), Color(1.0, 0.45, 0.8))
+	_breakdown_row("STAGE TOTAL", "%d/%d" % [hits, total], str(int(breakdown.get("level_total", 0))), GOOD_COL)
+	_breakdown_row("SCORE", "", pad_score(int(breakdown.get("score", 0))))
+	var hi_note := "NEW!" if bool(breakdown.get("new_high", false)) else ""
+	_breakdown_row("HI-SCORE", hi_note, pad_score(int(breakdown.get("high_score", 0))), LABEL_COL_ALT)
+	play_again_button.visible = false
+	next_level_button.visible = true
+	var nxt := String(breakdown.get("next_stage", ""))
+	next_level_button.text = "BOSS FIGHT!" if nxt.begins_with("boss") else "CONTINUE"
+	next_level_button.offset_left = -170.0
+	next_level_button.offset_right = 170.0
+	# count the hits up (Galaga tally)
+	var tw := end_panel.create_tween()
+	var steps := mini(hits, 30)
+	for i in steps + 1:
+		var v := int(round(float(hits) * i / maxf(steps, 1)))
+		tw.tween_callback(func() -> void:
+			end_label.text = "NUMBER OF HITS: %d" % v
+			Sfx.play(self, "tally", -14.0, 1.0 + 0.01 * i))
+		tw.tween_interval(0.035)
+	tw.tween_callback(func() -> void:
+		var bonus_txt := "BONUS %d" % (hits * LevelConfig.BONUS_POINTS_PER_HIT)
+		end_label.text = "NUMBER OF HITS: %d\n%s" % [hits, bonus_txt]
+		if perfect:
+			end_label.text += "\nPERFECT! SPECIAL BONUS %d PTS" % LevelConfig.BONUS_PERFECT_BONUS
+			end_label.label_settings.font_color = Color(1.0, 0.75, 0.95)
+			Sfx.play(self, "perfect", -6.0))
 
 
 # ------------------------------------------------------------------ build 015 boss
@@ -647,6 +789,7 @@ func _build_title_card(boss_name: String, boss_title: String) -> void:
 	title_card.add_child(band)
 	var portrait := TextureRect.new()
 	portrait.name = "Portrait"
+	title_portrait = portrait
 	var at := AtlasTexture.new()
 	at.atlas = TrustinJudeau.SHEET
 	at.region = Rect2(6 * 96, 0, 96, 84)
@@ -682,6 +825,18 @@ func _build_title_card(boss_name: String, boss_title: String) -> void:
 	hint.label_settings = PixelFont.settings(2, Color(0.85, 0.95, 1.0))
 	hint.position = Vector2(390, 438)
 	title_card.add_child(hint)
+	title_hint = hint
+
+
+## Build 016: boss 2 swaps the portrait (sheet + frame region) and the hint.
+func set_title_card_art(sheet: Texture2D, region: Rect2, hint_text: String) -> void:
+	if title_portrait != null:
+		var at := AtlasTexture.new()
+		at.atlas = sheet
+		at.region = region
+		title_portrait.texture = at
+	if title_hint != null:
+		title_hint.text = hint_text
 
 
 ## Slides the boss title card in, holds it, slides it out (BOSS_INTRO_TIME).
@@ -718,11 +873,17 @@ func show_boss_end(won: bool, message: String, breakdown: Dictionary = {}) -> vo
 	for c in breakdown_box.get_children():
 		c.queue_free()
 	var hh := int(breakdown.get("hearts_hit", 0))
-	_breakdown_row("HEARTS", "%d x%d" % [hh, LevelConfig.BOSS_POINTS_PER_HEART], str(int(breakdown.get("hearts_points", 0))))
+	var pph := int(breakdown.get("points_per_heart", LevelConfig.BOSS_POINTS_PER_HEART))
+	var hph := int(breakdown.get("health_per_heart", LevelConfig.BOSS_HEALTH_BONUS))
+	_breakdown_row("HEARTS", "%d x%d" % [hh, pph], str(int(breakdown.get("hearts_points", 0))))
+	# Build 016 (Huval): his programmed / micro sheep
+	if breakdown.has("robo"):
+		_breakdown_row("PROGRAMMED", "%d x%d" % [int(breakdown.get("robo", 0)), LevelConfig.POINTS_ROBO], str(int(breakdown.get("robo_points", 0))))
+		_breakdown_row("MICRO SHEEP", "%d x%d" % [int(breakdown.get("micro", 0)), LevelConfig.POINTS_MICRO], str(int(breakdown.get("micro_points", 0))))
 	if won:
 		_breakdown_row("DEFEAT BONUS", "", str(int(breakdown.get("defeat_bonus", 0))))
 		var hb := int(breakdown.get("health_bonus", 0))
-		_breakdown_row("HEALTH", "%d x%d" % [hb / maxi(LevelConfig.BOSS_HEALTH_BONUS, 1), LevelConfig.BOSS_HEALTH_BONUS], str(hb))
+		_breakdown_row("HEALTH", "%d x%d" % [hb / maxi(hph, 1), hph], str(hb))
 		_breakdown_row("TIME", format_time(float(breakdown.get("time", 0.0))), str(int(breakdown.get("time_bonus", 0))))
 	else:
 		_breakdown_row("BOSS LEFT", "%d HEARTS" % int(breakdown.get("boss_hearts", 0)), "-")
@@ -970,6 +1131,8 @@ class HeartBar extends Control:
 	const PX := 3
 	var hp: int = 5
 	var max_hp: int = 5
+	## Build 016: pending micro-sheep half heart (0 or 1).
+	var chip: int = 0
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -995,10 +1158,12 @@ class HeartBar extends Control:
 				for x in 7:
 					if SHAPE[y][x] == "#":
 						draw_rect(Rect2(o + Vector2(x * PX, y * PX), Vector2(PX * 3, PX * 3)), Color(0.06, 0.03, 0.08))
+			var half := full and chip > 0 and i == hp - 1
 			for y in SHAPE.size():
 				for x in 7:
 					if SHAPE[y][x] == "#":
-						draw_rect(Rect2(o + Vector2((x + 1) * PX, (y + 1) * PX), Vector2(PX, PX)), fill)
+						var f2 := Color(0.25, 0.2, 0.3) if half and x >= 3 else fill
+						draw_rect(Rect2(o + Vector2((x + 1) * PX, (y + 1) * PX), Vector2(PX, PX)), f2)
 			draw_rect(Rect2(o + Vector2(2 * PX, 2 * PX), Vector2(PX, PX)), shine)
 
 

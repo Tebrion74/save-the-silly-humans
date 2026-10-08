@@ -1,8 +1,8 @@
 # Save The Silly Humans — Development Log
 
-The full build-by-build history of the game, from the first prototype to the current live build. Every build's original source zip is attached to its [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) (tags `build-000-prototype`, `build-001` … `build-015b`, including hotfixes 009b–009d).
+The full build-by-build history of the game, from the first prototype to the current live build. Every build's original source zip is attached to its [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) (tags `build-000-prototype`, `build-001` … `build-016`, including hotfixes 009b–009d).
 
-**Playable Web exports** (`web-beta-<build>.zip`) are attached to the releases for **007, 008, 009d and 010 through 015b**. To self-host one, unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c; those releases have source only.
+**Playable Web exports** (`web-beta-<build>.zip`) are attached to the releases for **007, 008, 009d and 010 through 016**. To self-host one, unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c; those releases have source only.
 
 Times are Mountain Time (Calgary). Build times come from when each source zip was uploaded; live times are from the deploy notes.
 
@@ -31,6 +31,7 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [014b](#build-014b) | 2026-10-07 ~04:41 MT | Live | aim reticle (PC) and reach crosshair (touch) |
 | [015](#build-015) | 2026-10-07 ~22:22 MT | Live | boss battle: Trustin Judeau (between level 2 and level 3) |
 | [015b](#build-015b) | 2026-10-08 ~09:47 MT | Live | boss only after level 2, harder boss, sound and music everywhere |
+| [016](#build-016) | 2026-10-08 ~13:05 MT | Live | Galaga-style bonus stage, boss 2 Huval Yarheyhey |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -1062,7 +1063,7 @@ The release web export was also smoke-tested in headless Chrome: title (BUILD 01
 <a id="build-015b"></a>
 
 **Date:** 2026-10-08 ~09:47 MT  
-**Status:** **LIVE** 2026-10-08 ~10:12 MT. Current build.
+**Status:** **LIVE** 2026-10-08 ~10:12 MT. Replaced by build 016 at ~13:23 MT.
 
 Everything from 015, plus the changes below. The in-game label reads `BUILD 015B`.
 
@@ -1182,6 +1183,141 @@ Screenshots (attached to the source-zip folder, not in the repo): `stsh-build015
 
 ### Web build
 `web-beta-015b/`, exported with the same Web preset (`--export-release`). Cache bust: `index.js?v=015b` and `"mainPack":"index.pck?v=015b"` (with a matching `fileSizes` entry), so link it as `…/index.html?v=015b`. `index.pck` is 1,920,872 bytes. **LIVE** 2026-10-08 ~10:12 MT on https://savethesillyhumans.org/game.php; only `index.pck` and `index.html` changed (the engine `.js`/`.wasm` and audio worklets are byte-identical to 015). Live `index.pck` sha256 `e0b692603a29177d869b8908c63fee36bb044659b23e353b8eb674bf58946b2d`.
+
+## Build 016: Galaga-style BONUS STAGE, boss 2 HUVAL YARHEYHEY
+<a id="build-016"></a>
+
+**Date:** 2026-10-08 ~13:05 MT  
+**Status:** **LIVE** 2026-10-08 ~13:23 MT. Current build.
+
+Everything from 015b, plus the changes below. The in-game label reads `BUILD 016`.
+
+### 1. Progression order
+Every between-level stage comes from `LevelConfig` (`scripts/level_config.gd`, "build 016 progression"). `GameProgress` builds a small stage queue when a level is cleared. After level **L** it plays:
+1. the **BONUS STAGE** if `L == BONUS_FIRST_AFTER + k * BONUS_EVERY` (1, 4, 7, 10, …);
+2. the **boss** whose `*_AFTER_LEVEL` is L (`BOSS_AFTER_LEVEL = 2` Trustin Judeau, `BOSS2_AFTER_LEVEL = 5` Huval Yarheyhey; one config value each);
+3. then level L + 1.
+
+If a bonus slot and a boss ever coincide, the order is **level → bonus → boss → next level** (covered by tests with both bosses moved onto a bonus slot).
+
+With the defaults:
+
+`L1 > BONUS 1 > L2 > TRUSTIN > L3 > L4 > BONUS 2 > L5 > HUVAL > L6 > L7 > BONUS 3 > L8 > L9 > L10 > BONUS 4 > L11 > L12 > L13 > BONUS 5 > …`
+
+The level-clear button says what's next (`BONUS STAGE!` / `BOSS FIGHT! NEXT: HUVAL`). The score carries through every stage. Dying in a boss fight shows GAME OVER and PLAY AGAIN retries the boss with the score you entered it with. You can't die in a bonus stage.
+
+### 2. Bonus stage (`scenes/levels/BonusStage.tscn`, `scripts/bonus/*`)
+A sheep-ified Galaga "challenging stage" on an open walled meadow, with its own chiptune (`assets/audio/music_bonus.wav`).
+- **Title card** "BONUS STAGE / POP THE FLYING SHEEP!" (2 s), then a **45 s countdown**. The HUD bar shows `BONUS n  0:45  HITS x/total` (top right on PC, top centre on touch).
+- **8 waves**, one every 5 s, of 5–8 winged sheep that fly scripted Galaga patterns (swoop, loop, zig-zag, S-curve, figure-eight, orbit, dive, cross, mirrored and paired variants) in a line, then leave. **A sheep that leaves the field is a miss.** All waves are gone before 0:45 (worst case 43.3 s); the stage ends at 0:00 or when the last wave has left.
+- **Any hit pops a sheep**: whip crack, whip shot, shockwave splash, fire, cam swing, a thrown body. Wool-burst effect + "+100".
+- **The rancher can't be hurt** and can't die here.
+- **Power-up policy:** your loadout comes along and works (fire, shockwave, shot, cam), but **nothing is used up**: the inventory you arrive with is restored when you leave. **Nothing drops** in the bonus stage.
+- **Scoring:** 100 per hit, **PERFECT! +500** for a whole wave popped (callout on screen), **PERFECT! SPECIAL BONUS 10000** for every sheep of the stage.
+- **Tally** (CONTINUE only): `NUMBER OF HITS: n`, `BONUS n×100`, and `PERFECT! SPECIAL BONUS 10000 PTS` when perfect, plus a breakdown (hits, wave perfects, special bonus, stage total, score, hi-score).
+
+| Bonus stage | After level | Sheep | Wave sizes | Speed wave 1 → wave 8 (px/s) |
+|---|---|---|---|---|
+| 1 | 1 | 50 | 5 5 6 6 6 7 7 8 | 340 → 447 |
+| 2 | 4 | 57 | 6 6 7 7 7 8 8 8 | 381 → 501 |
+| 3 | 7 | 62 | 7 7 8 8 8 8 8 8 | 422 → 554 |
+| 4+ | 10, 13, … | 64 | 8 × 8 | 462 → 578 (cap ×1.7) |
+
+Each later wave is 4.5 % faster; each recurrence adds +1 sheep per wave (cap 8) and is 12 % faster (cap ×1.7). The rancher runs 260 px/s. Tunables: `BONUS_*` in `level_config.gd`.
+
+### 3. Boss 2: HUVAL YARHEYHEY, PROPHET OF THE ALGORITHM
+An invented, good-natured cartoon caricature of a generic futurist lecturer: shiny bald dome, round glasses, smug half-smile, dark sweater, headset mic, presentation clicker and a tablet of DATA. Generated original pixel art (`tools/gen_boss2.py` → `assets/boss2/`), no real likeness. Arena: **DATA PLAZA** (`scenes/levels/Boss2Arena.tscn`), a paved grid of paths with a glass lecture hall, with its own synth track (`assets/audio/music_boss2.wav`).
+
+Title card: **BOSS BATTLE! / HUVAL YARHEYHEY / PROPHET OF THE ALGORITHM** with portrait. **12 hearts**. Same hit rules as Trustin:
+- whip crack / whip shot / a lash that connects with SHOCKWAVE = 1 heart (0.9 s i-frames)
+- FIRE = +1 delayed heart, at most once per 6 s
+- GRAB / CAM SWING = shove + stagger (can cancel a wind-up)
+- **MSM CAM REC → he LECTURES to the camera** (stops, cancels a wind-up) for up to 1.4 s, then is camera-shy for 8 s
+- **touching him = 1 heart**
+
+**Weapon: PROGRAMMED SHEEP** (`scripts/boss/robo_sheep.gd`). Every summon is telegraphed: he raises the clicker ("!" + red LED beam) and a glitchy cyan **spawn ring** shows wherever a sheep will appear (never closer than 170 px to you) for 0.65–0.85 s. Programmed sheep (steel wool, circuit traces, antenna) hunt you with a limited turn rate, so you can outrun and out-turn them.
+- **Programmed sheep touch = 1 heart**, then it bounces back and stalls 0.8 s.
+- **Any hit splits it into 3 MICRO SHEEP** (+50). Grab and throw one: it splits where it lands, and if it hits Huval he loses a heart ("FEEDBACK LOOP!").
+- **Micro sheep** (small, neon magenta, fast) **do HALF a heart**: every 2nd micro touch costs 1 heart; a pending half shows as a half-empty heart in the HUD. Micro mercy window 0.45 s. Any hit pops one (+25). They **expire after 7 s** (blink first), and at most **12** are alive.
+
+| Phase (hearts left) | Attack gap | Summon tell | Sheep per summon | Programmed cap | Programmed speed | Attacks |
+|---|---|---|---|---|---|---|
+| 1 (12–9) | 1.6 s | 0.85 s | 1 | 4 | 115 | summon |
+| 2 (8–6) | 1.35 s | 0.80 s | 2 | 5 | 130 | summon 60 / LECTURE RAY 40 |
+| 3 (5–3) | 1.15 s | 0.75 s | 2 | 6 | 145 | summon 45 / ray 35 / SYSTEM UPDATE 20 |
+| rage (2–1) | 0.95 s | 0.65 s | 3 | 6 | 160 | same + TELEPORT after hits and every 3.5–5 s |
+
+- **LECTURE RAY:** an aim line tracks you for 0.6–0.75 s, locks 0.25 s, then fires for 0.3 s (1 heart). A sidestep dodges it.
+- **SYSTEM UPDATE:** every programmed and micro sheep on the field gets ×1.25 faster (stacks to ×1.6). At **6 and 3 hearts** he force-installs one ("UPDATING…", 1.5 s invulnerable, then flees).
+- **TELEPORT (rage):** glitches out; rings show the destination 0.4 s before he pops in there, at least 260 px from you.
+- Movement 105 px/s (135 in rage); keeps ~300 px away and backs off when you close in.
+- Robo sheep turn rate 2.2 rad/s; micro 190 px/s, 3.4 rad/s. Tunables: `BOSS2_*`, `ROBO_*`, `MICRO_*`, `SYSTEM_UPDATE_*` in `level_config.gd`.
+
+**Win screen** (PLAY AGAIN / CONTINUE → level 6): hearts ×100, programmed ×50, micro ×25, defeat bonus 4000, health ×300 per heart left, time bonus (20 per second under a 120 s par), level total, score, hi-score.
+
+### 4. Balance (bots, headless, 60 fps fixed)
+**Bonus stage**, 8 runs per row. Hit rate / wave PERFECTs per run (no bot got a whole-stage PERFECT; it is meant to be rare):
+
+| Skill | Bonus 1 | Bonus 2 | Bonus 3 |
+|---|---|---|---|
+| perfect | 96.0 % / 7.0 | 89.5 % / 5.0 | 91.9 % / 6.0 |
+| good | 91.2 % / 5.6 | 84.2 % / 3.5 | 82.1 % / 3.1 |
+| average | 77.8 % / 2.1 | 69.7 % / 1.2 | 66.5 % / 0.5 |
+| weak | 56.0 % / 0.2 | 51.5 % / 0.2 | 46.8 % / 0.0 |
+
+**Huval vs Trustin (015b)**, 24 runs per row (seeds 77 + 91). Wins / average win time:
+
+| Skill | Trustin Judeau | Huval Yarheyhey |
+|---|---|---|
+| perfect | 24/24, 17.1 s | 24/24, 19.4 s |
+| good | 24/24, 19.1 s | 24/24, 32.1 s |
+| average | 20/24, ~24 s | 15/24, ~44 s |
+| weak | 5/24 | 5/24 |
+
+Huval is the longer, harder fight (average players win ~62 % vs ~83 %, good players take ~70 % longer and lose more hearts), but beatable at every skill level. Hits taken by the average bot over 24 runs: programmed-sheep bites 53, ray 23, micro touches 22 (half a heart each), contact 0. A first pass with faster programmed sheep (120–165 px/s, turn 2.4) left the weak bot at 0/12; they were eased to 115–160 px/s, turn 2.2.
+
+### 5. Debug-only entries (`OS.is_debug_build()`)
+Release builds have no menu, key or button to reach a boss or a bonus stage.
+- Title keys: **B** Trustin, **V** Huval, **G** bonus stage 1.
+- `GameProgress.start_at_stage(stage, level)` / `debug_scenario` (via `tools/boss_shots.gd`): `bonus`, `bonus2`, `bonus3`, `bonus_waves` (auto-whips for screenshots), `bonus_tally` (perfect stage), `huval_title`, `huval_fight`, `huval_ray`, `huval_update`, `huval_lecture`, `huval_win`, plus the 015b `boss_*` scenarios.
+
+### 6. Files
+- New:
+  - `scripts/bonus/bonus_level.gd`, `bonus_waves.gd`, `bonus_sheep.gd`; `scripts/world/wool_burst.gd`
+  - `scripts/boss/huval.gd`, `huval_level.gd`, `robo_sheep.gd`
+  - `scenes/levels/BonusStage.tscn`, `scenes/levels/Boss2Arena.tscn`
+  - `assets/boss2/huval_96.png`, `robo_sheep_32.png`, `micro_sheep_32.png`, `data_plaza.png`; `tools/gen_boss2.py`
+  - `assets/audio/music_bonus.wav`, `music_boss2.wav` (generated by `tools/gen_music.py`)
+- Changed:
+  - `scripts/level_config.gd`: progression, bonus and boss 2 constants
+  - `scripts/game_progress.gd`, `scripts/game_progress_check.gd`: stage queue
+  - `scripts/level_controller.gd`: next-stage button text and routing
+  - `scripts/boss/boss_level.gd`: generalized (hooks for boss 2)
+  - `scripts/ui/hud.gd`: bonus bar, tally, half-heart, boss title art, generic breakdown
+  - `scripts/ui/title_screen.gd`: BUILD 016, V/G debug keys, How to Play lines
+  - `scripts/world/terrain_painter.gd`: data plaza and bonus field styles
+  - `scripts/audio/game_audio.gd`, `scripts/sfx.gd`: 2 tracks, 9 new sounds
+  - `scripts/debug_scenarios.gd`, `tools/boss_shots.gd`: stage scenarios
+
+### Tests
+The temporary suite `tools/_test_016.gd` (deleted after the run) passed **95/95** checks:
+- **Progression:** order L1…L13 and recurrence 1, 4, 7, 10, …; bonus index; coinciding slots play level > bonus > boss (both bosses); Huval after level 5 from a single value; each CONTINUE goes to the right next scene; debug `start_at_stage` for both bosses and bonus 3; level-clear button text.
+- **Bonus:** 50 / 57 sheep, wave sizes and speeds per repeat with caps; wave 1 only after the title card; wave PERFECT +500; 100 per hit; escaped sheep are misses; no damage to the rancher; ends at 0:00; special bonus only when perfect; tally text and CONTINUE; inventory restored; all waves gone before 45 s.
+- **Huval:** 12 hearts, title text, music; summon ring ≥ 170 px and no sheep before the tell; split into 3 micros; first micro nibble = half heart, second = 1 heart; programmed bite = 1 heart; cam swing pops micros; SYSTEM UPDATE ×1.25; whip = 1 heart with i-frames; fire once per 6 s; shockwave splash skips him; cam lecture + camera-shy; forced update at 6 hearts is invulnerable; ray hits on its line, misses an 80 px sidestep; rage teleport away from you; win breakdown + CONTINUE → level 6; death → GAME OVER, retry restarts Huval with the entry score.
+- **Title:** BUILD 016, no boss/bonus buttons, V/G keys and `start_stage` debug-only, How to Play mentions both; all new sounds exist.
+
+Also: `tools/verify_layout.gd` PASS; Main, Title, BonusStage, BossArena and Boss2Arena run headless with no script errors. The 015b suite still passes except two checks that test 015b-only text (old How to Play line; `start_boss` now delegates to `start_stage`).
+
+Screenshots: `stsh-build016-01-bonus-title.png`, `-02-bonus-waves.png`, `-03-bonus-tally-perfect.png`, `-04-huval-title.png`, `-05-huval-fight.png`, `-06-mobile-huval.png`, `-07-mobile-bonus.png`, `-08-huval-ray.png`, `-09-huval-update.png`, `-10-huval-lecture.png`, `-11-huval-win.png`, `-12-howto.png`.
+
+### Known issues / notes
+- No bot reached a whole-stage PERFECT (best: 50/50 needs every sheep, including the fast last waves); a human with a fire or shot whip can. It's a rare reward by design.
+- The weak bot wins Huval as often as Trustin (5/24); he's harder mostly for average and good players.
+- The clicker LED beam in the summon tell is drawn from an approximate hand position.
+- Not tested on real phones.
+
+### Web build
+`web-beta-016/`, exported with the same Web preset (`--export-release`). Cache bust: `index.js?v=016` and `"mainPack":"index.pck?v=016"` (with a matching `fileSizes` entry), so link it as `…/index.html?v=016`. `index.pck` is 3,098,768 bytes (two more PCM music loops). **LIVE** 2026-10-08 ~13:23 MT on https://savethesillyhumans.org/game.php; only `index.pck` and `index.html` changed (the engine `.js`/`.wasm`, audio worklets and icons are byte-identical to 015b). Live `index.pck` sha256 `baa9e6a24f8ee55940926a7031960c762915e9a6f6f54faf2daa06a20cf08d33`. Verified live in headless Chrome: BUILD 016 on the title, B/V/G do nothing, level music plays (peak ≈ 0.23 RMS), no console errors. Before release, the bonus and Huval tracks were checked in a debug web export (≈ 0.17 / 0.18 RMS).
 
 ## Appendix: project reference notes
 

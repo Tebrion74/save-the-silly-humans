@@ -7,8 +7,9 @@ extends Node
 ##   buses at runtime: in the web export, buses added with AudioServer.add_bus()
 ##   after start-up are silent (sample playback never reaches the speakers).
 ##   ensure_buses() is only a desktop fallback if the layout file goes missing.
-## - Music: two looping generated chiptune tracks (tools/gen_music.py):
-##   "level" for normal levels, "boss" for the Trustin Judeau fight.
+## - Music: looping generated chiptune tracks (tools/gen_music.py):
+##   "level" for normal levels, "boss" for the Trustin Judeau fight; build 016
+##   adds "bonus" (bonus stage) and "boss2" (Huval Yarheyhey).
 ## - M key (anywhere) or the speaker icon (HUD on touch, title screen) cycles
 ##   ON -> LOW -> OFF. Saved in user://audio.cfg.
 ## - Web: browsers start the AudioContext suspended; Godot resumes it on the
@@ -24,6 +25,8 @@ const MUSIC_DB := -7.0
 const TRACKS := {
 	"level": preload("res://assets/audio/music_level.wav"),
 	"boss": preload("res://assets/audio/music_boss.wav"),
+	"bonus": preload("res://assets/audio/music_bonus.wav"),
+	"boss2": preload("res://assets/audio/music_boss2.wav"),
 }
 
 var setting := 0

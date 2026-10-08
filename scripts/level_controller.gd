@@ -453,10 +453,10 @@ func request_next_level() -> void:
 	_transitioning = true
 	Sfx.play(self, "start", -8.0)
 	var progress := get_node_or_null("/root/GameProgress")
-	# Build 015: clearing level BOSS_AFTER_LEVEL leads into the boss fight.
-	if GameProgressCheck.boss_follows(level_number) and progress != null and progress.has_method("enter_boss"):
-		progress.enter_boss(level_number + 1)
-		get_tree().change_scene_to_file(LevelConfig.BOSS_SCENE)
+	# Build 016: a bonus stage and/or a boss may follow this level
+	# (GameProgressCheck.stages_after; bonus first, then the boss).
+	if not GameProgressCheck.stages_after(level_number).is_empty() and progress != null and progress.has_method("begin_after_level"):
+		get_tree().change_scene_to_file(progress.begin_after_level(level_number))
 		return
 	if progress != null and progress.has_method("advance_level"):
 		progress.advance_level()
@@ -727,7 +727,14 @@ func score_breakdown() -> Dictionary:
 		"new_high": bool(progress.new_high_score) if progress != null and "new_high_score" in progress else false,
 		"time": round_time,
 		"next_is_boss": GameProgressCheck.boss_follows(level_number),
+		"next_stage": _next_stage(),
 	}
+
+
+## Build 016: first stage after this level ("bonus", "boss1", "boss2" or "").
+func _next_stage() -> String:
+	var st := GameProgressCheck.stages_after(level_number)
+	return st[0] if not st.is_empty() else ""
 
 
 func _on_player_health_changed(health: int, maximum: int) -> void:

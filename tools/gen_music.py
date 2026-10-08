@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Build 015b: generates the two looping chiptune tracks (originals, MIT).
+"""Build 015b/016: generates the looping chiptune tracks (originals, MIT).
 
-    python3 tools/gen_music.py      -> assets/audio/music_level.wav
-                                       assets/audio/music_boss.wav
+    python3 tools/gen_music.py      -> assets/audio/music_level.wav   (015b)
+                                       assets/audio/music_boss.wav    (015b)
+                                       assets/audio/music_bonus.wav   (016)
+                                       assets/audio/music_boss2.wav   (016)
 
 Four NES-style voices, all synthesised here (no samples, no third-party
 material): pulse lead, thin pulse arpeggio, triangle bass and noise drums.
@@ -192,7 +194,109 @@ def boss_theme():
     s.write(os.path.join(OUT, 'music_boss.wav'))
 
 
+# ---------------------------------------------------------------- build 016 bonus stage
+def bonus_theme():
+    """'Fleece Frenzy': bright, bouncy F major, 150 BPM, 16 bars. Galaga-style
+    challenging-stage energy: fast staccato lead, sparkly 16th arps, busy drums."""
+    s = Song(150, 16)
+    prog = [('F2', 'maj'), ('D2', 'min'), ('Bb1', 'maj'), ('C2', 'maj')] * 2 + \
+           [('Bb1', 'maj'), ('C2', 'maj'), ('A1', 'min'), ('D2', 'min'),
+            ('G1', 'min'), ('C2', 'maj'), ('F2', 'maj'), ('C2', 'maj')]
+    # lead motifs: (step, length, semitones above root+12)
+    A = [(0, 1, 12), (1, 1, 16), (2, 1, 19), (3, 1, 24), (4, 2, 19), (6, 1, 16), (7, 1, 19), (8, 2, 24), (10, 2, 26), (12, 4, 24)]
+    B = [(0, 2, 19), (2, 1, 17), (3, 1, 16), (4, 2, 14), (6, 2, 12), (8, 1, 14), (9, 1, 16), (10, 2, 19), (12, 4, 16)]
+    C = [(0, 1, 24), (1, 1, 19), (2, 1, 16), (3, 1, 19), (4, 1, 24), (5, 1, 19), (6, 1, 16), (7, 1, 19), (8, 4, 26), (12, 2, 24), (14, 2, 19)]
+    D = [(0, 2, 28), (2, 2, 26), (4, 2, 24), (6, 2, 19), (8, 1, 24), (9, 1, 24), (10, 6, 24)]
+    motifs = [A, B, A, C, A, B, C, D, B, C, B, C, A, C, D, D]
+    for bar, ((rn, kind), mot) in enumerate(zip(prog, motifs)):
+        root = midi(rn)
+        base = bar * 16
+        tones = chord_tones(root, kind)
+        for st, ln, iv in mot:
+            m = root + 12 + iv
+            if kind == 'min' and (iv % 12) == 4:
+                m -= 1
+            s.tone(base + st, ln, m, 0.19, duty=0.25, decay=3.0 if ln <= 1 else 0.0, vib=0.005 if ln >= 4 else 0.0)
+        # sparkle arp: up through two octaves, 16ths
+        seq = [0, 1, 2, 3, 4, 5, 4, 3]
+        notes = tones + [t + 12 for t in tones]
+        for i in range(16):
+            s.tone(base + i, 1, notes[seq[i % 8]] + 24, 0.055, duty=0.125, decay=9)
+        # bouncy octave bass in 8ths
+        for i in range(8):
+            iv = 12 if i % 2 else 0
+            s.tone(base + i * 2, 2, root + 12 + iv, 0.32, wave_='tri')
+        for i in range(16):
+            if i in (0, 4, 8, 12):
+                s.kick(base + i, 0.5)
+            if i in (4, 12):
+                s.snare(base + i, 0.3)
+            s.hat(base + i, 0.09 if i % 2 else 0.12, open_=(i == 14))
+        if bar % 4 == 3:
+            for i in (12, 13, 14, 15):
+                s.snare(base + i, 0.18 + 0.04 * (i - 12))
+    s.write(os.path.join(OUT, 'music_bonus.wav'))
+
+
+# ---------------------------------------------------------------- build 016 boss 2
+def boss2_theme():
+    """'Firmware Sermon': tense, glitchy E minor, 168 BPM, 16 bars. A cold
+    pulse ostinato, a bit-crushed lead and 'glitch' stutters (repeated
+    16th-note slices, pitch-drop zaps) for the Huval Yarheyhey fight."""
+    s = Song(168, 16)
+    prog = [('E2', 'min'), ('E2', 'min'), ('C2', 'maj'), ('D2', 'maj')] * 2 + \
+           [('A1', 'min'), ('B1', 'maj'), ('E2', 'min'), ('F2', 'maj'),
+            ('C2', 'maj'), ('A1', 'min'), ('B1', 'sus'), ('B1', 'maj')]
+    L = {
+        0: [(0, 2, 'E5'), (2, 1, 'F5'), (3, 1, 'E5'), (4, 2, 'B4'), (6, 2, 'G4'), (8, 2, 'E5'), (10, 2, 'G5'), (12, 4, 'F#5')],
+        1: [(0, 3, 'E5'), (3, 1, 'D5'), (4, 2, 'B4'), (6, 2, 'D5'), (8, 6, 'E5'), (14, 2, 'B4')],
+        2: [(0, 2, 'C5'), (2, 2, 'E5'), (4, 2, 'G5'), (6, 2, 'E5'), (8, 2, 'C6'), (10, 2, 'B5'), (12, 4, 'G5')],
+        3: [(0, 2, 'D5'), (2, 2, 'F#5'), (4, 2, 'A5'), (6, 2, 'F#5'), (8, 4, 'D5'), (12, 4, 'F#5')],
+        4: [(0, 2, 'A4'), (2, 2, 'C5'), (4, 4, 'E5'), (8, 2, 'A5'), (10, 2, 'G5'), (12, 4, 'E5')],
+        5: [(0, 2, 'D#5'), (2, 2, 'F#5'), (4, 4, 'B5'), (8, 2, 'A5'), (10, 2, 'F#5'), (12, 4, 'D#5')],
+        6: [(0, 1, 'F5'), (1, 1, 'E5'), (2, 2, 'F5'), (4, 2, 'A5'), (6, 2, 'C6'), (8, 8, 'B5')],
+    }
+    order = [0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 6, 2, 4, 5, 5]
+    for bar, ((rn, kind), li) in enumerate(zip(prog, order)):
+        root = midi(rn)
+        base = bar * 16
+        tones = chord_tones(root, kind)
+        for st, ln, nm in L[li]:
+            s.tone(base + st, ln, midi(nm), 0.17, duty=0.5 if bar % 2 else 0.25, vib=0.008 if ln >= 4 else 0.0)
+        # cold ostinato: root-fifth-octave-fifth 16ths, two octaves up
+        seq = [0, 2, 3, 2]
+        notes = [tones[0], tones[1], tones[2], tones[0] + 12]
+        for i in range(16):
+            s.tone(base + i, 1, notes[seq[i % 4]] + 24, 0.06, duty=0.125, decay=12)
+        # pumping 16th bass on the root with octave pops
+        for i in range(16):
+            iv = 12 if i % 4 == 3 else 0
+            s.tone(base + i, 1, root + 12 + iv, 0.3, wave_='tri', decay=6)
+        for i in range(16):
+            if i in (0, 3, 8, 11) or (bar % 4 == 2 and i == 14):
+                s.kick(base + i, 0.62)
+            if i in (4, 12):
+                s.snare(base + i, 0.36)
+            if i % 2 == 1:
+                s.hat(base + i, 0.12)
+        # glitch zap (pitch-drop pulse) at the end of every 2nd bar
+        if bar % 2 == 1:
+            s.tone(base + 15, 1, midi('E6'), 0.12, duty=0.5, slide=-0.85)
+    # bit-crush the whole mix a little (4-bit-ish steps) for a digital edge
+    m = s.mix / max(1e-9, np.abs(s.mix).max())
+    s.mix = np.round(m * 12.0) / 12.0 * 0.7 + m * 0.3
+    # stutters: in bars 7, 11 and 15 the last beat repeats its first 16th 4x
+    for bar in (7, 11, 15):
+        st = (bar * 16 + 12) * s.step
+        sl = s.mix[st:st + s.step].copy()
+        for k in range(4):
+            s.mix[st + k * s.step: st + (k + 1) * s.step] = sl * (1.0 - 0.12 * k)
+    s.write(os.path.join(OUT, 'music_boss2.wav'))
+
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     level_theme()
     boss_theme()
+    bonus_theme()
+    boss2_theme()

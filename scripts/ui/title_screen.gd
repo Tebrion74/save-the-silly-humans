@@ -8,7 +8,7 @@ extends Control
 ## Mouse emulation from touch is off, so touches are hit-tested by hand.
 
 const GAME_SCENE := "res://scenes/Main.tscn"
-const BUILD_LABEL := "BUILD 015B"
+const BUILD_LABEL := "BUILD 016"
 const COPYRIGHT := "© 2026 ECHELON PUBLISHERS GROUP"
 const HORIZON := 440.0
 const TITLE_SHADER := preload("res://assets/shaders/title_text.gdshader")
@@ -57,9 +57,8 @@ func _ready() -> void:
 	tw.tween_property(_flash, "color:a", 0.0, 0.6)
 	# Build 014 debug scenarios (debug builds only): skip the title.
 	var progress := get_node_or_null("/root/GameProgress")
-	if OS.is_debug_build() and progress != null and "debug_scenario" in progress and String(progress.debug_scenario).begins_with("boss"):
-		progress.start_at_boss()
-		get_tree().change_scene_to_file.call_deferred(LevelConfig.BOSS_SCENE)
+	if OS.is_debug_build() and progress != null and "debug_scenario" in progress and _debug_stage_scene(String(progress.debug_scenario)) != "":
+		get_tree().change_scene_to_file.call_deferred(_debug_stage_scene(String(progress.debug_scenario)))
 	elif OS.is_debug_build() and progress != null and "debug_scenario" in progress and progress.debug_scenario != "" \
 			and progress.debug_scenario != "howto" and progress.debug_scenario != "title":
 		get_tree().change_scene_to_file.call_deferred(GAME_SCENE)
@@ -101,6 +100,14 @@ func _input(event: InputEvent) -> void:
 			# Build 015b: debug builds only (editor / native test runs). Release
 			# builds reach the boss only by clearing level 2.
 			start_boss()
+			get_viewport().set_input_as_handled()
+		elif OS.is_debug_build() and (k == KEY_V or kc == KEY_V):
+			# Build 016 (debug builds only): straight to boss 2, Huval Yarheyhey
+			start_stage("boss2")
+			get_viewport().set_input_as_handled()
+		elif OS.is_debug_build() and (k == KEY_G or kc == KEY_G):
+			# Build 016 (debug builds only): straight to the bonus stage
+			start_stage("bonus")
 			get_viewport().set_input_as_handled()
 		elif k in [KEY_ESCAPE, KEY_BACKSPACE] or kc in [KEY_ESCAPE, KEY_BACKSPACE]:
 			close_howto()
@@ -181,20 +188,46 @@ func start_game() -> void:
 ## CONTINUE after beating him goes to level 3). Build 015b: DEBUG BUILDS ONLY
 ## (B key on the title); there is no menu button any more.
 func start_boss() -> void:
+	start_stage("boss1")
+
+
+## Build 016: debug builds only. B = Trustin, V = Huval, G = bonus stage: a
+## fresh run starting at that stage (CONTINUE then follows the normal order).
+func start_stage(stage: String) -> void:
 	if not OS.is_debug_build():
 		return
 	if _starting:
 		return
 	_starting = true
 	var progress := get_node_or_null("/root/GameProgress")
-	if progress != null and progress.has_method("start_at_boss"):
-		progress.start_at_boss()
+	var scene := GameProgressCheck.stage_scene(stage)
+	if progress != null and progress.has_method("start_at_stage"):
+		scene = progress.start_at_stage(stage)
 	close_howto()
 	_flash.color = Color(1, 1, 1, 0.0)
 	var tw := create_tween()
 	tw.tween_property(_flash, "color", Color(1, 0.85, 0.85, 0.85), 0.08)
 	tw.tween_property(_flash, "color", Color(0, 0, 0, 1.0), 0.18)
-	tw.tween_callback(func() -> void: get_tree().change_scene_to_file(LevelConfig.BOSS_SCENE))
+	tw.tween_callback(func() -> void: get_tree().change_scene_to_file(scene))
+
+
+## Build 016 debug scenarios: "boss*" -> Trustin, "huval*" -> Huval,
+## "bonus*" -> bonus stage ("bonus2"/"bonus3" = the 2nd / 3rd bonus stage).
+## Returns the scene to jump to ("" = not a stage scenario).
+func _debug_stage_scene(scenario: String) -> String:
+	var progress := get_node_or_null("/root/GameProgress")
+	if progress == null or not progress.has_method("start_at_stage"):
+		return ""
+	if scenario.begins_with("boss"):
+		return progress.start_at_stage("boss1")
+	if scenario.begins_with("huval"):
+		return progress.start_at_stage("boss2")
+	if scenario.begins_with("bonus"):
+		var n := 1
+		if scenario.length() > 5 and scenario.substr(5, 1).is_valid_int():
+			n = int(scenario.substr(5, 1))
+		return progress.start_at_stage("bonus", n)
+	return ""
 
 
 # ------------------------------------------------------------------ build
@@ -358,7 +391,7 @@ func _menu_button(node_name: String, text: String, font_size: int, bg: Color, bg
 
 const HOWTO_PC := "WASD  —  move   ·   MOUSE  —  aim the reticle\nLEFT CLICK  —  WHIP   ·   cam: hold REC\nRIGHT CLICK  —  GRAB & throw   ·   cam: SWING\nQ / WHEEL / 1-2  —  swap weapon   ·   M  —  sound\nR  —  restart   ·   N / ENTER  —  next level"
 const HOWTO_TOUCH := "JOYSTICK (bottom left)  —  move\nBOTTOM-RIGHT  —  WHIP   ·   cam: hold REC\nTOP-RIGHT  —  GRAB   ·   cam: SWING\nTOP-LEFT  —  swap weapon   ·   SPEAKER  —  sound\nWHIP auto-aims  ·  crosshair = weapon reach"
-const HOWTO_RULES := "• Herd silly humans into the green SAFE ZONE. Throw POSSESSED humans in to save them too.\n• The CAMP sends humans, the SHEEP DEN breeds sheep. Hit the SAVE TARGET; lose if the rancher falls.\n• LEVEL 3+: 4 possessed together become KARENS: they mob you, convert humans, shut the camp.\n• POWER-UPS never time out. Whip mods stay till you grab another. FIRE: 10 lashes. SHOCKWAVE: 3.\n• MSM CAM (rare): hold REC to film a 39° cone. Filmed humans walk to safety; filmed Karens go VIRAL!\n• Filming drains the BATTERY (spares auto-load, carry 3), breeds sheep, and Karens LOVE it.\n• Two moves per weapon: WHIP / GRAB, or MSM CAM REC / SWING (shove + stun, no damage, no battery).\n• SCORE: 200 per human · 50 per sheep or possessed · 100 per Karen. Sheep speed up each level!\n• RETICLE / crosshair turns GREEN when a target's in range (whip reach or cam cone); RED = nothing to hit.\n• Clear LEVEL 2 to face TRUSTIN JUDEAU (10 hearts). Dodge poutine, don't touch him. Die = retry boss."
+const HOWTO_RULES := "• Herd silly humans into the green SAFE ZONE. Throw POSSESSED humans in to save them too.\n• The CAMP sends humans, the SHEEP DEN breeds sheep. Hit the SAVE TARGET; lose if the rancher falls.\n• LEVEL 3+: 4 possessed together become KARENS: they mob you, convert humans, shut the camp.\n• POWER-UPS never time out. Whip mods stay till you grab another. FIRE: 10 lashes. SHOCKWAVE: 3.\n• MSM CAM (rare): hold REC to film a 39° cone. Filmed humans walk to safety; filmed Karens go VIRAL!\n• Filming drains the BATTERY (spares auto-load, carry 3), breeds sheep, and Karens LOVE it.\n• Two moves per weapon: WHIP / GRAB, or MSM CAM REC / SWING (shove + stun, no damage, no battery).\n• SCORE: 200 per human · 50 per sheep or possessed · 100 per Karen. Sheep speed up each level!\n• RETICLE / crosshair turns GREEN when a target's in range (whip reach or cam cone); RED = nothing to hit.\n• BOSSES: TRUSTIN JUDEAU after LEVEL 2, HUVAL YARHEYHEY after LEVEL 5. Don't touch them. Die = retry boss.\n• BONUS STAGE after LEVEL 1, then every 3 levels: pop flying sheep for 45 s. You can't get hurt there!"
 
 
 func _build_howto() -> void:
@@ -402,7 +435,8 @@ func _build_howto() -> void:
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	howto_panel.add_child(line)
 	howto_panel.add_child(_howto_heading("OBJECTIVE", Vector2(110, 312), Color(1.0, 0.55, 0.12)))
-	var rules := _howto_body(HOWTO_RULES, Vector2(110, 346), Vector2(1060, 260), 17)
+	var rules := _howto_body(HOWTO_RULES, Vector2(110, 342), Vector2(1060, 250), 16)
+	rules.add_theme_constant_override("line_spacing", -2)
 	rules.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	howto_panel.add_child(rules)
 	back_button = _menu_button("BackButton", "BACK", 30,

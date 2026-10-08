@@ -20,8 +20,19 @@ func _run() -> void:
 		await create_timer(0.3).timeout
 		current_scene.open_howto()
 	else:
-		gp.start_at_boss()
-		change_scene_to_file(LevelConfig.BOSS_SCENE)
+		# build 016: "huval*" -> boss 2, "bonus*" -> bonus stage, else Trustin
+		var sc := String(gp.debug_scenario)
+		var scene := ""
+		if sc.begins_with("huval"):
+			scene = gp.start_at_stage("boss2")
+		elif sc.begins_with("bonus"):
+			var n := 1
+			if sc.length() > 5 and sc.substr(5, 1).is_valid_int():
+				n = int(sc.substr(5, 1))
+			scene = gp.start_at_stage("bonus", n)
+		else:
+			scene = gp.start_at_stage("boss1")
+		change_scene_to_file(scene)
 	await create_timer(delay).timeout
 	root.get_texture().get_image().save_png(out)
 	print("saved ", out)

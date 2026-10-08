@@ -16,6 +16,10 @@ extends RefCounted
 ## 4 -> 3 hearts, reticle on him), boss_pose (MSM Cam filming him),
 ## boss_win (last heart -> defeat -> win screen), boss_volley (rage attacks),
 ## boss_rage (015b: radial burst with its gap + double lob).
+## Build 016: bonus stage (bonus, bonus_waves = mid-swoop, bonus_tally =
+## perfect tally, bonus2 / bonus3 = later stages) and Huval Yarheyhey
+## (huval_title, huval_fight = programmed + micro sheep on the field,
+## huval_ray, huval_update, huval_lecture, huval_win).
 ## Add touch=1 / --touch for the mobile layout.
 
 
@@ -186,7 +190,7 @@ static func run_boss(lvl: Node, scenario: String) -> void:
 	if not OS.is_debug_build():
 		return
 	var p := lvl.get_node_or_null("Entities/Player") as Node2D
-	var boss: TrustinJudeau = lvl.boss
+	var boss = lvl.boss
 	if p == null or boss == null:
 		return
 	print("[debug] boss scenario ", scenario)
@@ -243,6 +247,117 @@ static func run_boss(lvl: Node, scenario: String) -> void:
 			lvl.cam.debug_force_film = true
 			pu.changed.emit()
 		"boss_win":
+			boss.hearts = 1
+			lvl.hud.set_boss_hearts(1, boss.max_hearts)
+			boss.ai_enabled = false
+			await tree.create_timer(0.3).timeout
+			boss.take_hit(1, "whip", p.global_position)
+
+
+# ------------------------------------------------------------------ build 016
+
+## Bonus-stage scenarios (bonus_level.gd calls this when the scenario starts with "bonus").
+static func run_bonus(lvl: Node, scenario: String) -> void:
+	if not OS.is_debug_build():
+		return
+	print("[debug] bonus scenario ", scenario)
+	var tree := lvl.get_tree()
+	match scenario:
+		"bonus_waves":
+			# auto-play for screenshots: chase + whip the nearest flying sheep
+			var p := lvl.get_node_or_null("Entities/Player") as Node2D
+			var whip = p.get_node("Whip")
+			for i in 1500:
+				await tree.physics_frame
+				if not is_instance_valid(lvl) or lvl._ended:
+					return
+				var best: Node2D = null
+				var bd := INF
+				for sh in tree.get_nodes_in_group("bonus_sheep"):
+					if is_instance_valid(sh) and sh.is_flying():
+						var d: float = p.global_position.distance_to(sh.global_position)
+						if d < bd:
+							bd = d
+							best = sh
+				if best != null and bd < 190.0 and whip.cooldown <= 0.0 and i % 40 == 0:
+					p.facing = p.global_position.direction_to(best.global_position)
+					var target_screen: Vector2 = lvl.get_viewport().get_canvas_transform() * best.global_position
+					p.get_viewport().warp_mouse(target_screen)
+					whip.fire_whip()
+		"bonus_tally":
+			# a perfect stage: pop every sheep as it launches
+			await tree.create_timer(LevelConfig.BONUS_INTRO_TIME + 0.1).timeout
+			lvl._clock = LevelConfig.BONUS_TIME - 0.5
+			while lvl.waves_launched < LevelConfig.BONUS_WAVES:
+				lvl._launch_wave(lvl.waves_launched)
+				lvl.waves_launched += 1
+			await tree.create_timer(0.2).timeout
+			for i in 40:
+				for s in tree.get_nodes_in_group("bonus_sheep"):
+					if is_instance_valid(s):
+						s.delay = 0.0
+				await tree.physics_frame
+				for s in tree.get_nodes_in_group("bonus_sheep"):
+					if is_instance_valid(s) and s.is_flying():
+						s.pop()
+				if lvl.hits >= lvl.total_sheep:
+					break
+
+
+static func run_huval(lvl: Node, scenario: String) -> void:
+	if not OS.is_debug_build():
+		return
+	var p := lvl.get_node_or_null("Entities/Player") as Node2D
+	var boss = lvl.boss
+	if p == null or boss == null:
+		return
+	print("[debug] huval scenario ", scenario)
+	p.begin_grab_ghost(600.0)
+	if scenario == "huval_title":
+		return
+	if lvl.hud != null and lvl.hud.title_card != null:
+		lvl.hud.title_card.visible = false
+		lvl.hud.title_card.position.x = 5000.0
+	boss._set_state(HuvalYarheyhey.S.MOVE)
+	boss._gap = 99.0
+	boss.global_position = p.global_position + Vector2(-40, -260)
+	p.global_position += Vector2(60, 0)
+	var tree := lvl.get_tree()
+	match scenario:
+		"huval_fight":
+			boss.hearts = 7
+			lvl.hud.set_boss_hearts(7, boss.max_hearts)
+			boss.ai_enabled = false
+			for off in [Vector2(-260, -60), Vector2(230, -110), Vector2(-120, 90)]:
+				var s = boss._spawn_robo(p.global_position + off)
+				s.warp_in = 0.0
+			var victim = boss._spawn_robo(p.global_position + Vector2(170, 40))
+			victim.warp_in = 0.0
+			await tree.create_timer(0.25).timeout
+			victim.split(p.global_position, true)
+			boss.force_attack("summon")
+			lvl.chip = 1
+			lvl.hud.set_heart_chip(1)
+		"huval_ray":
+			boss.hearts = 6
+			lvl.hud.set_boss_hearts(6, boss.max_hearts)
+			boss.force_attack("ray")
+		"huval_update":
+			boss.hearts = 4
+			lvl.hud.set_boss_hearts(4, boss.max_hearts)
+			for off in [Vector2(-260, -60), Vector2(230, -110)]:
+				var s = boss._spawn_robo(p.global_position + off)
+				s.warp_in = 0.0
+			boss._start_forced_update()
+		"huval_lecture":
+			var pu: PowerUps = lvl.power_ups
+			pu.grant("msm_cam")
+			lvl.cam.battery = 14.0
+			p.global_position = boss.global_position + Vector2(-60, 260)
+			lvl.cam.debug_aim = p.global_position.direction_to(boss.global_position)
+			lvl.cam.debug_force_film = true
+			pu.changed.emit()
+		"huval_win":
 			boss.hearts = 1
 			lvl.hud.set_boss_hearts(1, boss.max_hearts)
 			boss.ai_enabled = false

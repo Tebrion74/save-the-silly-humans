@@ -31,6 +31,15 @@ var debug_scenario: String = ""
 ## a boss fight). The fight sits between LevelConfig.BOSS_AFTER_LEVEL and the
 ## next level.
 var boss_return_level: int = 0
+## Build 016: between-level stages. After a level is cleared, stage_queue
+## holds what's left to play (["bonus", "boss1"] ...), current_stage is the
+## one being played ("" = a normal level) and stage_return_level the level
+## after them. Retrying a stage (PLAY AGAIN) keeps all three.
+var stage_queue: Array[String] = []
+var current_stage: String = ""
+var stage_return_level: int = 0
+## Which bonus stage this is (1 = after level 1): later ones are harder.
+var bonus_index: int = 1
 
 
 func _ready() -> void:
@@ -77,17 +86,67 @@ func enter_boss(return_level: int) -> void:
 	boss_return_level = return_level
 
 
+## Build 016: level `level` was cleared. Queues its stages (bonus, boss) and
+## returns the scene to load next: the first stage, or the game scene (with
+## current_level already advanced) when nothing follows.
+func begin_after_level(level: int) -> String:
+	stage_queue = GameProgressCheck.stages_after(level)
+	stage_return_level = level + 1
+	bonus_index = GameProgressCheck.bonus_index(level)
+	return next_stage_scene()
+
+
+## Pops the next queued stage (or returns to the levels).
+func next_stage_scene() -> String:
+	if stage_queue.is_empty():
+		current_stage = ""
+		if stage_return_level > 0:
+			current_level = stage_return_level
+		stage_return_level = 0
+		boss_return_level = 0
+		return LevelConfig.GAME_SCENE
+	current_stage = stage_queue.pop_front()
+	boss_return_level = stage_return_level   # 015 compatibility (boss_level.return_level)
+	return GameProgressCheck.stage_scene(current_stage)
+
+
+## A bonus stage / boss is done (CONTINUE): the next scene to load.
+func finish_stage() -> String:
+	return next_stage_scene()
+
+
+## Debug: a fresh run that starts at `stage` ("bonus", "boss1", "boss2"),
+## exactly as if its level had just been cleared. `bonus_n` picks which bonus
+## stage (1 = after level 1, 2 = after level 4, ...).
+func start_at_stage(stage: String, bonus_n: int = 1) -> String:
+	reset_progress()
+	var level := LevelConfig.BOSS_AFTER_LEVEL
+	match stage:
+		"bonus":
+			level = LevelConfig.BONUS_FIRST_AFTER + (maxi(bonus_n, 1) - 1) * LevelConfig.BONUS_EVERY
+		"boss2":
+			level = LevelConfig.BOSS2_AFTER_LEVEL
+	current_level = level
+	stage_queue = GameProgressCheck.stages_after(level)
+	stage_return_level = level + 1
+	bonus_index = GameProgressCheck.bonus_index(level)
+	# drop anything queued before the requested stage
+	while not stage_queue.is_empty() and stage_queue[0] != stage:
+		stage_queue.pop_front()
+	return next_stage_scene()
+
+
 ## Title-screen BOSS button: a fresh run that starts at the boss fight.
 func start_at_boss() -> void:
-	reset_progress()
-	current_level = LevelConfig.BOSS_AFTER_LEVEL
-	boss_return_level = LevelConfig.BOSS_AFTER_LEVEL + 1
+	start_at_stage("boss1")
 
 
-## Boss beaten: on to the level after it.
+## Boss beaten: on to the level after it (015 API; 016 uses finish_stage).
 func finish_boss() -> void:
-	current_level = boss_return_level if boss_return_level > 0 else current_level + 1
-	boss_return_level = 0
+	stage_queue.clear()
+	if boss_return_level > 0:
+		stage_return_level = boss_return_level
+	next_stage_scene()
 
 
 ## START from the title: level 1, score 0.
@@ -99,6 +158,10 @@ func reset_progress() -> void:
 	inventory = {}
 	level_start_inventory = {}
 	boss_return_level = 0
+	stage_queue.clear()
+	current_stage = ""
+	stage_return_level = 0
+	bonus_index = 1
 
 
 ## Called when a level scene starts: remember the score to restore on retry.

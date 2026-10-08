@@ -374,3 +374,151 @@ static func boss_phase(hearts: int) -> int:
 	if hearts <= BOSS_PHASE2_HEARTS:
 		return 2
 	return 1
+
+
+# ---------------------------------------------------------------- build 016 progression
+## Between-level stages. After clearing level L the game plays, in this order:
+##   1. the BONUS STAGE when L == BONUS_FIRST_AFTER + k * BONUS_EVERY (1, 4, 7, 10, ...)
+##   2. the boss whose *_AFTER_LEVEL is L (Trustin Judeau after 2, Huval
+##      Yarheyhey after 5)
+## then level L + 1. So with the defaults:
+##   L1 > BONUS 1 > L2 > TRUSTIN > L3 > L4 > BONUS 2 > L5 > HUVAL > L6 > L7 >
+##   BONUS 3 > L8 > L9 > L10 > BONUS 4 > ...
+## If a bonus and a boss ever share a slot: level > bonus > boss > next level.
+const BONUS_FIRST_AFTER := 1
+const BONUS_EVERY := 3
+const BONUS_SCENE := "res://scenes/levels/BonusStage.tscn"
+const BOSS2_AFTER_LEVEL := 5
+const BOSS2_SCENE := "res://scenes/levels/Boss2Arena.tscn"
+
+
+# ---------------------------------------------------------------- build 016 bonus stage
+## Galaga-style "challenging stage": BONUS_WAVES scripted waves of flying
+## bonus sheep swoop across the field; any whip / weapon hit pops one. A sheep
+## that leaves the field is a miss. The rancher can't be hurt. Power-ups work
+## but nothing is used up (charges / battery are given back afterwards) and
+## nothing drops.
+const BONUS_TIME := 45.0
+const BONUS_WAVES := 8
+const BONUS_FIRST_WAVE := 1.0           ## seconds into the countdown (it starts after the title card)
+const BONUS_WAVE_EVERY := 5.0           ## a new wave every 5 s (8 waves in ~42 s)
+const BONUS_WAVE_SIZE := [5, 5, 6, 6, 6, 7, 7, 8]   ## sheep per wave (bonus 1)
+const BONUS_SIZE_PER_REPEAT := 1        ## +1 sheep per wave each later bonus stage (cap 8)
+const BONUS_WAVE_MAX := 8
+const BONUS_SPACING := 0.32             ## seconds between sheep in a wave
+const BONUS_SHEEP_SPEED := 340.0        ## px/s along the flight path (wave 1, bonus 1); the rancher runs 260
+const BONUS_WAVE_SPEEDUP := 0.045       ## each later wave is this much faster (x1.315 by wave 8)
+const BONUS_FLY_HEIGHT := 14.0          ## sprite drawn this far above its shadow
+const BONUS_REPEAT_SPEEDUP := 0.12      ## each later bonus stage is 12% faster (cap BONUS_SPEED_CAP)
+const BONUS_SPEED_CAP := 1.7
+## Scoring (Galaga numbers, sheep-ified).
+const BONUS_POINTS_PER_HIT := 100
+const BONUS_WAVE_PERFECT := 500         ## a whole wave popped
+const BONUS_PERFECT_BONUS := 10000      ## every sheep of the stage popped
+const BONUS_INTRO_TIME := 2.0           ## "BONUS STAGE" title card
+
+
+static func bonus_wave_size(wave: int, repeat: int) -> int:
+	var base: int = BONUS_WAVE_SIZE[clampi(wave, 0, BONUS_WAVE_SIZE.size() - 1)]
+	return mini(base + BONUS_SIZE_PER_REPEAT * maxi(repeat - 1, 0), BONUS_WAVE_MAX)
+
+
+static func bonus_speed(wave: int, repeat: int) -> float:
+	var s := (1.0 + BONUS_WAVE_SPEEDUP * wave) * (1.0 + BONUS_REPEAT_SPEEDUP * maxi(repeat - 1, 0))
+	return minf(s, BONUS_SPEED_CAP)
+
+
+static func bonus_total(repeat: int) -> int:
+	var n := 0
+	for w in BONUS_WAVES:
+		n += bonus_wave_size(w, repeat)
+	return n
+
+
+# ---------------------------------------------------------------- build 016 boss 2
+## HUVAL YARHEYHEY, PROPHET OF THE ALGORITHM (scripts/boss/huval.gd,
+## scenes/levels/Boss2Arena.tscn). Same hit rules as Trustin (whip / shot /
+## lash-only shockwave = 1 heart, fire = 1 delayed heart per 6 s, grab and
+## swing shove + stagger, contact = 1 heart). His weapon: PROGRAMMED SHEEP.
+const BOSS2_NAME := "HUVAL YARHEYHEY"
+const BOSS2_TITLE := "PROPHET OF THE ALGORITHM"
+const BOSS2_HEARTS := 12
+## Phases by hearts left: 12-9 / 8-6 / 5-3 / rage 2-1.
+const BOSS2_PHASE2_HEARTS := 8
+const BOSS2_PHASE3_HEARTS := 5
+const BOSS2_RAGE_HEARTS := 2
+## At these hearts he force-installs a SYSTEM UPDATE (1.5 s invulnerable,
+## every sheep on the field gets faster).
+const BOSS2_UPDATE_HEARTS := [6, 3]
+const BOSS2_UPDATE_TIME := 1.5
+## Movement (he's a lecturer, not a sprinter; still keeps his distance).
+const BOSS2_SPEED := 105.0
+const BOSS2_SPEED_RAGE := 135.0
+const BOSS2_PREF_DIST := 300.0
+const BOSS2_RETREAT_DIST := 170.0
+const BOSS2_RETREAT_MULT := 1.5
+## Attack rhythm.
+const BOSS2_ATTACK_GAP := [1.6, 1.35, 1.15, 0.95]
+const BOSS2_SUMMON_TELL := [0.85, 0.8, 0.75, 0.65]     ## clicker raised + spawn rings + glitch
+const BOSS2_SUMMON_COUNT := [1, 2, 2, 3]               ## programmed sheep per summon
+const BOSS2_SHEEP_CAP := [4, 5, 6, 6]                  ## programmed sheep alive at once
+const BOSS2_SPAWN_MIN_DIST := 170.0                    ## spawn rings never closer to you than this
+## Programmed sheep: hunt the rancher with a limited turn rate (outrunnable).
+const ROBO_SPEED := [115.0, 130.0, 145.0, 160.0]
+const ROBO_TURN := 2.2                  ## rad/s
+const ROBO_DAMAGE := 1                  ## hearts on contact
+const ROBO_HIT_RADIUS := 26.0
+const ROBO_BUMP_STUN := 0.8             ## after biting, it bounces back and stalls
+## Micro sheep: a programmed sheep that's hit splits into MICRO_SPLIT micros.
+const MICRO_SPLIT := 3
+const MICRO_SPEED := 190.0
+const MICRO_TURN := 3.4
+const MICRO_LIFE := 7.0                 ## then it fizzles out on its own
+const MICRO_CAP := 12
+const MICRO_HIT_RADIUS := 18.0
+## Micro damage = HALF a heart: every 2nd micro touch costs 1 heart; a pending
+## half shows as a half-empty heart in the HUD and carries through the fight.
+const MICRO_CHIPS_PER_HEART := 2
+const MICRO_HIT_COOLDOWN := 0.45        ## micro-only mercy window (shorter than 0.8)
+## SYSTEM UPDATE (attack, phase 3+, and the forced ones above): every live
+## programmed / micro sheep gets this speed multiplier (stacks to SYSTEM_UPDATE_MAX).
+const SYSTEM_UPDATE_MULT := 1.25
+const SYSTEM_UPDATE_MAX := 1.6
+## LECTURE RAY (phase 2+): aim line, locks BOSS2_RAY_LOCK before firing.
+const BOSS2_RAY_TELL := [0.75, 0.75, 0.7, 0.6]
+const BOSS2_RAY_LOCK := 0.25
+const BOSS2_RAY_TIME := 0.3
+const BOSS2_RAY_WIDTH := 22.0           ## half width incl. the rancher's body
+const BOSS2_RAY_LENGTH := 760.0
+## Rage: after a hit (and every few seconds) he TELEPORTS (glitch out, rings
+## at the destination for BOSS2_TELEPORT_TELL, then pops in there).
+const BOSS2_TELEPORT_TELL := 0.4
+const BOSS2_TELEPORT_EVERY := Vector2(3.5, 5.0)
+const BOSS2_TELEPORT_MIN_DIST := 260.0
+## Weighted attack menu per phase.
+const BOSS2_ATTACKS := [
+	{"summon": 1},
+	{"summon": 60, "ray": 40},
+	{"summon": 45, "ray": 35, "update": 20},
+	{"summon": 45, "ray": 35, "update": 20},
+]
+## MSM Cam: he LECTURES to the camera (stops, cancels a wind-up) up to
+## BOSS2_LECTURE_MAX, lingers BOSS_POSE_LINGER, then camera-shy BOSS_POSE_COOLDOWN.
+const BOSS2_LECTURE_MAX := 1.4
+## Scoring (same structure as Trustin, bigger numbers).
+const BOSS2_POINTS_PER_HEART := 100
+const BOSS2_DEFEAT_BONUS := 4000
+const BOSS2_HEALTH_BONUS := 300
+const BOSS2_TIME_PAR := 120.0
+const POINTS_ROBO := 50                 ## per programmed sheep split
+const POINTS_MICRO := 25                ## per micro sheep popped
+
+
+static func boss2_phase(hearts: int) -> int:
+	if hearts <= BOSS2_RAGE_HEARTS:
+		return 4
+	if hearts <= BOSS2_PHASE3_HEARTS:
+		return 3
+	if hearts <= BOSS2_PHASE2_HEARTS:
+		return 2
+	return 1
