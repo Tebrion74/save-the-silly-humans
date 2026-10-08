@@ -30,7 +30,7 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [014](#build-014) | 2026-10-07 ~04:17 MT | Not deployed (superseded by 014b) | MSM Cam, inventory (no power-up timers), corner-wedge touch controls |
 | [014b](#build-014b) | 2026-10-07 ~04:41 MT | Live | aim reticle (PC) and reach crosshair (touch) |
 | [015](#build-015) | 2026-10-07 ~22:22 MT | Live | boss battle: Trustin Judeau (between level 2 and level 3) |
-| [015b](#build-015b) | 2026-10-08 ~09:47 MT | Pre-release (in review, not deployed) | boss only after level 2, harder boss, sound and music everywhere |
+| [015b](#build-015b) | 2026-10-08 ~09:47 MT | Live | boss only after level 2, harder boss, sound and music everywhere |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -916,7 +916,7 @@ Whip, aim assist, facing, weapons and touch-control code is unchanged in 014b.
 <a id="build-015"></a>
 
 **Date:** 2026-10-07 ~22:22 MT  
-**Status:** **LIVE** 2026-10-07 ~22:27 MT. Current build.
+**Status:** **LIVE** 2026-10-07 ~22:27 MT. Replaced by build 015b at ~10:12 MT on 2026-10-08.
 
 Everything from 014b, plus a boss fight. The in-game label reads `BUILD 015`.
 
@@ -1062,7 +1062,7 @@ The release web export was also smoke-tested in headless Chrome: title (BUILD 01
 <a id="build-015b"></a>
 
 **Date:** 2026-10-08 ~09:47 MT  
-**Status:** Not deployed yet; waiting for review. Build 015 stays live. Pre-release.
+**Status:** **LIVE** 2026-10-08 ~10:12 MT. Current build.
 
 Everything from 015, plus the changes below. The in-game label reads `BUILD 015B`.
 
@@ -1181,7 +1181,7 @@ Screenshots (attached to the source-zip folder, not in the repo): `stsh-build015
 - The `.pck` grew from 0.7 MB to 1.9 MB (two PCM music loops). The `.wasm` and engine JS are byte-identical to 015.
 
 ### Web build
-`web-beta-015b/`, exported with the same Web preset (`--export-release`). Cache bust: `index.js?v=015b` and `"mainPack":"index.pck?v=015b"` (with a matching `fileSizes` entry), so link it as `…/index.html?v=015b`. `index.pck` is 1,920,872 bytes. **Not deployed.**
+`web-beta-015b/`, exported with the same Web preset (`--export-release`). Cache bust: `index.js?v=015b` and `"mainPack":"index.pck?v=015b"` (with a matching `fileSizes` entry), so link it as `…/index.html?v=015b`. `index.pck` is 1,920,872 bytes. **LIVE** 2026-10-08 ~10:12 MT on https://savethesillyhumans.org/game.php; only `index.pck` and `index.html` changed (the engine `.js`/`.wasm` and audio worklets are byte-identical to 015). Live `index.pck` sha256 `e0b692603a29177d869b8908c63fee36bb044659b23e353b8eb674bf58946b2d`.
 
 ## Appendix: project reference notes
 
