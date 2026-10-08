@@ -51,6 +51,7 @@ var _flicker: float = 1.0
 var _flicker_t: float = 0.0
 var _was_pressed := false
 var _beep: AudioStreamPlayer
+var _rec_tick := 0.0
 var _dead_popup_ms: int = -100000
 
 
@@ -66,6 +67,7 @@ func _ready() -> void:
 	_beep = AudioStreamPlayer.new()
 	_beep.stream = Sfx.swap_beep()
 	_beep.volume_db = -14.0
+	_beep.bus = "SFX" if AudioServer.get_bus_index("SFX") >= 0 else "Master"
 	add_child(_beep)
 
 
@@ -122,6 +124,7 @@ func swing() -> int:
 	if p == null or ("_dead" in p and p._dead) or swing_cooldown > 0.0:
 		return -1
 	swing_cooldown = LevelConfig.SWING_COOLDOWN
+	Sfx.play(self, "swing", -7.0)
 	swing_dir = current_aim()
 	aim_dir = swing_dir
 	swing_t = 0.0
@@ -187,6 +190,12 @@ func _physics_process(delta: float) -> void:
 		if not _was_pressed:
 			_no_battery_cue()
 	_was_pressed = pressed
+	# Build 015b: REC start / stop beeps and a soft tick each second of filming.
+	if want and not filming:
+		Sfx.play(self, "rec_start", -8.0)
+		_rec_tick = 0.0
+	elif filming and not want:
+		Sfx.play(self, "rec_stop", -10.0)
 	filming = want
 	humans_in_cone = 0
 	karens_in_cone = 0
@@ -194,6 +203,10 @@ func _physics_process(delta: float) -> void:
 		aim_dir = current_aim()
 		battery -= delta
 		rec_time += delta
+		_rec_tick += delta
+		if _rec_tick >= 1.0:
+			_rec_tick -= 1.0
+			Sfx.play(self, "rec_tick", -14.0)
 		if battery <= 0.0:
 			battery = 0.0
 			if not _load_spare():
@@ -245,6 +258,7 @@ func _no_battery_cue() -> void:
 	var now := Time.get_ticks_msec()
 	if now - _dead_popup_ms > 1200:
 		_dead_popup_ms = now
+		Sfx.play(self, "no_battery", -8.0)
 		_popup("NO BATTERY!", Color(1.0, 0.4, 0.35))
 
 

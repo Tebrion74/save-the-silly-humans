@@ -8,7 +8,7 @@ extends Control
 ## Mouse emulation from touch is off, so touches are hit-tested by hand.
 
 const GAME_SCENE := "res://scenes/Main.tscn"
-const BUILD_LABEL := "BUILD 015"
+const BUILD_LABEL := "BUILD 015B"
 const COPYRIGHT := "© 2026 ECHELON PUBLISHERS GROUP"
 const HORIZON := 440.0
 const TITLE_SHADER := preload("res://assets/shaders/title_text.gdshader")
@@ -16,9 +16,7 @@ const TITLE_SHADER := preload("res://assets/shaders/title_text.gdshader")
 var start_button: Button
 var howto_button: Button
 var back_button: Button
-## Build 015: jump straight to the Trustin Judeau boss fight (title + How to Play).
-var boss_button: Button
-var howto_boss_button: Button
+var sound_icon: SoundIcon
 ## Full-screen How to Play overlay (hidden until opened).
 var howto_panel: Control
 var _press_label: Label
@@ -36,6 +34,7 @@ var _rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	add_to_group("title_screen")
+	Sfx.music(self, "")   # build 015b: the title is quiet; music starts in a level
 	# Build 014b: the gameplay reticle hides the OS pointer; menus always get it back.
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -62,7 +61,7 @@ func _ready() -> void:
 		progress.start_at_boss()
 		get_tree().change_scene_to_file.call_deferred(LevelConfig.BOSS_SCENE)
 	elif OS.is_debug_build() and progress != null and "debug_scenario" in progress and progress.debug_scenario != "" \
-			and progress.debug_scenario != "howto":
+			and progress.debug_scenario != "howto" and progress.debug_scenario != "title":
 		get_tree().change_scene_to_file.call_deferred(GAME_SCENE)
 	elif OS.is_debug_build() and progress != null and "debug_scenario" in progress and progress.debug_scenario == "howto":
 		open_howto.call_deferred()
@@ -75,17 +74,15 @@ func _input(event: InputEvent) -> void:
 		var t := event as InputEventScreenTouch
 		TouchInput.note_touch(t.index, t.pressed, false)
 		if t.pressed:
-			if is_howto_open():
+			if sound_icon != null and sound_icon.hit_rect().has_point(t.position):
+				sound_icon.toggle()
+			elif is_howto_open():
 				if get_back_rect().grow(16.0).has_point(t.position):
 					close_howto()
-				elif _rect_of(howto_boss_button).grow(16.0).has_point(t.position):
-					start_boss()
 			elif get_start_rect().grow(24.0).has_point(t.position):
 				start_game()
 			elif get_howto_rect().grow(12.0).has_point(t.position):
 				open_howto()
-			elif get_boss_rect().grow(12.0).has_point(t.position):
-				start_boss()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventScreenDrag:
 		var d := event as InputEventScreenDrag
@@ -100,7 +97,9 @@ func _input(event: InputEvent) -> void:
 		elif k == KEY_H or kc == KEY_H:
 			open_howto()
 			get_viewport().set_input_as_handled()
-		elif k == KEY_B or kc == KEY_B:
+		elif OS.is_debug_build() and (k == KEY_B or kc == KEY_B):
+			# Build 015b: debug builds only (editor / native test runs). Release
+			# builds reach the boss only by clearing level 2.
 			start_boss()
 			get_viewport().set_input_as_handled()
 		elif k in [KEY_ESCAPE, KEY_BACKSPACE] or kc in [KEY_ESCAPE, KEY_BACKSPACE]:
@@ -118,10 +117,6 @@ func get_howto_rect() -> Rect2:
 	if howto_button == null or not howto_button.is_visible_in_tree():
 		return Rect2()
 	return howto_button.get_global_rect()
-
-
-func get_boss_rect() -> Rect2:
-	return _rect_of(boss_button)
 
 
 func _rect_of(b: Control) -> Rect2:
@@ -144,6 +139,7 @@ func open_howto() -> void:
 	if _starting or howto_panel == null or howto_panel.visible:
 		return
 	howto_panel.visible = true
+	Sfx.play(self, "click", -8.0)
 	howto_panel.modulate.a = 0.0
 	create_tween().tween_property(howto_panel, "modulate:a", 1.0, 0.15)
 	_set_menu_visible(false)
@@ -153,11 +149,12 @@ func close_howto() -> void:
 	if howto_panel == null or not howto_panel.visible:
 		return
 	howto_panel.visible = false
+	Sfx.play(self, "click", -8.0)
 	_set_menu_visible(true)
 
 
 func _set_menu_visible(v: bool) -> void:
-	for n in [start_button, howto_button, boss_button, _press_label, _hiscore_label]:
+	for n in [start_button, howto_button, _press_label, _hiscore_label]:
 		if n != null:
 			n.visible = v
 
@@ -166,6 +163,7 @@ func start_game() -> void:
 	if _starting:
 		return
 	_starting = true
+	Sfx.play(self, "start", -6.0)
 	var progress := get_node_or_null("/root/GameProgress")
 	if progress != null and progress.has_method("reset_progress"):
 		progress.reset_progress()
@@ -180,8 +178,11 @@ func start_game() -> void:
 
 
 ## Build 015: straight to the boss fight (a fresh run that starts at the boss;
-## CONTINUE after beating him goes to level 3).
+## CONTINUE after beating him goes to level 3). Build 015b: DEBUG BUILDS ONLY
+## (B key on the title); there is no menu button any more.
 func start_boss() -> void:
+	if not OS.is_debug_build():
+		return
 	if _starting:
 		return
 	_starting = true
@@ -307,14 +308,6 @@ func _build_menu() -> void:
 	howto_button.pressed.connect(open_howto)
 	add_child(howto_button)
 
-	boss_button = _menu_button("BossButton", "BOSS FIGHT", 22,
-		Color(0.55, 0.06, 0.1, 0.95), Color(0.72, 0.1, 0.14, 1.0), Color(1.0, 0.86, 0.45))
-	boss_button.position = Vector2(640 - 140, 614)
-	boss_button.size = Vector2(280, 46)
-	boss_button.add_to_group("boss_button")
-	boss_button.pressed.connect(start_boss)
-	add_child(boss_button)
-
 	_hiscore_label = Label.new()
 	_hiscore_label.name = "HiScoreLabel"
 	_hiscore_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -328,6 +321,11 @@ func _build_menu() -> void:
 	add_child(_small_label(COPYRIGHT, 16, Vector2(0, 690), Vector2(1280, 24), HORIZONTAL_ALIGNMENT_CENTER))
 	add_child(_small_label(BUILD_LABEL, 16, Vector2(1080, 690), Vector2(180, 24), HORIZONTAL_ALIGNMENT_RIGHT))
 	_build_howto()
+	# Build 015b: sound ON / LOW / OFF (also the M key anywhere).
+	sound_icon = SoundIcon.new()
+	sound_icon.name = "SoundIcon"
+	sound_icon.position = Vector2(1280 - 56 - 18, 14)
+	add_child(sound_icon)
 
 
 func _menu_button(node_name: String, text: String, font_size: int, bg: Color, bg_hover: Color, border: Color) -> Button:
@@ -358,9 +356,9 @@ func _menu_button(node_name: String, text: String, font_size: int, bg: Color, bg
 	return b
 
 
-const HOWTO_PC := "WASD  —  move   ·   MOUSE  —  aim the reticle\nLEFT CLICK  —  WHIP   ·   cam: hold REC\nRIGHT CLICK  —  GRAB & throw   ·   cam: SWING\nQ / WHEEL / 1-2  —  swap weapon   ·   B  —  boss\nR  —  restart   ·   N / ENTER  —  next level"
-const HOWTO_TOUCH := "JOYSTICK (bottom left)  —  move\nBOTTOM-RIGHT  —  WHIP   ·   cam: hold REC\nTOP-RIGHT  —  GRAB   ·   cam: SWING\nTOP-LEFT  —  swap weapon\nWHIP auto-aims  ·  crosshair = weapon reach"
-const HOWTO_RULES := "• Herd silly humans into the green SAFE ZONE. Throw POSSESSED humans in to save them too.\n• The CAMP sends humans, the SHEEP DEN breeds sheep. Hit the SAVE TARGET; lose if the rancher falls.\n• LEVEL 3+: 4 possessed together become KARENS: they mob you, convert humans, shut the camp.\n• POWER-UPS never time out. Whip mods stay till you grab another. FIRE: 10 lashes. SHOCKWAVE: 3.\n• MSM CAM (rare): hold REC to film a 39° cone. Filmed humans walk to safety; filmed Karens go VIRAL!\n• Filming drains the BATTERY (spares auto-load, carry 3), breeds sheep, and Karens LOVE it.\n• Two moves per weapon: WHIP / GRAB, or MSM CAM REC / SWING (shove + stun, no damage, no battery).\n• SCORE: 200 per human · 50 per sheep or possessed · 100 per Karen. Sheep speed up each level!\n• RETICLE / crosshair turns GREEN when a target's in range (whip reach or cam cone); RED = nothing to hit.\n• BOSS after LEVEL 2: TRUSTIN JUDEAU, 10 hearts. Dodge poutine, WHIP him, CAM = pose. Die = retry boss."
+const HOWTO_PC := "WASD  —  move   ·   MOUSE  —  aim the reticle\nLEFT CLICK  —  WHIP   ·   cam: hold REC\nRIGHT CLICK  —  GRAB & throw   ·   cam: SWING\nQ / WHEEL / 1-2  —  swap weapon   ·   M  —  sound\nR  —  restart   ·   N / ENTER  —  next level"
+const HOWTO_TOUCH := "JOYSTICK (bottom left)  —  move\nBOTTOM-RIGHT  —  WHIP   ·   cam: hold REC\nTOP-RIGHT  —  GRAB   ·   cam: SWING\nTOP-LEFT  —  swap weapon   ·   SPEAKER  —  sound\nWHIP auto-aims  ·  crosshair = weapon reach"
+const HOWTO_RULES := "• Herd silly humans into the green SAFE ZONE. Throw POSSESSED humans in to save them too.\n• The CAMP sends humans, the SHEEP DEN breeds sheep. Hit the SAVE TARGET; lose if the rancher falls.\n• LEVEL 3+: 4 possessed together become KARENS: they mob you, convert humans, shut the camp.\n• POWER-UPS never time out. Whip mods stay till you grab another. FIRE: 10 lashes. SHOCKWAVE: 3.\n• MSM CAM (rare): hold REC to film a 39° cone. Filmed humans walk to safety; filmed Karens go VIRAL!\n• Filming drains the BATTERY (spares auto-load, carry 3), breeds sheep, and Karens LOVE it.\n• Two moves per weapon: WHIP / GRAB, or MSM CAM REC / SWING (shove + stun, no damage, no battery).\n• SCORE: 200 per human · 50 per sheep or possessed · 100 per Karen. Sheep speed up each level!\n• RETICLE / crosshair turns GREEN when a target's in range (whip reach or cam cone); RED = nothing to hit.\n• Clear LEVEL 2 to face TRUSTIN JUDEAU (10 hearts). Dodge poutine, don't touch him. Die = retry boss."
 
 
 func _build_howto() -> void:
@@ -409,22 +407,15 @@ func _build_howto() -> void:
 	howto_panel.add_child(rules)
 	back_button = _menu_button("BackButton", "BACK", 30,
 		Color(0.8, 0.3, 0.12, 0.95), Color(0.92, 0.42, 0.16, 1.0), Color(1.0, 0.86, 0.45))
-	back_button.position = Vector2(640 - 230, 612)
-	back_button.size = Vector2(220, 58)
+	back_button.position = Vector2(640 - 110, 610)
+	back_button.size = Vector2(220, 62)
 	back_button.add_to_group("back_button")
 	back_button.pressed.connect(close_howto)
 	howto_panel.add_child(back_button)
-	howto_boss_button = _menu_button("HowToBossButton", "BOSS FIGHT", 24,
-		Color(0.55, 0.06, 0.1, 0.95), Color(0.72, 0.1, 0.14, 1.0), Color(1.0, 0.86, 0.45))
-	howto_boss_button.position = Vector2(650, 612)
-	howto_boss_button.size = Vector2(220, 58)
-	howto_boss_button.add_to_group("boss_button")
-	howto_boss_button.pressed.connect(start_boss)
-	howto_panel.add_child(howto_boss_button)
-	var keys_l := _small_label("ESC / BACKSPACE: BACK", 15, Vector2(110, 646), Vector2(280, 22), HORIZONTAL_ALIGNMENT_LEFT)
+	var keys_l := _small_label("ESC / BACKSPACE: BACK", 15, Vector2(110, 646), Vector2(380, 22), HORIZONTAL_ALIGNMENT_LEFT)
 	keys_l.label_settings.font_color = Color(0.8, 0.85, 1.0, 0.8)
 	howto_panel.add_child(keys_l)
-	var keys_r := _small_label("ENTER / SPACE: START · B: BOSS", 15, Vector2(890, 646), Vector2(280, 22), HORIZONTAL_ALIGNMENT_RIGHT)
+	var keys_r := _small_label("ENTER / SPACE: START", 15, Vector2(790, 646), Vector2(380, 22), HORIZONTAL_ALIGNMENT_RIGHT)
 	keys_r.label_settings.font_color = Color(0.8, 0.85, 1.0, 0.8)
 	howto_panel.add_child(keys_r)
 

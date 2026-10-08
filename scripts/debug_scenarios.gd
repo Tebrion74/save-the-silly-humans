@@ -14,7 +14,8 @@ extends RefCounted
 ## Build 015 boss (the title jumps straight to the boss arena): boss_title,
 ## boss_attack (spread + lob in the air, 6 hearts), boss_hearts (whip hit at
 ## 4 -> 3 hearts, reticle on him), boss_pose (MSM Cam filming him),
-## boss_win (last heart -> defeat -> win screen), boss_volley (rage attacks).
+## boss_win (last heart -> defeat -> win screen), boss_volley (rage attacks),
+## boss_rage (015b: radial burst with its gap + double lob).
 ## Add touch=1 / --touch for the mobile layout.
 
 
@@ -214,6 +215,13 @@ static func run_boss(lvl: Node, scenario: String) -> void:
 			boss.hearts = 2
 			lvl.hud.set_boss_hearts(2, boss.max_hearts)
 			boss.force_attack("radial")
+		"boss_rage":   # 015b: radial burst (with its gap) + a double lob in rage
+			boss.hearts = 2
+			lvl.hud.set_boss_hearts(2, boss.max_hearts)
+			boss.force_attack("radial")
+			await tree.create_timer(0.5).timeout
+			boss.force_attack("lob")
+			boss._gap = 99.0
 		"boss_hearts":
 			boss.hearts = 4
 			lvl.hud.set_boss_hearts(4, boss.max_hearts)

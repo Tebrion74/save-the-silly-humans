@@ -277,18 +277,23 @@ const BOSS_NAME := "TRUSTIN JUDEAU"
 const BOSS_TITLE := "PRIME MINISTER OF POUTINE"
 ## Hearts and hit rules.
 const BOSS_HEARTS := 10
-const BOSS_IFRAMES := 0.6               ## seconds of invulnerability after any heart lost
+const BOSS_IFRAMES := 0.9               ## seconds of invulnerability after any heart lost (015b, was 0.6)
 const BOSS_HIT_PUSH := 260.0            ## knock-back velocity on a whip hit (decays at SWING_PUSH_DAMPING/s, ~85 px)
+## Build 015b: touching him costs the rancher 1 heart (shares the 0.8 s
+## BOSS_PLAYER_HIT_COOLDOWN mercy window with poutine hits).
+const BOSS_CONTACT_RADIUS := 40.0       ## centre distance (bodies bump at ~34)
+const BOSS_CONTACT_DAMAGE := 1
 ## FIRE WHIP: a fire crack on him burns for one extra heart after this delay
 ## (once per fire crack, it never stacks; delay > i-frames so it always lands).
 const BOSS_FIRE_DELAY := 0.75
+const BOSS_FIRE_COOLDOWN := 6.0         ## 015b: at most one fire bonus heart per 6 s
 ## MSM Cam: filming him makes him POSE (stops, cancels a wind-up, grins at the
 ## lens). No damage. He holds the pose while filmed, up to BOSS_POSE_MAX, keeps
 ## it BOSS_POSE_LINGER after the cam stops (swap to the whip and crack him!),
 ## then he's camera-shy for BOSS_POSE_COOLDOWN.
-const BOSS_POSE_MAX := 2.2
-const BOSS_POSE_LINGER := 0.8
-const BOSS_POSE_COOLDOWN := 6.0
+const BOSS_POSE_MAX := 1.2              ## 015b (was 2.2)
+const BOSS_POSE_LINGER := 0.5           ## 015b (was 0.8)
+const BOSS_POSE_COOLDOWN := 8.0         ## 015b (was 6.0)
 ## SWING (cam) and GRAB (whip) shove him (he's too heavy to throw) and stagger
 ## him; both can cancel a wind-up, at most once per BOSS_INTERRUPT_COOLDOWN.
 const BOSS_SWING_PUSH_MULT := 0.6       ## x the normal swing push (~120 px)
@@ -296,18 +301,23 @@ const BOSS_GRAB_TUG := 300.0            ## tug velocity toward the throw directi
 const BOSS_STAGGER := 0.6
 const BOSS_INTERRUPT_COOLDOWN := 3.0
 ## Movement: strafes around the rancher inside whip-able range, short dashes.
-const BOSS_STRAFE_SPEED := 95.0
-const BOSS_STRAFE_SPEED_RAGE := 125.0   ## at <= BOSS_RAGE_HEARTS
-const BOSS_PREF_DIST := 250.0           ## orbit distance (whip reach is 210)
-const BOSS_RETREAT_DIST := 120.0        ## backs off (slower than you) when closer
+const BOSS_STRAFE_SPEED := 115.0        ## 015b (was 95)
+const BOSS_STRAFE_SPEED_RAGE := 145.0   ## at <= BOSS_RAGE_HEARTS (015b, was 125)
+const BOSS_PREF_DIST := 310.0           ## orbit distance (whip reach is 210): chase him (015b, was 250)
+const BOSS_RETREAT_DIST := 170.0        ## backs off (slower than you) when closer (015b, was 120)
 const BOSS_DASH_SPEED := 620.0
 const BOSS_DASH_TIME := 0.26            ## ~160 px
 const BOSS_DASH_TELL := 0.25            ## crouch + dust before a dash
-const BOSS_DASH_EVERY := Vector2(3.0, 5.0)
+const BOSS_DASH_EVERY := Vector2(2.0, 3.0)   ## 015b (was 3-5 s)
+## 015b: right after a hit he dash-strafes away (short 0.12 s tell).
+const BOSS_FLEE_TELL := 0.12
+const BOSS_FLEE_COOLDOWN := 1.6         ## 015b: hits inside this window after a flee don't trigger another
+const BOSS_COUNTER_GAP := 0.25          ## 015b: after a flee dash he throws again this soon
+const BOSS_RETREAT_MULT := 1.5          ## 015b: back-off speed x strafe speed (was 1.1; still slower than you)
 ## Attacks. Every attack is telegraphed by a wind-up (arm up, poutine in hand,
 ## "!" and an aim line / landing ring) of BOSS_WINDUP seconds.
-const BOSS_WINDUP := 0.5
-const BOSS_WINDUP_RAGE := 0.42
+const BOSS_WINDUP := 0.4                ## 015b (was 0.5)
+const BOSS_WINDUP_RAGE := 0.32          ## 015b (was 0.42)
 const BOSS_INTRO_TIME := 2.8            ## title card; he waves and doesn't attack
 ## Phases by hearts left: 10-8 single aimed shots; 7-5 adds 3-way spreads;
 ## 4-3 adds the lobbed poutine; 2-1 (rage) adds fast volleys + radial bursts.
@@ -315,17 +325,26 @@ const BOSS_PHASE2_HEARTS := 7
 const BOSS_PHASE3_HEARTS := 4
 const BOSS_RAGE_HEARTS := 2
 ## Pause between attacks (after the throw) per phase 1..4.
-const BOSS_ATTACK_GAP := [1.5, 1.3, 1.15, 1.0]
+const BOSS_ATTACK_GAP := [1.1, 0.95, 0.8, 0.65]   ## 015b (was 1.5/1.3/1.15/1.0)
 ## Poutine projectiles.
-const POUTINE_SPEED := 290.0            ## single aimed shot
-const POUTINE_SPREAD_SPEED := 270.0
+const POUTINE_SPEED := 360.0            ## single aimed shot (015b, was 290)
+const POUTINE_SPREAD_SPEED := 335.0     ## 015b (was 270)
 const POUTINE_SPREAD_DEG := 20.0        ## 3-way: -20 / 0 / +20 degrees
-const POUTINE_VOLLEY_SPEED := 360.0     ## rage: 3 quick aimed shots
-const POUTINE_VOLLEY_COUNT := 3
-const POUTINE_VOLLEY_GAP := 0.2
-const POUTINE_RADIAL_COUNT := 10        ## rage: ring of 10 (36 degree gaps)
-const POUTINE_RADIAL_SPEED := 220.0
-const POUTINE_LOB_TIME := 1.1           ## lob flight time; the landing ring shows all along
+## 015b: phase 3+ spreads are 5-way, 18 degrees apart (gaps ~2x the rancher).
+const POUTINE_SPREAD5_DEG := 18.0
+const POUTINE_VOLLEY_SPEED := 440.0     ## rage: quick aimed shots (015b, was 360)
+const POUTINE_VOLLEY_COUNT := 5         ## 015b (was 3)
+const POUTINE_VOLLEY_GAP := 0.17        ## 015b (was 0.2)
+const POUTINE_RADIAL_COUNT := 14        ## rage: ring of 14 slots (015b, was 10)
+const POUTINE_RADIAL_GAP := 2           ## 015b: 2 neighbouring slots left empty (a safe lane)
+const POUTINE_RADIAL_SPEED := 275.0     ## 015b (was 220)
+const POUTINE_LOB_TIME := 1.0           ## lob flight time; the landing ring shows all along (015b, was 1.1)
+## 015b: phase 3+ lobs come in pairs: one on you, one where you're heading.
+const POUTINE_LOB_LEAD := 0.75          ## seconds of your velocity to lead the 2nd lob
+const POUTINE_LOB_PAIR_MIN := 90.0      ## the 2nd ring is at least this far from the 1st
+## 015b combos: chance that a lob is chained straight into an aimed shot
+## (phase 3) or a spread (rage); the chained attack still has its wind-up.
+const BOSS_COMBO_CHANCE := [0.0, 0.0, 0.35, 0.5]
 const POUTINE_LOB_HEIGHT := 150.0
 const POUTINE_LOB_RADIUS := 42.0        ## splash radius on landing
 const POUTINE_HIT_RADIUS := 22.0        ## flying poutine vs the rancher's body
@@ -341,6 +360,10 @@ const BOSS_HEALTH_BONUS := 300          ## per rancher heart left at the win
 const BOSS_TIME_PAR := 90.0             ## +BOSS_TIME_BONUS_PER_SEC for every second under par
 const BOSS_TIME_BONUS_PER_SEC := 20
 const BOSS_DEFEAT_ANIM := 1.8           ## defeat animation before the win screen
+## 015b PHOTO OP: when he drops to these hearts he waves for the cameras,
+## invulnerable, for BOSS_PHOTO_OP_TIME (shimmering shield, no attacks).
+const BOSS_PHOTO_OP_HEARTS := [5, 2]
+const BOSS_PHOTO_OP_TIME := 1.5
 
 
 static func boss_phase(hearts: int) -> int:

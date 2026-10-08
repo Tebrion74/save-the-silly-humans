@@ -66,6 +66,10 @@ var _left: VBoxContainer
 var _right: VBoxContainer
 ## Build 015 boss fight: heart bar (top centre) and the title card.
 var boss_bar: BossBar
+## Build 015b: speaker icon (touch layouts) + "SOUND OFF (M)" toast.
+var sound_icon: SoundIcon
+var _sound_toast: Label
+var _sound_toast_t := 0.0
 var title_card: Control
 var boss_mode := false
 
@@ -157,6 +161,40 @@ func _ready() -> void:
 		"NextLevelButton", "NEXT LEVEL", Color(0.14, 0.55, 0.26, 0.97), Color(0.2, 0.7, 0.34, 1.0),
 		"next_level_button")
 	next_level_button.pressed.connect(_on_next_level)
+	_build_sound_ui(root)
+
+
+## Build 015b: speaker icon (touch) and a short toast when the sound setting
+## changes (M key on PC, the icon on touch).
+func _build_sound_ui(root: Control) -> void:
+	sound_icon = SoundIcon.new()
+	sound_icon.name = "SoundIcon"
+	sound_icon.visible = false
+	root.add_child(sound_icon)
+	_sound_toast = Label.new()
+	_sound_toast.name = "SoundToast"
+	_sound_toast.label_settings = PixelFont.settings(2, Color(1, 1, 1))
+	_sound_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_sound_toast.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_sound_toast.offset_left = -200
+	_sound_toast.offset_right = 200
+	_sound_toast.offset_top = 64
+	_sound_toast.offset_bottom = 84
+	_sound_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_sound_toast.modulate.a = 0.0
+	root.add_child(_sound_toast)
+	var ga := get_node_or_null("/root/GameAudio")
+	if ga != null and ga.has_signal("setting_changed"):
+		ga.setting_changed.connect(_on_sound_setting)
+
+
+func _on_sound_setting(_i: int) -> void:
+	var ga := get_node_or_null("/root/GameAudio")
+	if ga == null or _sound_toast == null:
+		return
+	_sound_toast.text = String(ga.setting_name()) + ("" if TouchInput.active else " (M)")
+	_sound_toast.modulate.a = 1.0
+	_sound_toast_t = 1.4
 
 
 ## "LABEL value" pair. Returns the value Label.
@@ -323,6 +361,9 @@ func _process(delta: float) -> void:
 			_help_t = 0.0  # weapon changed: show the hint again
 			objective_label.modulate.a = 1.0
 		objective_label.text = want
+	if _sound_toast_t > 0.0:
+		_sound_toast_t -= delta
+		_sound_toast.modulate.a = clampf(_sound_toast_t / 0.4, 0.0, 1.0)
 	_help_t += delta
 	if _help_t > HELP_SECONDS:
 		objective_label.modulate.a = clampf(1.0 - (_help_t - HELP_SECONDS) / 1.5, 0.0, 1.0)
@@ -347,6 +388,9 @@ func apply_layout(touch: bool, vs: Vector2) -> void:
 		objective_label.offset_left = -400
 		objective_label.offset_right = 400
 	inventory_panel.position = Vector2(22, _left.position.y + 154.0)
+	if sound_icon != null:
+		sound_icon.visible = touch
+		sound_icon.position = Vector2(roundf(TouchLayout.swap_dims(vs).z + 12.0), 10.0)
 	if boss_bar != null:
 		_place_boss_bar(touch, vs)
 
@@ -583,7 +627,7 @@ func _place_boss_bar(touch: bool, vs: Vector2) -> void:
 	var cx := vs.x * 0.5
 	if touch:
 		# centred in the free strip between the swap wedge and the SECONDARY wedge
-		var left := TouchLayout.swap_dims(vs).z
+		var left := TouchLayout.swap_dims(vs).z + SoundIcon.SIZE.x + 20.0   # 015b: room for the speaker icon
 		var right := vs.x - TouchLayout.wedge_dims(vs).z
 		cx = (left + right) * 0.5
 	boss_bar.position = Vector2(roundf(cx - w * 0.5), 12.0)

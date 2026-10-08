@@ -103,6 +103,7 @@ func _ready() -> void:
 		hud.set_time(0.0)
 	state.mark_setup_complete()
 	_on_health_ui(state.player_health, state.player_max_health)
+	Sfx.music(self, "boss")   # build 015b
 	_unlock_rescues_after_physics.call_deferred()
 
 
@@ -172,22 +173,44 @@ func _start_camp() -> void:
 func _process(delta: float) -> void:
 	super(delta)
 	_player_hit_cool = maxf(_player_hit_cool - delta, 0.0)
+	_check_contact()
+
+
+## Build 015b: touching Trustin Judeau costs 1 heart (same mercy window as
+## poutine hits, so a touch can't chain with a splash).
+var contact_hits_taken := 0
+
+
+func _check_contact() -> void:
+	if boss == null or not is_instance_valid(boss) or _ended or _defeat_pending:
+		return
+	if boss.state == TrustinJudeau.S.INTRO or boss.state == TrustinJudeau.S.DEFEATED:
+		return
+	var p := get_node_or_null("Entities/Player") as Node2D
+	if p == null:
+		return
+	if p.global_position.distance_to(boss.global_position + Vector2(0, -6)) > LevelConfig.BOSS_CONTACT_RADIUS:
+		return
+	if poutine_hit_player(boss.global_position, LevelConfig.BOSS_CONTACT_DAMAGE, "OUCH! PERSONAL SPACE!"):
+		contact_hits_taken += 1
+		Sfx.play(self, "contact", -6.0)
 
 
 ## A poutine reached the rancher: 1 heart (the existing damage rule), at most
 ## once per BOSS_PLAYER_HIT_COOLDOWN.
-func poutine_hit_player(from_pos: Vector2) -> bool:
+func poutine_hit_player(from_pos: Vector2, damage: int = LevelConfig.POUTINE_DAMAGE, popup: String = "GRAVY'D!") -> bool:
 	if _ended or _defeat_pending or _player_hit_cool > 0.0:
 		return false
 	var p := get_node_or_null("Entities/Player")
 	if p == null or not p.has_method("take_damage"):
 		return false
 	var before: int = p.health
-	p.take_damage(LevelConfig.POUTINE_DAMAGE, from_pos)
+	p.take_damage(damage, from_pos)
 	if p.health < before:
 		_player_hit_cool = LevelConfig.BOSS_PLAYER_HIT_COOLDOWN
-		poutine_hits_taken += 1
-		spawn_score_popup("GRAVY'D!", (p as Node2D).global_position + Vector2(0, -20), Color(0.95, 0.7, 0.4), 2)
+		if popup == "GRAVY'D!":
+			poutine_hits_taken += 1
+		spawn_score_popup(popup, (p as Node2D).global_position + Vector2(0, -20), Color(0.95, 0.7, 0.4), 2)
 		return true
 	return false
 
@@ -241,6 +264,7 @@ func _on_won() -> void:
 func _on_lost(reason: String) -> void:
 	_ended = true
 	_finish_round()
+	Sfx.play(self, "lose", -6.0)
 	if hud and hud.has_method("show_boss_end"):
 		hud.show_boss_end(false, reason, score_breakdown())
 

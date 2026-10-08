@@ -57,6 +57,7 @@ func select_index(i: int) -> bool:
 		return false
 	current = i
 	changed.emit(current_id())
+	Sfx.play(self, "swap", -10.0)
 	return true
 
 

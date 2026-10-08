@@ -1,8 +1,8 @@
 # Save The Silly Humans — Development Log
 
-The full build-by-build history of the game, from the first prototype to the current live build. Every build's original source zip is attached to its [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) (tags `build-000-prototype`, `build-001` … `build-015`, including hotfixes 009b–009d).
+The full build-by-build history of the game, from the first prototype to the current live build. Every build's original source zip is attached to its [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) (tags `build-000-prototype`, `build-001` … `build-015b`, including hotfixes 009b–009d).
 
-**Playable Web exports** (`web-beta-<build>.zip`) are attached to the releases for **007, 008, 009d and 010 through 015**. To self-host one, unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c; those releases have source only.
+**Playable Web exports** (`web-beta-<build>.zip`) are attached to the releases for **007, 008, 009d and 010 through 015b**. To self-host one, unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c; those releases have source only.
 
 Times are Mountain Time (Calgary). Build times come from when each source zip was uploaded; live times are from the deploy notes.
 
@@ -30,6 +30,7 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [014](#build-014) | 2026-10-07 ~04:17 MT | Not deployed (superseded by 014b) | MSM Cam, inventory (no power-up timers), corner-wedge touch controls |
 | [014b](#build-014b) | 2026-10-07 ~04:41 MT | Live | aim reticle (PC) and reach crosshair (touch) |
 | [015](#build-015) | 2026-10-07 ~22:22 MT | Live | boss battle: Trustin Judeau (between level 2 and level 3) |
+| [015b](#build-015b) | 2026-10-08 ~09:47 MT | Pre-release (in review, not deployed) | boss only after level 2, harder boss, sound and music everywhere |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -1056,6 +1057,131 @@ The release web export was also smoke-tested in headless Chrome: title (BUILD 01
 
 ### Web build
 `web-beta-015/`, exported with the same Web preset (`--export-release`). Cache bust: `index.html` loads `index.js?v=015` and the pack as `"mainPack":"index.pck?v=015"` (with a matching `fileSizes` entry), so link it as `…/index.html?v=015`. The `.wasm` and engine JS are byte-identical to 014b (same Godot 4.7.2 templates). **LIVE** 2026-10-07 ~22:27 MT on https://savethesillyhumans.org/game.php. Live `index.pck` sha256 `97cd07e88e2410ade30b168879f29e1d2f679dd5165e7d320c37f6a5b35d22c4` (716,124 bytes).
+
+## Build 015b: boss only after level 2, harder boss, sound and music everywhere
+<a id="build-015b"></a>
+
+**Date:** 2026-10-08 ~09:47 MT  
+**Status:** Not deployed yet; waiting for review. Build 015 stays live. Pre-release.
+
+Everything from 015, plus the changes below. The in-game label reads `BUILD 015B`.
+
+### 1. No menu access to the boss
+- Removed the red **BOSS FIGHT** buttons from the title screen and the How to Play screen, and removed the **B** key. Players only reach Trustin Judeau by clearing **level 2**. Beating him goes to level 3, and dying retries the boss fight from its start, as in 015.
+- How to Play now says: "Clear LEVEL 2 to face TRUSTIN JUDEAU (10 hearts). Dodge poutine, don't touch him. Die = retry boss."
+- Debug entry only: in debug builds, **B** on the title screen and the `boss*` debug scenarios still jump straight to the arena. Both are gated by `OS.is_debug_build()` (`title_screen.gd` `start_boss()`), so release exports can't do it. Verified in the release web build: pressing B on the title does nothing.
+
+### 2. Harder boss (Robert: "too easy")
+| | 015 | 015b |
+|---|---|---|
+| Contact damage | none | **1 heart** when you touch him (40 px), "OUCH! PERSONAL SPACE!" (shares the 0.8 s mercy window) |
+| Pause after an attack (phase 1/2/3/rage) | 1.5 / 1.3 / 1.15 / 1.0 s | **1.1 / 0.95 / 0.8 / 0.65 s** |
+| Wind-up (still telegraphed: "!", aim line or ring, aim locks 0.15 s before release) | 0.5 s (rage 0.42) | **0.4 s (rage 0.32)** |
+| Poutine speed: single / spread / volley / radial | 290 / 270 / 360 / 220 | **360 / 335 / 440 / 275** (+20–25 %) |
+| Spread | 3-way ±20° | 3-way in phase 2, **5-way (±18°, ±36°) from phase 3** |
+| Lob | 1 ring, 1.1 s flight | 1.0 s flight; **two rings from phase 3** (2nd one leads your movement, ≥ 90 px from the 1st) |
+| Rage volley | 3 shots, 0.2 s apart | **5 shots, 0.17 s apart** |
+| Rage radial | 10 | **ring of 14 with a 2-slot gap** (12 fly; the gap is the safe lane and is drawn on the telegraph) |
+| Combos | none | after a lob: 35 % (phase 3) a quick aimed shot, 50 % (rage) a spread |
+| Movement | orbits at 250 px, backs off under 120 px at 1.1× strafe speed, strafe 95 (rage 125), dash every 3–5 s | **orbits at 310 px**, backs off under 170 px at 1.5× strafe speed (still slower than you), strafe **115 (rage 145)**, **dash every 2–3 s** |
+| After you hit him | nothing | **dash-strafes away** (0.12 s tell) and **throws again right away** (0.25 s). There is at most one flee every 1.6 s |
+| Boss i-frames after a heart | 0.6 s | **0.9 s** |
+| MSM Cam pose | up to 2.2 s, lingers 0.8 s, camera-shy 6 s | **up to 1.2 s, lingers 0.5 s, camera-shy 8 s** |
+| FIRE whip bonus heart | every fire crack | **at most once per 6 s** |
+| SHOCKWAVE | a near miss still cost him a heart | **the lash itself must connect**; the splash ring no longer hurts him |
+| PHOTO OP | none | at **5 and 2 hearts**: 1.5 s invulnerable wave with a shimmering shield ("PHOTO OP!", "NO COMMENT!" if you whip him), then he dashes off |
+
+Unchanged: 10 hearts; phases at 7 / 4 / 2 hearts; poutine = 1 heart, then 0.8 s mercy; swing and grab interrupts (cooldown 3 s); scoring (100 per heart, 2500 defeat, 300 per heart left, 90 s par). All values are in `scripts/level_config.gd` under "build 015 boss" (015b values are commented).
+
+Mobile: every attack still has its wind-up, and the radial always leaves a gap. The touch WHIP auto-aims at him within reach, so the fight stays dodgeable with the joystick.
+
+**Bot check (`--fixed-fps 60`, touch auto-aim, 12 runs per skill level, same seeds for 015 and 015b).** The bots chase into whip range and dodge any projectile whose path passes within 50 px (lob rings + 30 px). Their reaction time and the share of throws they ignore stand in for skill. They aim well and never get bored, so real fights take longer.
+
+| bot (reaction / ignored throws / aim error) | 015: wins, win time, hearts lost | 015b: wins, win time, hearts lost |
+|---|---|---|
+| perfect (0 s / 0 % / 0°) | 12/12, 11.4 s, 0.2 | 12/12, 16.8 s, 0.8 |
+| good (0.16 s / 10 % / 15°) | 12/12, 14.5 s, 1.2 | 11/12, 19.1 s, 1.4 |
+| average (0.24 s / 22 % / 28°) | 12/12, 17.3 s, 1.8 | 9/12, 22.9 s, 3.2 |
+| weak (0.32 s / 35 % / 40°) | 9/12, 21.8 s, 3.5 | 3/12, 29.0 s, 4.5 |
+
+Result: harder (he throws 2–3× as often, and average and weak players now lose a fair share), but still beatable, and retries are free.
+
+### 3. Sound and music (Robert: "why do we not have audio for the entire game?")
+**Root cause:** the game barely had any sound to play. Before 015b the only sounds anywhere were the MSM Cam battery-swap beep (014) and the boss-fight sounds (015). The whip, grabs, saves, explosions, damage, pickups, UI, win and lose had **no sounds wired at all**, and there was **no music**. So levels 1–2 and 3+ were silent by design, not by a broken engine. The web audio path itself worked: in headless Chrome the 015 build's AudioContext was running and the boss sounds reached the output. There was also no explicit mobile unlock beyond Godot's own, and no mute control.
+
+While fixing it we hit a second trap and fixed it: **audio buses created at runtime (`AudioServer.add_bus()`) are silent in the Godot web export.** Samples played and the music source carried signal, but nothing reached the speakers (measured with an analyser on the AudioContext destination). The buses now come from `default_bus_layout.tres`, which the engine loads at start-up, and the web build is audible.
+
+**What 015b adds**
+- **SFX everywhere** (all generated in code, `scripts/sfx.gd`):
+  - whip crack (and a fire crack), shockwave, whip shot, grab, throw
+  - human saved, possessed human saved, human turned possessed, explosion
+  - rancher hurt, Karen, pickup, viral, cam REC start / stop / tick, cam swing, no battery, weapon swap
+  - UI click and start, win and lose stingers
+  - all the boss sounds: throw, splat, hit, wind-up, pose, shield, contact, defeat, fanfare
+  - Per-sound limits (35 ms minimum interval, 4 voices) keep busy scenes from clipping.
+- **Music:** two original looping chiptune tracks generated by `tools/gen_music.py` (numpy, MIT; pulse lead, 12.5 % pulse arpeggio, triangle bass, noise drums; 22.05 kHz 8-bit PCM, exact bar lengths so the loops are seamless):
+  - `music_level.wav`, "Ranch Hand Hustle" (C major, 132 BPM, 29 s): plays in the levels
+  - `music_boss.wav`, "Question Period" (D minor, 156 BPM, 25 s): plays in the boss fight, tenser
+  - The title screen is quiet, and the music stops on the win/lose panel.
+- **Buses:** Master ← Music (−7 dB) + SFX.
+- **Sound toggle:** **M** on PC; on touch, a **speaker icon** on the title screen and next to the swap wedge in the HUD. It cycles **SOUND ON → SOUND LOW → SOUND OFF** with a short toast, and the setting is saved in `user://audio.cfg`. Autoload: `scripts/audio/game_audio.gd` (`GameAudio`); icon: `scripts/ui/sound_icon.gd`.
+- **Web unlock** (`export_presets.cfg` → `html/head_include`): Godot already resumes the AudioContext on its own input events. The extra script also resumes it on `touchstart` / `touchend` / `pointerdown` / `pointerup` / `mousedown` / `keydown` / `click`, plays a 1-sample silent buffer (the iOS Safari wake-up), sets `navigator.audioSession.type = 'playback'` (iOS 17+: the ring/silent switch no longer mutes the game, like a video), and resumes again when the tab comes back.
+- Audio imports are PCM with forward loop for the music (no QOA), for safe web sample playback.
+
+**Verified in the release web build** (`web-beta-015b`, headless Chrome, analyser tapped on the AudioContext destination):
+- After a click and ENTER, the context is running, the music buffer is created and plays, and whip cracks add new buffer sources.
+- Output level: ON ≈ 0.23 RMS, LOW ≈ 0.09, OFF = 0, back ON. Same result with an emulated Android phone, tapping START and then the speaker icon.
+- Not tested on a real iPhone or Android device.
+
+### 4. Files
+- New:
+  - `scripts/audio/game_audio.gd`
+  - `scripts/ui/sound_icon.gd`
+  - `default_bus_layout.tres`
+  - `assets/audio/music_level.wav`, `assets/audio/music_boss.wav`
+  - `tools/gen_music.py`
+- Changed:
+  - `scripts/boss/judeau.gd`: PHOTO_OP state, flee and counter-throw, 5-way spread, double lob, combos, gapped radial, fire cooldown, telegraphs
+  - `scripts/boss/boss_level.gd`: contact damage, boss music
+  - `scripts/level_config.gd`
+  - `scripts/player/whip.gd`: shockwave no longer splashes the boss, plus sounds
+  - `scripts/sfx.gd`
+  - `scripts/ui/title_screen.gd`, `scripts/ui/hud.gd`, `scripts/ui/touch_controls.gd`
+  - `scripts/player/player.gd`, `scripts/player/msm_cam.gd`, `scripts/player/weapons.gd`, `scripts/level_controller.gd`: sounds
+  - `scripts/debug_scenarios.gd`: new `boss_rage` scenario
+  - `tools/boss_shots.gd`: new `title` scenario
+  - `project.godot`: GameAudio autoload
+  - `export_presets.cfg`: audio unlock
+
+### Tests
+The temporary suite `tools/_test_015b.gd` (deleted after the run) passed **49/49** checks:
+- **Title and How to Play:** no boss button or BOSS FIGHT text; the new rules line is present; the B key and `start_boss()` are debug-only; the speaker icon shows.
+- **Flow:** the boss only follows level 2; a boss win goes to level 3; retry restarts the boss with 10 hearts.
+- **Boss rules:**
+  - whip = 1 heart; 0.9 s i-frames
+  - flee queued after a hit (none inside the 1.6 s window)
+  - fire once per 6 s; the shockwave splash skips the boss
+  - contact = 1 heart
+  - cam pose ends by 1.2 s, then 8 s camera-shy; swing still staggers
+  - photo op at 5 and 2 hearts blocks whips and ends after 1.5 s
+- **Attack shapes:** 3-way spread in phase 2 and 5-way in phase 3; radial = 12 of 14; volley 5; double lob in phase 3 with rings ≥ 90 px apart, even in a corner; combos ≈ 25 %.
+- **Audio:**
+  - level / boss / title music
+  - crack, throw, hit, contact and hurt sounds fire
+  - SFX and Music buses exist
+  - ON / LOW / OFF set the Master bus
+
+Also: `tools/verify_layout.gd` PASS. Main, Title and BossArena run 25 s headless with no script errors. The bot runs are above.
+
+Screenshots (attached to the source-zip folder, not in the repo): `stsh-build015b-title.png` (no BOSS button, speaker icon), `stsh-build015b-rage.png` (gapped radial ring and double lob), `stsh-build015b-rage-touch.png`, `stsh-build015b-howto.png`, `stsh-build015b-web-sound.png` (release web build, "SOUND LOW (M)" toast).
+
+### Known issues / notes
+- Not implemented: Karens / possessed joining in rage. They'd need their own lose-condition rules in the arena; the fight is hard enough without them.
+- Audio is untested on real phones. On iOS older than 17 the silent switch still mutes web audio, as it does on every web game.
+- The `.pck` grew from 0.7 MB to 1.9 MB (two PCM music loops). The `.wasm` and engine JS are byte-identical to 015.
+
+### Web build
+`web-beta-015b/`, exported with the same Web preset (`--export-release`). Cache bust: `index.js?v=015b` and `"mainPack":"index.pck?v=015b"` (with a matching `fileSizes` entry), so link it as `…/index.html?v=015b`. `index.pck` is 1,920,872 bytes. **Not deployed.**
 
 ## Appendix: project reference notes
 

@@ -1,6 +1,8 @@
 class_name Sfx
 extends RefCounted
-## Build 014: tiny procedural sound effects (the game ships no audio files).
+## Build 014: tiny procedural sound effects. Build 015b: every game sound is
+## generated here (whip, grab, saves, hits, pickups, cam, boss, stingers, UI).
+## Music is the only audio file (assets/audio, made by tools/gen_music.py).
 
 static var _swap: AudioStreamWAV = null
 
@@ -102,6 +104,117 @@ static func get_sound(sound_name: String) -> AudioStreamWAV:
 			s = _notes([[392.0, 0.16], [370.0, 0.16], [349.0, 0.16], [262.0, 0.5]], 0.22, 0.4)
 		"fanfare":   # victory jingle
 			s = _notes([[523.0, 0.1], [659.0, 0.1], [784.0, 0.1], [1047.0, 0.28], [0.0, 0.05], [784.0, 0.1], [1047.0, 0.4]], 0.2, 0.5)
+		# ---------------------------------------------------- build 015b game-wide
+		"crack":     # whip crack: a hard click into a bright, fast-decaying hiss
+			var n := int(rate * 0.16)
+			var prev := 0.0
+			for i in n:
+				var u := float(i) / rate
+				var w := rng.randf_range(-1.0, 1.0)
+				var hp := w - prev
+				prev = w
+				var click := (1.0 if i % 9 < 4 else -1.0) * 0.6 if i < 90 else 0.0
+				s.append((hp * 0.7 + click) * exp(-u * 38.0))
+		"crack_fire":   # crack + a low fwoosh
+			var n := int(rate * 0.3)
+			var prev := 0.0
+			var lp := 0.0
+			for i in n:
+				var u := float(i) / rate
+				var w := rng.randf_range(-1.0, 1.0)
+				lp = lerpf(lp, w, 0.12)
+				var hp := w - prev
+				prev = w
+				s.append(hp * 0.55 * exp(-u * 40.0) + lp * 1.6 * sin(minf(u / 0.3, 1.0) * PI) * 0.6)
+		"shock":     # shockwave boom
+			var n := int(rate * 0.42)
+			var ph := 0.0
+			var lp := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += TAU * lerpf(110.0, 38.0, u) / rate
+				lp = lerpf(lp, rng.randf_range(-1.0, 1.0), 0.15)
+				s.append((sin(ph) * 0.75 + lp * 0.6) * pow(1.0 - u, 2.0))
+		"grab":      # rising zip as the lash latches
+			var n := int(rate * 0.13)
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += lerpf(280.0, 1100.0, u) / rate
+				s.append((1.0 if fmod(ph, 1.0) < 0.3 else -1.0) * 0.22 * (1.0 - u * 0.6))
+		"shot":      # whip-shot zap
+			var n := int(rate * 0.16)
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += lerpf(1400.0, 260.0, u) / rate
+				s.append((1.0 if fmod(ph, 1.0) < 0.5 else -1.0) * 0.2 * (1.0 - u))
+		"explode":   # sheep / possessed pop: crunchy low noise + thump
+			var n := int(rate * 0.45)
+			var ph := 0.0
+			var lp := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += TAU * lerpf(140.0, 45.0, u) / rate
+				lp = lerpf(lp, rng.randf_range(-1.0, 1.0), 0.35 - 0.25 * u)
+				var crush := floorf(lp * 6.0) / 6.0
+				s.append((crush * 0.8 + sin(ph) * 0.5) * pow(1.0 - u, 1.8))
+		"save":      # human reaches the safe zone: bright two-note chime
+			s = _notes([[784.0, 0.07], [1047.0, 0.16]], 0.22, 0.25)
+		"save_possessed":   # possessed saved: little arpeggio
+			s = _notes([[523.0, 0.05], [659.0, 0.05], [784.0, 0.05], [1047.0, 0.16]], 0.2, 0.25)
+		"hurt":      # rancher loses a heart
+			s = _notes([[420.0, 0.05], [300.0, 0.06], [180.0, 0.12]], 0.3, 0.5)
+		"possessed":    # a human turns: eerie falling warble
+			var n := int(rate * 0.4)
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += (lerpf(520.0, 220.0, u) + sin(u * 60.0) * 30.0) / rate
+				s.append((1.0 if fmod(ph, 1.0) < 0.5 else -1.0) * 0.14 * (1.0 - u))
+		"karen":     # Karen forms: angry buzz
+			var n := int(rate * 0.45)
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += (130.0 + sin(u * 70.0) * 18.0) / rate
+				s.append((fmod(ph, 1.0) * 2.0 - 1.0) * 0.22 * (1.0 - u * 0.7))
+		"pickup":    # power-up collected
+			s = _notes([[988.0, 0.05], [1319.0, 0.05], [1568.0, 0.12]], 0.2, 0.25)
+		"rec_start":    # camcorder REC: double beep
+			s = _notes([[1568.0, 0.05], [0.0, 0.03], [1568.0, 0.07]], 0.13, 0.5)
+		"rec_stop":
+			s = _notes([[1175.0, 0.08]], 0.11, 0.5)
+		"rec_tick":     # soft tick every second while recording
+			s = _notes([[2093.0, 0.018]], 0.07, 0.5)
+		"swing":     # camcorder swing: low whoosh + thump
+			var n := int(rate * 0.24)
+			var lp := 0.0
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				lp = lerpf(lp, rng.randf_range(-1.0, 1.0), 0.05 + 0.1 * u)
+				ph += TAU * 90.0 / rate
+				var thump := sin(ph) * 0.7 * maxf(0.0, (u - 0.55) / 0.45) * pow(1.0 - u, 0.5) * 2.0
+				s.append(lp * 2.2 * sin(u * PI) * 0.5 + thump * 0.5)
+		"no_battery":
+			s = _notes([[220.0, 0.1], [0.0, 0.04], [165.0, 0.16]], 0.18, 0.5)
+		"viral":     # filmed Karen goes viral
+			s = _notes([[659.0, 0.05], [784.0, 0.05], [988.0, 0.05], [1319.0, 0.05], [1568.0, 0.2]], 0.18, 0.25)
+		"click":     # UI click
+			s = _notes([[1250.0, 0.018], [820.0, 0.025]], 0.16, 0.5)
+		"start":     # START / NEXT LEVEL
+			s = _notes([[523.0, 0.05], [784.0, 0.05], [1047.0, 0.12]], 0.18, 0.5)
+		"swap":      # weapon swap
+			s = _notes([[660.0, 0.03], [990.0, 0.045]], 0.12, 0.25)
+		"win":       # round won stinger
+			s = _notes([[523.0, 0.11], [659.0, 0.11], [784.0, 0.11], [1047.0, 0.26], [0.0, 0.05], [988.0, 0.1], [1047.0, 0.5]], 0.2, 0.5)
+		"lose":      # game over stinger
+			s = _notes([[392.0, 0.2], [330.0, 0.2], [262.0, 0.2], [0.0, 0.05], [196.0, 0.6]], 0.2, 0.5)
+		"shield":    # boss PHOTO OP shimmer
+			s = _notes([[1568.0, 0.03], [2093.0, 0.03], [1568.0, 0.03], [2093.0, 0.03], [1760.0, 0.03], [2349.0, 0.06]], 0.1, 0.5)
+		"contact":   # rancher bumps into the boss
+			s = _notes([[300.0, 0.04], [150.0, 0.1]], 0.3, 0.5)
 		_:
 			s = _notes([[880.0, 0.05]])
 	var w := _wav(s, rate)
@@ -109,15 +222,55 @@ static func get_sound(sound_name: String) -> AudioStreamWAV:
 	return w
 
 
-## One-shot sound on `parent` (frees itself). Silently does nothing headless.
+## Build 015b: start / stop the background music through the GameAudio
+## autoload (no-op when it isn't there, e.g. tool scripts).
+static func music(node: Node, track: String) -> void:
+	if node == null or not node.is_inside_tree():
+		return
+	var ga := node.get_tree().root.get_node_or_null("GameAudio")
+	if ga == null:
+		return
+	if track == "":
+		ga.stop_music()
+	else:
+		ga.play_music(track)
+
+
+## Build 015b: per-sound limits so a burst (10 poutine splats, a shockwave
+## popping 6 sheep) doesn't stack into a wall of noise.
+const MIN_INTERVAL_MS := 35
+const MAX_VOICES := 4
+static var _last_ms: Dictionary = {}
+static var _voices: Dictionary = {}
+## Tests: how many one-shots have actually started, by name.
+static var played: Dictionary = {}
+
+
+## One-shot sound (frees itself), on the "SFX" bus. Build 015b: players live
+## under the GameAudio autoload when it exists, so a sound isn't cut off when
+## the node that triggered it is freed or the scene changes.
 static func play(parent: Node, sound_name: String, volume_db: float = -10.0, pitch: float = 1.0) -> void:
 	if parent == null or not parent.is_inside_tree():
 		return
+	var now := Time.get_ticks_msec()
+	if now - int(_last_ms.get(sound_name, -100000)) < MIN_INTERVAL_MS:
+		return
+	if int(_voices.get(sound_name, 0)) >= MAX_VOICES:
+		return
+	_last_ms[sound_name] = now
+	var host: Node = parent.get_tree().root.get_node_or_null("GameAudio")
+	if host == null:
+		host = parent
 	var p := AudioStreamPlayer.new()
 	p.stream = get_sound(sound_name)
 	p.volume_db = volume_db
 	p.pitch_scale = pitch
+	p.bus = "SFX" if AudioServer.get_bus_index("SFX") >= 0 else "Master"
 	p.process_mode = Node.PROCESS_MODE_ALWAYS
-	parent.add_child(p)
-	p.finished.connect(p.queue_free)
+	host.add_child(p)
+	_voices[sound_name] = int(_voices.get(sound_name, 0)) + 1
+	played[sound_name] = int(played.get(sound_name, 0)) + 1
+	p.finished.connect(func() -> void:
+		_voices[sound_name] = maxi(int(_voices.get(sound_name, 1)) - 1, 0)
+		p.queue_free())
 	p.play()

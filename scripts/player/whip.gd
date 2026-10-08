@@ -126,6 +126,7 @@ func fire_whip() -> void:
 
 	_crack_age = 0.0
 	_spark_sent_crack = false
+	Sfx.play(self, "crack_fire" if has_power("fire_whip") else "crack", -7.0, randf_range(0.94, 1.08))
 	_apply_crack_powerups(owner_position, direction, target)
 
 
@@ -170,7 +171,9 @@ func _apply_crack_powerups(owner_position: Vector2, direction: Vector2, target: 
 				if c is Node2D and (c as Node2D).global_position.distance_to(tip) <= LevelConfig.FIRE_IGNITE_RADIUS:
 					Burn.ignite(c)
 	if has_power("shockwave"):
-		for group in ["possessed", "sheep", "boss"]:
+		# Build 015b: the boss is no longer in the splash list; a shockwave crack
+		# only hurts him when the lash itself connects (target above).
+		for group in ["possessed", "sheep"]:
 			for c in get_tree().get_nodes_in_group(group):
 				if c == target or not c is Node2D or not is_instance_valid(c):
 					continue
@@ -179,6 +182,7 @@ func _apply_crack_powerups(owner_position: Vector2, direction: Vector2, target: 
 				if (c as Node2D).global_position.distance_to(tip) <= LevelConfig.SHOCKWAVE_RADIUS and c.has_method("receive_whip"):
 					c.receive_whip(owner_position, whip_force)
 		_spawn_fx(ShockRing.new(), tip)
+		Sfx.play(self, "shock", -6.0)
 	if has_power("whip_shot"):
 		var shot := WhipShot.new()
 		shot.direction = direction.normalized()
@@ -191,6 +195,7 @@ func _apply_crack_powerups(owner_position: Vector2, direction: Vector2, target: 
 		if parent != null:
 			parent.add_child(shot)
 			shot.global_position = owner_position + shot.direction * 24.0
+			Sfx.play(self, "shot", -10.0)
 	# Build 014: fire and shockwave are charges (one per crack).
 	var pu := power_ups()
 	if pu != null and pu.has_method("on_whip_crack"):
@@ -263,10 +268,12 @@ func fire_grab_throw() -> void:
 		player.begin_grab_ghost(GRAB_TIME)
 
 	var target := assist if assist != null else find_target(owner_position, mouse_position, direction)
+	Sfx.play(self, "grab", -10.0)
 	if target != null:
 		grab_end = target.global_position
 		if target.has_method("receive_throw"):
 			target.receive_throw(throw_direction, throw_force)
+			Sfx.play(self, "throw", -9.0, 1.1)
 
 	_grab_age = 0.0
 	_spark_sent_grab = false

@@ -179,6 +179,7 @@ func _ready() -> void:
 
 	state.mark_setup_complete()
 	_refresh_hud()
+	Sfx.music(self, "level")   # build 015b
 
 	# Wait until physics transforms match placed positions, then unlock rescues.
 	_unlock_rescues_after_physics.call_deferred()
@@ -437,6 +438,7 @@ func request_retry() -> void:
 	if _transitioning:
 		return
 	_transitioning = true
+	Sfx.play(self, "start", -8.0)
 	var progress := _progress()
 	if progress != null and progress.has_method("restore_level_start_score"):
 		progress.restore_level_start_score()
@@ -449,6 +451,7 @@ func request_next_level() -> void:
 	if _transitioning or not state.is_won:
 		return
 	_transitioning = true
+	Sfx.play(self, "start", -8.0)
 	var progress := get_node_or_null("/root/GameProgress")
 	# Build 015: clearing level BOSS_AFTER_LEVEL leads into the boss fight.
 	if GameProgressCheck.boss_follows(level_number) and progress != null and progress.has_method("enter_boss"):
@@ -461,6 +464,7 @@ func request_next_level() -> void:
 
 
 func _on_human_rescued(human: Node = null) -> void:
+	Sfx.play(self, "save", -6.0)
 	if _scoring_open():
 		_award(POINTS_RESCUE, _pos_of(human), Color(0.55, 1.0, 0.45))
 	state.add_rescue()
@@ -471,16 +475,19 @@ func _on_human_killed() -> void:
 
 
 func _on_human_possessed() -> void:
+	Sfx.play(self, "possessed", -9.0)
 	state.add_possession()
 
 
 func _on_human_possession_saved(human: Node = null) -> void:
+	Sfx.play(self, "save_possessed", -6.0)
 	if _scoring_open():
 		_award(POINTS_RESCUE, _pos_of(human), Color(0.55, 1.0, 0.45))
 	state.add_possession_save()
 
 
 func _on_human_destroyed(was_possessed_then: bool, human: Node = null) -> void:
+	Sfx.play(self, "explode", -7.0, randf_range(0.9, 1.1))
 	if not was_possessed_then or not _scoring_open():
 		return
 	var pos := _pos_of(human)
@@ -496,6 +503,7 @@ func _on_human_destroyed(was_possessed_then: bool, human: Node = null) -> void:
 
 
 func _on_sheep_killed(sheep: Node = null) -> void:
+	Sfx.play(self, "explode", -7.0, randf_range(0.95, 1.2))
 	if not _scoring_open():
 		return
 	var pos := _pos_of(sheep)
@@ -550,6 +558,7 @@ func _on_became_karen(human: Node = null) -> void:
 	var now := Time.get_ticks_msec()
 	if human != null and is_instance_valid(human) and now - _karen_popup_ms > 600:
 		_karen_popup_ms = now
+		Sfx.play(self, "karen", -8.0)
 		spawn_score_popup("KAREN!", (human as Node2D).global_position, Color(1.0, 0.45, 0.8), 2)
 	_refresh_live_counts()
 
@@ -606,6 +615,7 @@ func _on_pickup_collected(kind: String, pickup: Node2D) -> void:
 	if _ended or power_ups == null:
 		return
 	powerups_collected += 1
+	Sfx.play(self, "pickup", -6.0)
 	var note: String = power_ups.grant(kind)
 	var col: Color = PowerUp.PLATE.get(kind, Color.WHITE).lightened(0.35)
 	if kind == "msm_cam" or kind == "battery":
@@ -620,6 +630,7 @@ func _on_pickup_collected(kind: String, pickup: Node2D) -> void:
 
 func _on_cam_viral(humans: int) -> void:
 	virals += 1
+	Sfx.play(self, "viral", -6.0)
 	if hud and hud.has_method("show_callout"):
 		hud.show_callout("VIRAL!", "KARENS EXPOSED! %d HUMANS RUN FOR SAFETY" % humans if humans != 1 else "KARENS EXPOSED! 1 HUMAN RUNS FOR SAFETY")
 	var p := get_node_or_null("Entities/Player") as Node2D
@@ -791,6 +802,7 @@ func _on_won() -> void:
 	clear_bonus = CLEAR_BONUS_FLAT + CLEAR_BONUS_PER_SURVIVOR * survivors_at_win
 	level_points_bonus_award()
 	_finish_round()
+	Sfx.play(self, "win", -6.0)
 	if hud and hud.has_method("show_end"):
 		hud.show_end(
 			true,
@@ -809,6 +821,7 @@ func level_points_bonus_award() -> void:
 func _on_lost(reason: String) -> void:
 	_ended = true
 	_finish_round()
+	Sfx.play(self, "lose", -6.0)
 	if hud and hud.has_method("show_end"):
 		hud.show_end(false, reason, score_breakdown())
 
@@ -818,6 +831,7 @@ func _on_lost(reason: String) -> void:
 ## store the high score. HUD, touch controls and score popups keep running.
 func _finish_round() -> void:
 	_stop_spawners()
+	Sfx.music(self, "")   # build 015b: the win / game-over stinger plays alone
 	var progress := _progress()
 	if progress != null and progress.has_method("commit_high_score"):
 		progress.commit_high_score()

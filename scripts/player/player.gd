@@ -174,6 +174,7 @@ func take_damage(amount: int, source_position := Vector2.ZERO) -> void:
 		return
 
 	health -= amount
+	Sfx.play(self, "hurt", -6.0)
 
 	if source_position != Vector2.ZERO:
 		var direction := source_position.direction_to(global_position)

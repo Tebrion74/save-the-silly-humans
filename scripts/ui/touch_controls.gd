@@ -203,6 +203,12 @@ func _on_screen_touch(e: InputEventScreenTouch) -> void:
 	var idx: int = e.index
 
 	if e.pressed:
+		# Build 015b: the HUD speaker icon (sound ON / LOW / OFF).
+		for sb in get_tree().get_nodes_in_group("sound_button"):
+			if sb is Control and sb.has_method("hit_rect") and sb.hit_rect().has_point(pos):
+				sb.toggle()
+				get_viewport().set_input_as_handled()
+				return
 		if _level_ended:
 			# Game over: the only thing a tap can do is hit PLAY AGAIN / NEXT LEVEL.
 			if _play_again_rect().has_point(pos):

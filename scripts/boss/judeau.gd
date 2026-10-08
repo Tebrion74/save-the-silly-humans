@@ -8,10 +8,10 @@ extends CharacterBody2D
 ## (0.6 s) of invulnerability with a white flash + knock-back wobble.
 ## Weapon rules (see README "Build 015"):
 ##   WHIP crack / WHIP SHOT bolt  1 heart
-##   SHOCKWAVE                    1 heart if the crack's tip lands within the
-##                                shockwave radius even when the lash misses
+##   SHOCKWAVE                    015b: no splash damage on him; only a lash
+##                                that actually connects counts (1 heart)
 ##   FIRE WHIP                    +1 heart burn tick BOSS_FIRE_DELAY after the
-##                                crack (once per fire crack, never stacks)
+##                                crack; 015b: at most once per BOSS_FIRE_COOLDOWN
 ##   GRAB                         too heavy to throw: a short tug + stagger
 ##   MSM CAM REC                  he POSES for the camera (no damage): stops,
 ##                                cancels a wind-up, then camera-shy for a while
@@ -21,17 +21,22 @@ extends CharacterBody2D
 ## Attacks escalate with the hearts left (LevelConfig.boss_phase):
 ##   phase 1 (10-8)  single aimed poutine
 ##   phase 2 (7-5)   + 3-way spread
-##   phase 3 (4-3)   + lobbed poutine with a landing-ring telegraph
-##   phase 4 (2-1)   fast 3-shot volley, radial burst of 10, lobs, spreads
-## Every attack starts with a BOSS_WINDUP (0.5 s; 0.42 s in phase 4) wind-up:
+##   phase 3 (4-3)   + 5-way spread, DOUBLE lob (on you + where you're heading),
+##                   lob -> aimed-shot combos
+##   phase 4 (2-1)   5-shot volley, radial burst of 14 with a 2-slot safe lane,
+##                   double lobs, 5-way spreads, lob -> spread combos
+## Every attack starts with a BOSS_WINDUP (0.4 s; 0.32 s in phase 4) wind-up:
 ## arm raised with a poutine, a "!" over his head and the aim line / ring.
+## Build 015b also: contact damage (boss_level.gd), keeps his distance, dashes
+## every 2-3 s, dash-strafes away right after a hit, and a 1.5 s invulnerable
+## PHOTO OP wave when he drops to 5 and to 2 hearts.
 
 signal hearts_changed(hearts: int, maximum: int)
 signal took_hit(source: String)
 signal defeated
 
 const SHEET := preload("res://assets/boss/judeau_96.png")
-enum S { INTRO, MOVE, TELL_DASH, DASH, WINDUP, VOLLEY, RECOVER, POSE, STAGGER, DEFEATED }
+enum S { INTRO, MOVE, TELL_DASH, DASH, WINDUP, VOLLEY, RECOVER, POSE, STAGGER, DEFEATED, PHOTO_OP }
 
 const F_IDLE := 0
 const F_WALK := 2
@@ -59,6 +64,16 @@ var rng := RandomNumberGenerator.new()
 
 var _aim := Vector2.RIGHT
 var _lob_target := Vector2.ZERO
+var _lob_target2 := Vector2.ZERO
+var _radial_off := 0.0
+var _radial_gap_at := 0
+var _combo_next := ""
+var _flee := false
+var _flee_pending := false
+var _fire_cool := 0.0
+var _flee_cool := 0.0
+var _photo_done: Dictionary = {}
+var _shield_quip_ms := -100000
 var _aim_locked := false
 var _gap := 1.2
 var _dash_in := 4.0
@@ -136,6 +151,12 @@ func receive_whip(source_position: Vector2, _force: float = 0.0) -> void:
 
 ## Returns true if a heart was taken (false while invulnerable / defeated).
 func take_hit(amount: int, source: String, from_pos: Vector2) -> bool:
+	if state == S.PHOTO_OP and hearts > 0:
+		var now := Time.get_ticks_msec()
+		if now - _shield_quip_ms > 900:
+			_shield_quip_ms = now
+			_quip(["NO COMMENT!", "SMILE!", "NOT NOW, PRESS!"][rng.randi_range(0, 2)], Color(0.7, 0.95, 1.0))
+		return false
 	if state == S.DEFEATED or hearts <= 0 or invuln > 0.0:
 		return false
 	hearts = maxi(hearts - amount, 0)
@@ -151,7 +172,14 @@ func take_hit(amount: int, source: String, from_pos: Vector2) -> bool:
 		_end_pose()
 	if hearts <= 0:
 		_defeat()
-	elif rng.randf() < 0.45:
+		return true
+	if LevelConfig.BOSS_PHOTO_OP_HEARTS.has(hearts) and not _photo_done.has(hearts):
+		_photo_done[hearts] = true
+		_start_photo_op()
+		return true
+	if _flee_cool <= 0.0:
+		_flee_pending = true
+	if rng.randf() < 0.45:
 		_quip(["SORRY!", "OOF, EH?", "NOT THE HAIR!", "SUNNY WAYS!", "HEY, EASY!"][rng.randi_range(0, 4)], Color(1, 0.9, 0.5))
 	return true
 
@@ -160,8 +188,9 @@ func take_hit(amount: int, source: String, from_pos: Vector2) -> bool:
 func boss_ignite() -> bool:
 	if state == S.DEFEATED:
 		return false
-	if _burn_t < 0.0:
+	if _burn_t < 0.0 and _fire_cool <= 0.0:
 		_burn_t = LevelConfig.BOSS_FIRE_DELAY
+		_fire_cool = LevelConfig.BOSS_FIRE_COOLDOWN
 	return true
 
 
@@ -194,7 +223,7 @@ func receive_throw(direction: Vector2, _force: float) -> void:
 
 ## MSM Cam REC: he can't resist a camera.
 func cam_film(delta: float) -> void:
-	if state == S.DEFEATED or state == S.INTRO:
+	if state == S.DEFEATED or state == S.INTRO or state == S.PHOTO_OP:
 		return
 	_since_filmed = 0.0
 	if state == S.POSE:
@@ -222,9 +251,24 @@ func _end_pose() -> void:
 	_gap = maxf(_gap, 0.7)
 
 
+## 015b PHOTO OP: invulnerable wave for the cameras, no attacks.
+func _start_photo_op() -> void:
+	_cancel_attack()
+	_combo_next = ""
+	_set_state(S.PHOTO_OP)
+	invuln = LevelConfig.BOSS_PHOTO_OP_TIME
+	_flee_pending = true
+	Sfx.play(self, "shield", -8.0)
+	_quip("PHOTO OP!", Color(0.7, 0.95, 1.0))
+
+
+func is_photo_op() -> bool:
+	return state == S.PHOTO_OP
+
+
 func _interrupt(t: float) -> void:
 	var attacking := state == S.WINDUP or state == S.VOLLEY
-	if state == S.INTRO or state == S.DEFEATED:
+	if state == S.INTRO or state == S.DEFEATED or state == S.PHOTO_OP:
 		return
 	if attacking and _interrupt_cool > 0.0:
 		return   # super armour: the push still lands, the attack doesn't stop
@@ -238,6 +282,7 @@ func _interrupt(t: float) -> void:
 
 
 func _cancel_attack() -> void:
+	_combo_next = ""
 	attack = ""
 	_volley_left = 0
 	_aim_locked = false
@@ -277,6 +322,8 @@ func _physics_process(delta: float) -> void:
 	_wobble = maxf(_wobble - delta * 2.5, 0.0)
 	_pose_cool = maxf(_pose_cool - delta, 0.0)
 	_interrupt_cool = maxf(_interrupt_cool - delta, 0.0)
+	_fire_cool = maxf(_fire_cool - delta, 0.0)
+	_flee_cool = maxf(_flee_cool - delta, 0.0)
 	_since_filmed += delta
 	if _burn_t >= 0.0:
 		_burn_t -= delta
@@ -337,7 +384,18 @@ func _think(delta: float, p: Node2D) -> Vector2:
 			if _strafe_flip <= 0.0:
 				_strafe_flip = rng.randf_range(2.0, 4.0)
 				_strafe_sign = -_strafe_sign
+			if _flee_pending:
+				_flee_pending = false
+				_flee = true
+				_set_state(S.TELL_DASH)
+				return Vector2.ZERO
+			if _combo_next != "":
+				var k := _combo_next
+				_combo_next = ""
+				_start_windup(p, k)
+				return Vector2.ZERO
 			if _dash_in <= 0.0 and _gap > 0.5:
+				_flee = false
 				_set_state(S.TELL_DASH)
 				return Vector2.ZERO
 			if _gap <= 0.0:
@@ -348,28 +406,43 @@ func _think(delta: float, p: Node2D) -> Vector2:
 			if dist > LevelConfig.BOSS_PREF_DIST + 60.0:
 				return (radial * 0.8 + tangent * 0.5).normalized() * spd
 			if dist < LevelConfig.BOSS_RETREAT_DIST:
-				return (-radial * 0.9 + tangent * 0.4).normalized() * spd * 1.1
+				return (-radial * 0.9 + tangent * 0.4).normalized() * spd * LevelConfig.BOSS_RETREAT_MULT
 			return (tangent + radial * clampf((dist - LevelConfig.BOSS_PREF_DIST) / 120.0, -0.6, 0.6)).normalized() * spd
 		S.TELL_DASH:
-			if state_t >= LevelConfig.BOSS_DASH_TELL:
+			_gap -= delta
+			if state_t >= (LevelConfig.BOSS_FLEE_TELL if _flee else LevelConfig.BOSS_DASH_TELL):
 				var side := radial.orthogonal() * (1.0 if rng.randf() < 0.5 else -1.0)
 				var dir := (side + radial * (0.35 if dist > LevelConfig.BOSS_PREF_DIST else -0.35)).normalized()
+				if _flee:   # dash-strafe away from the rancher after a hit
+					dir = (side * 0.75 - radial * 0.75).normalized()
 				# stay inside the arena: flip if the dash would hit a side
 				var dest := global_position + dir * LevelConfig.BOSS_DASH_SPEED * LevelConfig.BOSS_DASH_TIME
 				if not arena.grow(-20.0).has_point(dest):
-					dir = -dir
+					dir = Vector2(-dir.x, dir.y) if _flee else -dir
+					dest = global_position + dir * LevelConfig.BOSS_DASH_SPEED * LevelConfig.BOSS_DASH_TIME
+					if _flee and not arena.grow(-20.0).has_point(dest):
+						dir = (side * 0.6 - radial * 0.3).normalized()
+					if _flee and not arena.grow(-20.0).has_point(global_position + dir * LevelConfig.BOSS_DASH_SPEED * LevelConfig.BOSS_DASH_TIME):
+						dir = -side
 				_dash_vel = dir * LevelConfig.BOSS_DASH_SPEED
 				_set_state(S.DASH)
 				_spawn_dust()
 			return Vector2.ZERO
 		S.DASH:
+			_gap -= delta
 			if state_t >= LevelConfig.BOSS_DASH_TIME:
 				_set_state(S.MOVE)
 				_dash_in = rng.randf_range(LevelConfig.BOSS_DASH_EVERY.x, LevelConfig.BOSS_DASH_EVERY.y)
-				_gap = maxf(_gap, 0.35)
+				if _flee:
+					# 015b: dash away, then answer at once (counter-throw)
+					_flee_cool = LevelConfig.BOSS_FLEE_COOLDOWN
+					_gap = minf(_gap, LevelConfig.BOSS_COUNTER_GAP)
+				else:
+					_gap = maxf(_gap, 0.35)
+				_flee = false
 			return _dash_vel
 		S.WINDUP:
-			var wind := LevelConfig.BOSS_WINDUP_RAGE if phase() >= 4 else LevelConfig.BOSS_WINDUP
+			var wind := wind_time()
 			if not _aim_locked and attack != "lob":
 				_aim = radial
 				if state_t >= wind - 0.15:
@@ -399,7 +472,16 @@ func _think(delta: float, p: Node2D) -> Vector2:
 				_set_state(S.MOVE)
 				_gap = maxf(_gap, 0.6)
 			return Vector2.ZERO
+		S.PHOTO_OP:
+			if state_t >= LevelConfig.BOSS_PHOTO_OP_TIME:
+				_set_state(S.MOVE)
+				_gap = maxf(_gap, 0.4)
+			return Vector2.ZERO
 	return Vector2.ZERO
+
+
+func wind_time() -> float:
+	return LevelConfig.BOSS_WINDUP_RAGE if phase() >= 4 else LevelConfig.BOSS_WINDUP
 
 
 func choose_attack() -> String:
@@ -407,7 +489,7 @@ func choose_attack() -> String:
 	match phase():
 		1: w = {"single": 1}
 		2: w = {"single": 40, "spread": 60}
-		3: w = {"single": 20, "spread": 35, "lob": 45}
+		3: w = {"single": 25, "spread": 40, "lob": 35}
 		_: w = {"volley": 30, "radial": 30, "lob": 25, "spread": 15}
 	if _last_attack == "radial" and w.has("radial") and w.size() > 1:
 		w.erase("radial")
@@ -427,6 +509,10 @@ func _start_windup(p: Node2D, forced: String = "") -> void:
 	_aim = global_position.direction_to(p.global_position)
 	_aim_locked = false
 	_lob_target = p.global_position
+	_lob_target2 = _second_lob_target(p)
+	var n := LevelConfig.POUTINE_RADIAL_COUNT
+	_radial_off = rng.randf() * TAU / n
+	_radial_gap_at = rng.randi_range(0, n - 1)
 	_set_state(S.WINDUP)
 	Sfx.play(self, "windup", -14.0)
 
@@ -438,6 +524,51 @@ func force_attack(kind: String) -> void:
 		_start_windup(p, kind)
 
 
+## 015b double lob: the 2nd ring leads the rancher's movement (or sits beside
+## the 1st ring when standing still), at least POUTINE_LOB_PAIR_MIN away.
+func _second_lob_target(p: Node2D) -> Vector2:
+	var t1 := p.global_position
+	var v: Vector2 = p.velocity if "velocity" in p else Vector2.ZERO
+	var t2 := _clamp_to_arena(t1 + v * LevelConfig.POUTINE_LOB_LEAD)
+	if t2.distance_to(t1) >= LevelConfig.POUTINE_LOB_PAIR_MIN:
+		return t2
+	# standing still / pinned at a wall: put the 2nd ring beside the 1st
+	var side := global_position.direction_to(t1).orthogonal()
+	if side == Vector2.ZERO:
+		side = Vector2.RIGHT
+	var sgn := 1.0 if rng.randf() < 0.5 else -1.0
+	var off := LevelConfig.POUTINE_LOB_PAIR_MIN + 20.0
+	for s in [sgn, -sgn]:
+		t2 = _clamp_to_arena(t1 + side * off * s)
+		if t2.distance_to(t1) >= LevelConfig.POUTINE_LOB_PAIR_MIN:
+			return t2
+	# corner: drop it toward the arena centre instead
+	return _clamp_to_arena(t1 + t1.direction_to(arena.get_center()) * off)
+
+
+func _clamp_to_arena(v: Vector2) -> Vector2:
+	return Vector2(clampf(v.x, arena.position.x, arena.end.x), clampf(v.y, arena.position.y, arena.end.y))
+
+
+func spread_angles() -> Array:
+	if phase() >= 3:
+		var d := LevelConfig.POUTINE_SPREAD5_DEG
+		return [-2.0 * d, -d, 0.0, d, 2.0 * d]
+	return [-LevelConfig.POUTINE_SPREAD_DEG, 0.0, LevelConfig.POUTINE_SPREAD_DEG]
+
+
+## Radial slots that will fire (the gap slots are skipped).
+func radial_dirs() -> Array:
+	var n := LevelConfig.POUTINE_RADIAL_COUNT
+	var out: Array = []
+	for i in n:
+		var rel := (i - _radial_gap_at + n) % n
+		if rel < LevelConfig.POUTINE_RADIAL_GAP:
+			continue
+		out.append(Vector2.from_angle(_radial_off + TAU * i / n))
+	return out
+
+
 func _fire(p: Node2D) -> void:
 	_last_attack = attack
 	attacks_fired[attack] = int(attacks_fired.get(attack, 0)) + 1
@@ -446,15 +577,17 @@ func _fire(p: Node2D) -> void:
 		"single":
 			_throw_one(_aim, LevelConfig.POUTINE_SPEED)
 		"spread":
-			for deg in [-LevelConfig.POUTINE_SPREAD_DEG, 0.0, LevelConfig.POUTINE_SPREAD_DEG]:
+			for deg in spread_angles():
 				_throw_one(_aim.rotated(deg_to_rad(deg)), LevelConfig.POUTINE_SPREAD_SPEED)
 		"lob":
 			_lob(_lob_target)
+			if phase() >= 3:
+				_lob(_lob_target2)
+				if rng.randf() < float(LevelConfig.BOSS_COMBO_CHANCE[phase() - 1]):
+					_combo_next = "spread" if phase() >= 4 else "single"
 		"radial":
-			var n := LevelConfig.POUTINE_RADIAL_COUNT
-			var off := rng.randf() * TAU / n
-			for i in n:
-				_throw_one(Vector2.from_angle(off + TAU * i / n), LevelConfig.POUTINE_RADIAL_SPEED)
+			for d in radial_dirs():
+				_throw_one(d, LevelConfig.POUTINE_RADIAL_SPEED)
 		"volley":
 			_volley_left = LevelConfig.POUTINE_VOLLEY_COUNT
 			_volley_t = 0.0
@@ -467,6 +600,8 @@ func _after_attack() -> void:
 	attack = ""
 	_set_state(S.RECOVER)
 	_gap = float(LevelConfig.BOSS_ATTACK_GAP[phase() - 1])
+	if _combo_next != "":
+		_gap = 0.0
 
 
 func _quip_throw() -> void:
@@ -535,8 +670,8 @@ func _animate() -> void:
 			_spr.scale = Vector2(0.92, 1.06)
 		S.WINDUP, S.VOLLEY:
 			f = F_WINDUP
-		S.POSE:
-			f = F_POSE
+		S.POSE, S.PHOTO_OP:
+			f = F_POSE if state == S.POSE or fmod(state_t, 0.5) < 0.32 else F_IDLE
 		S.STAGGER:
 			f = F_HURT
 		S.DEFEATED:
@@ -554,7 +689,9 @@ func _animate() -> void:
 		if state_t < 0.45:
 			_spr.position.y -= sin(state_t / 0.45 * PI) * 30.0
 	_spr.rotation = wob
-	if invuln > 0.0 and state != S.DEFEATED:
+	if state == S.PHOTO_OP:
+		_spr.modulate = Color(1.1, 1.2, 1.35)
+	elif invuln > 0.0 and state != S.DEFEATED:
 		_spr.modulate = Color(3.0, 3.0, 3.0, 1.0) if fmod(invuln, 0.12) > 0.06 else Color(1, 1, 1, 0.75)
 	elif state == S.POSE:
 		_spr.modulate = Color(1.15, 1.15, 1.15)
@@ -565,22 +702,27 @@ func _animate() -> void:
 func _draw() -> void:
 	# wind-up telegraphs (in local space; drawn behind the sprite)
 	if state == S.WINDUP:
-		var wind := LevelConfig.BOSS_WINDUP_RAGE if phase() >= 4 else LevelConfig.BOSS_WINDUP
+		var wind := wind_time()
 		var k := clampf(state_t / wind, 0.0, 1.0)
 		var col := Color(1.0, 0.3, 0.2, 0.35 + 0.5 * k)
 		match attack:
 			"single", "volley":
 				_dash_line(Vector2.ZERO, _aim * (170.0 + 60.0 * k), col, 3.0)
 			"spread":
-				for deg in [-LevelConfig.POUTINE_SPREAD_DEG, 0.0, LevelConfig.POUTINE_SPREAD_DEG]:
+				for deg in spread_angles():
 					_dash_line(Vector2.ZERO, _aim.rotated(deg_to_rad(deg)) * (150.0 + 50.0 * k), col, 2.5)
 			"lob":
-				var lt := to_local(_lob_target)
 				var r := LevelConfig.POUTINE_LOB_RADIUS
-				_ring(lt, Vector2(r, r * 0.55), col, 3.0)
+				_ring(to_local(_lob_target), Vector2(r, r * 0.55), col, 3.0)
+				if phase() >= 3:
+					_ring(to_local(_lob_target2), Vector2(r, r * 0.55), col, 3.0)
 			"radial":
 				var rr := 40.0 + 80.0 * k
 				_ring(Vector2.ZERO, Vector2(rr, rr * 0.55), col, 3.0)
+				# one short spoke per poutine; the empty slots are the safe lane
+				for d in radial_dirs():
+					var dd: Vector2 = d * Vector2(1.0, 0.55)
+					draw_line(dd * rr, dd * (rr + 26.0), col, 3.0)
 		# "!" over his head
 		var bang := Vector2(0, -122 - 3.0 * sin(_t * 20.0))
 		draw_rect(Rect2(bang + Vector2(-5, -18), Vector2(10, 26)), Color(0.06, 0.03, 0.08))
@@ -588,6 +730,15 @@ func _draw() -> void:
 		draw_rect(Rect2(bang + Vector2(-3, 1), Vector2(6, 5)), Color(1.0, 0.85, 0.2))
 	if state == S.TELL_DASH:
 		_ring(Vector2(0, 2), Vector2(30, 10), Color(1, 1, 1, 0.5), 2.0)
+	if state == S.PHOTO_OP:
+		# shimmering "photo op" shield: whips bounce off
+		var a := 0.35 + 0.2 * sin(_t * 14.0)
+		_ring(Vector2(0, -46), Vector2(48, 64), Color(0.6, 0.9, 1.0, a + 0.3), 3.0)
+		_ring(Vector2(0, -46), Vector2(42, 57), Color(1, 1, 1, a), 2.0)
+		for i in 3:
+			var c := Vector2(cos(_t * 4.0 + i * 2.1) * 40.0, -60.0 + sin(_t * 5.0 + i) * 40.0)
+			draw_line(c - Vector2(6, 0), c + Vector2(6, 0), Color(1, 1, 0.8, 0.9), 2.0)
+			draw_line(c - Vector2(0, 6), c + Vector2(0, 6), Color(1, 1, 0.8, 0.9), 2.0)
 	if state == S.POSE:
 		# camera flash sparkles
 		for i in 4:
