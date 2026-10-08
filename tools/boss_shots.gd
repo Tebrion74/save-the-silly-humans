@@ -23,7 +23,10 @@ func _run() -> void:
 		# build 016: "huval*" -> boss 2, "bonus*" -> bonus stage, else Trustin
 		var sc := String(gp.debug_scenario)
 		var scene := ""
-		if sc.begins_with("huval"):
+		if sc.begins_with("cantifa"):
+			gp.current_level = 4
+			scene = "res://scenes/Main.tscn"
+		elif sc.begins_with("huval"):
 			scene = gp.start_at_stage("boss2")
 		elif sc.begins_with("bonus"):
 			var n := 1

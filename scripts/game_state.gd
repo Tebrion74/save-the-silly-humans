@@ -31,6 +31,8 @@ var sheep_killed: int = 0
 var possessed_destroyed: int = 0
 ## Build 013: Karens destroyed (subset of possessed_destroyed, +100 each).
 var karens_destroyed: int = 0
+## Build 017: human spawn rolls that arrived as Cantifa instead (not saveable).
+var cantifa_slots: int = 0
 ## Humans in this round (initial + camp). Build 010: 20.
 var total_humans: int = 0
 ## Humans generated so far this round (initial placement + camp spawns).
@@ -59,6 +61,7 @@ func reset() -> void:
 	sheep_killed = 0
 	possessed_destroyed = 0
 	karens_destroyed = 0
+	cantifa_slots = 0
 	total_humans = 0
 	spawned_humans = 0
 	target_rescued = 1
@@ -77,7 +80,7 @@ func resolved_humans() -> int:
 
 ## Silly humans generated and still unresolved (in the field).
 func living_silly() -> int:
-	return maxi(spawned_humans - resolved_humans(), 0)
+	return maxi(spawned_humans - resolved_humans() - cantifa_slots, 0)
 
 
 func living_uncounted() -> int:
@@ -91,7 +94,27 @@ func humans_left_to_arrive() -> int:
 
 ## Build 012: best case saves still reachable this round.
 func max_possible_saves() -> int:
-	return maxi(total_humans - dead_humans - possessed_destroyed, 0)
+	return maxi(total_humans - dead_humans - possessed_destroyed - cantifa_slots, 0)
+
+
+## Build 017: a camp arrival was a Cantifa instead of a human. Counts as
+## generated (the round still ends) but not as someone who can be saved.
+func note_cantifa_slot() -> bool:
+	if spawned_humans >= total_humans:
+		return false
+	spawned_humans += 1
+	cantifa_slots += 1
+	counts_changed.emit()
+	_check_end()
+	return true
+
+
+## Build 017: one of the humans already placed at round start was a Cantifa.
+## spawned_humans already includes them; this only marks the slot unsavable.
+func convert_initial_to_cantifa() -> void:
+	cantifa_slots += 1
+	counts_changed.emit()
+	_check_end()
 
 
 ## Possessed humans still walking around (savable by throwing them in the zone).
@@ -111,6 +134,7 @@ func mark_setup_complete() -> void:
 func begin_round(total: int, initial: int, target: int, level_number: int) -> void:
 	total_humans = maxi(total, 0)
 	spawned_humans = clampi(initial, 0, total_humans)
+	cantifa_slots = 0
 	target_rescued = target
 	level = level_number
 	rescued_humans = 0
@@ -119,6 +143,7 @@ func begin_round(total: int, initial: int, target: int, level_number: int) -> vo
 	sheep_killed = 0
 	possessed_destroyed = 0
 	karens_destroyed = 0
+	cantifa_slots = 0
 	rescued_changed.emit(rescued_humans, total_humans)
 	dead_changed.emit(dead_humans)
 	possessed_changed.emit(possessed_humans)

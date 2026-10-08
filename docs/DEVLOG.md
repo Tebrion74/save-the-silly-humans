@@ -1,8 +1,8 @@
 # Save The Silly Humans — Development Log
 
-The full build-by-build history of the game, from the first prototype to the current live build. Every build's original source zip is attached to its [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) (tags `build-000-prototype`, `build-001` … `build-016`, including hotfixes 009b–009d).
+The full build-by-build history of the game, from the first prototype to the current live build. Every build's original source zip is attached to its [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) (tags `build-000-prototype`, `build-001` … `build-017`, including hotfixes 009b–009d).
 
-**Playable Web exports** (`web-beta-<build>.zip`) are attached to the releases for **007, 008, 009d and 010 through 016**. To self-host one, unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c; those releases have source only.
+**Playable Web exports** (`web-beta-<build>.zip`) are attached to the releases for **007, 008, 009d and 010 through 017**. To self-host one, unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c; those releases have source only.
 
 Times are Mountain Time (Calgary). Build times come from when each source zip was uploaded; live times are from the deploy notes.
 
@@ -32,6 +32,7 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [015](#build-015) | 2026-10-07 ~22:22 MT | Live | boss battle: Trustin Judeau (between level 2 and level 3) |
 | [015b](#build-015b) | 2026-10-08 ~09:47 MT | Live | boss only after level 2, harder boss, sound and music everywhere |
 | [016](#build-016) | 2026-10-08 ~13:05 MT | Live | Galaga-style bonus stage, boss 2 Huval Yarheyhey |
+| [017](#build-017) | 2026-10-08 ~16:34 MT | Live | Cantifa: posted gunmen, from level 4 |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -1188,7 +1189,7 @@ Screenshots (attached to the source-zip folder, not in the repo): `stsh-build015
 <a id="build-016"></a>
 
 **Date:** 2026-10-08 ~13:05 MT  
-**Status:** **LIVE** 2026-10-08 ~13:23 MT. Current build.
+**Status:** **LIVE** 2026-10-08 ~13:23 MT. Replaced by build 017 at ~16:43 MT.
 
 Everything from 015b, plus the changes below. The in-game label reads `BUILD 016`.
 
@@ -1318,6 +1319,70 @@ Screenshots: `stsh-build016-01-bonus-title.png`, `-02-bonus-waves.png`, `-03-bon
 
 ### Web build
 `web-beta-016/`, exported with the same Web preset (`--export-release`). Cache bust: `index.js?v=016` and `"mainPack":"index.pck?v=016"` (with a matching `fileSizes` entry), so link it as `…/index.html?v=016`. `index.pck` is 3,098,768 bytes (two more PCM music loops). **LIVE** 2026-10-08 ~13:23 MT on https://savethesillyhumans.org/game.php; only `index.pck` and `index.html` changed (the engine `.js`/`.wasm`, audio worklets and icons are byte-identical to 015b). Live `index.pck` sha256 `baa9e6a24f8ee55940926a7031960c762915e9a6f6f54faf2daa06a20cf08d33`. Verified live in headless Chrome: BUILD 016 on the title, B/V/G do nothing, level music plays (peak ≈ 0.23 RMS), no console errors. Before release, the bonus and Huval tracks were checked in a debug web export (≈ 0.17 / 0.18 RMS).
+
+## Build 017: CANTIFA
+<a id="build-017"></a>
+
+**Date:** 2026-10-08 ~16:34 MT  
+**Status:** **LIVE** 2026-10-08 ~16:43 MT. Current build.
+
+Everything from 016, plus the changes below. The in-game label reads `BUILD 017`.
+
+Cartoon black-bloc mob (original art, `tools/gen_cantifa.py`): black hoodie, two eye-holes, red bandana, a little two-colour flag and a blocky rifle. No real likeness. They are **not** Karens and **not** saveable humans.
+
+### When
+Level 4 and on. Level 4 is the first level after Trustin Judeau (L1 → bonus → L2 → Trustin → L3 → **L4**). They do not appear in the bonus stage or in a boss arena.
+
+### Spawn
+1 in 5 human spawn rolls (the 5 humans placed at the start, and every camp arrival) is a Cantifa instead. They walk in from off the map edge. A roll stays a real human when the on-screen cap is full, or when replacing one more human would drop the best-case saves below the level target. That slot is not a death and not someone you can save.
+
+| Level | On-screen cap |
+|---|---|
+| 1–3 | 0 |
+| 4–5 | 3 |
+| 6–7 | 4 |
+| 8–9 | 5 |
+| 10+ | 6 |
+
+### Posts and rifle
+They drift to a free post just outside the safe zone (158 px from the centre; the ring is drawn at 95) or just outside the camp (230 px). They face inward and do not enter either zone (keep-out 120 / 200). Whip one and the others within 260 px scatter for 0.85 s, then re-post.
+
+They only shoot the rancher, only while posted (or while being filmed), and only inside a 70° cone. Range starts at 315 px (1.5× the whip) and grows 12 px per level, cap 420. Wind-up 0.25 s, then a straight tracer at 460 px/s. Spread ±14° at level 4, 0.6° tighter each level, never under ±8°. Cooldown 0.7–0.9 s. A hit costs 1 heart and shares the boss mercy window (0.8 s). Humans, sheep and other Cantifa are ignored.
+
+### Whip, fire, grab
+Not saveable. **2 whip hits** (a shockwave or whip-shot counts) or **1 fire hit** drives them off the map for **75 points**. A grab throws them like any other target; landing in the safe zone does not rescue them. A cam swing only shoves them.
+
+### Cam
+Filming a Cantifa does not convince them; they turn and may shoot back. Silly humans in the cone stampede to the safe zone (the existing VIRAL run). Every Karen becomes angrier than the normal camera buff: ×1.75 speed (camera-love is ×1.35) and a wider zig-zag for 2.5 s, refreshing while the filming continues.
+
+### Power-up drops
+The chance that a kill drops anything is ×1.75. The type weights are unchanged, so the cam and batteries stay rare.
+
+| Source | Was | Now |
+|---|---|---|
+| Sheep | 0.12 | 0.21 |
+| Possessed | 0.22 | 0.385 |
+| Karen | 0.40 | 0.70 |
+
+Weights: health 30, fire 16, long 14, shock 14, shot 14, strong 12, cam 8, battery 5.
+
+### HUD and debug
+A CANTIFA counter from level 4. How to Play has one new line. Debug builds only: **C** on the title starts level 4. Scenarios `cantifa_post`, `cantifa_shoot`, `cantifa_film`. Release builds have no key and no button.
+
+### Tests
+Temporary suite `tools/_test_017.gd` (deleted after the run) passed **36/36**: no Cantifa before level 4, about 1 in 5 (99/500), entry from the map edge, posts held outside both zones, the cap, the save-target safety, bullets hit only the rancher and the mercy window blocks the next, two whips or one fire drives them off and neighbours scatter, filming stampedes humans and enrages Karens.
+
+Survivability bot, 25 s, 6 runs, seed 77 (the rifle numbers were left as designed):
+
+| | Level 4 | Level 6 |
+|---|---|---|
+| average | 0/6 down, 7 hearts lost in total | 1/6 down, 7 hearts |
+| weak | 0/6 down, 4 hearts | 0/6 down, 4 hearts |
+
+Screenshots: `stsh-build017-01-posted.png`, `-02-shooting.png`, `-03-filmed.png`, `-04-howto.png`, `-05-mobile.png`.
+
+### Web build
+`web-beta-017/`, exported with the same Web preset (`--export-release`). Cache bust: `index.js?v=017` and `"mainPack":"index.pck?v=017"` (with a matching `fileSizes` entry), so link it as `…/index.html?v=017`. `index.pck` is 3,124,340 bytes. **LIVE** 2026-10-08 ~16:43 MT on https://savethesillyhumans.org/game.php; only `index.pck` and `index.html` changed (the engine `.js`/`.wasm`, audio worklets and icons are byte-identical to 016). Live `index.pck` sha256 `{sha}`. Verified live in headless Chrome: BUILD 017 on the title, B/V/G/C do nothing, level music plays (peak ≈ 0.23 RMS), no console errors.
 
 ## Appendix: project reference notes
 

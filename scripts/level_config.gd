@@ -78,10 +78,78 @@ const KAREN_BITE_COOLDOWN := 1.0    ## per-Karen bite on silly humans (5 bites =
 const KAREN_SEPARATION := 26.0      ## Karens push apart inside this distance
 const POINTS_KAREN := 100
 
+# ---------------------------------------------------------------- build 017 cantifa
+## CANTIFA: a cartoon black-bloc mob. Not saveable humans. They are not Karens.
+## From level 4 on, 1 in CANTIFA_SPAWN_EVERY human spawn rolls (the 5 placed at
+## the start and every camp arrival) is a Cantifa instead, walking in from off
+## the map. A roll is skipped (a real human arrives) when the on-screen cap is
+## full, or when replacing one more human would drop the best-case saves below
+## the level target. They never spawn in the bonus stage or a boss arena.
+const CANTIFA_MIN_LEVEL := 4
+const CANTIFA_SPAWN_EVERY := 5          ## exactly 1 in 5 rolls
+## On-screen cap: 3 at level 4, +1 every two levels, never more than 6.
+const CANTIFA_CAP_BASE := 3
+const CANTIFA_CAP_MAX := 6
+const CANTIFA_HP := 2                   ## whip / shockwave / shot hits to drive off
+const POINTS_CANTIFA := 75
+## Posts just outside the zones. Safe-zone ring is drawn at 95 px.
+const CANTIFA_SAFE_POST := 158.0        ## px from the safe-zone centre
+const CANTIFA_SAFE_KEEP_OUT := 120.0    ## never walk closer than this
+const CANTIFA_CAMP_POST := 230.0
+const CANTIFA_CAMP_KEEP_OUT := 200.0
+const CANTIFA_POSTS_PER_ZONE := 4
+const CANTIFA_HOLD_DIST := 22.0         ## this close = posted, may shoot
+const CANTIFA_DRIFT_SPEED := 80.0
+const CANTIFA_ARRIVE_SPEED := 130.0
+const CANTIFA_FLEE_SPEED := 220.0
+const CANTIFA_SCATTER_TIME := 0.85
+const CANTIFA_SCATTER_RADIUS := 260.0
+const CANTIFA_SEPARATION := 34.0
+## Rifle. Telegraph, then a straight tracer. Mercy window is the boss one
+## (BOSS_PLAYER_HIT_COOLDOWN) so a burst can't empty the hearts.
+const CANTIFA_TELL := 0.25
+const CANTIFA_COOLDOWN_MIN := 0.70
+const CANTIFA_COOLDOWN_MAX := 0.90
+const CANTIFA_RANGE_L4 := 315.0         ## 1.5 x the 210 px whip
+const CANTIFA_RANGE_PER_LEVEL := 12.0
+const CANTIFA_RANGE_CAP := 420.0
+const CANTIFA_BULLET_SPEED := 460.0
+const CANTIFA_SPREAD_L4 := 14.0         ## +/- degrees, level 4
+const CANTIFA_SPREAD_STEP := 0.6        ## tighter each level after 4
+const CANTIFA_SPREAD_MIN := 8.0
+const CANTIFA_CONE_DEG := 70.0          ## they only fire inside this arc
+const CANTIFA_BULLET_RADIUS := 11.0
+## Filming one: humans in the cone stampede (existing VIRAL run), and Karens
+## get angrier than the normal "Karens love cameras" buff.
+const CANTIFA_RAGE_TIME := 2.5
+const CANTIFA_RAGE_SPEED_MULT := 1.75   ## cam-love is 1.35
+const CANTIFA_RAGE_ZIG_AMP := 1.4
+
+
+static func cantifa_enabled(level: int) -> bool:
+	return level >= CANTIFA_MIN_LEVEL
+
+
+static func cantifa_cap(level: int) -> int:
+	if not cantifa_enabled(level):
+		return 0
+	return mini(CANTIFA_CAP_BASE + (level - CANTIFA_MIN_LEVEL) / 2, CANTIFA_CAP_MAX)
+
+
+static func cantifa_range(level: int) -> float:
+	var lv := maxi(level, CANTIFA_MIN_LEVEL)
+	return minf(CANTIFA_RANGE_L4 + float(lv - CANTIFA_MIN_LEVEL) * CANTIFA_RANGE_PER_LEVEL, CANTIFA_RANGE_CAP)
+
+
+static func cantifa_spread_deg(level: int) -> float:
+	var lv := maxi(level, CANTIFA_MIN_LEVEL)
+	return maxf(CANTIFA_SPREAD_L4 - float(lv - CANTIFA_MIN_LEVEL) * CANTIFA_SPREAD_STEP, CANTIFA_SPREAD_MIN)
+
+
 ## Power-ups: drop chance per kill, weighted type table, lifetimes.
-const DROP_CHANCE_SHEEP := 0.12
-const DROP_CHANCE_POSSESSED := 0.22
-const DROP_CHANCE_KAREN := 0.40
+const DROP_CHANCE_SHEEP := 0.21      ## build 017: was 0.12 (x1.75)
+const DROP_CHANCE_POSSESSED := 0.385  ## build 017: was 0.22 (x1.75)
+const DROP_CHANCE_KAREN := 0.70       ## build 017: was 0.40 (x1.75)
 ## Weights for the type roll (HEALTH is the most common).
 ## Build 014 adds "msm_cam" and "battery"; their weights are adjusted at roll
 ## time (see CAM_* / BATTERY_* below).

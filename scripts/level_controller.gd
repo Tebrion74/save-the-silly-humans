@@ -42,6 +42,10 @@ var _cluster_timer: float = 0.0
 var karens_formed: int = 0
 var powerups_collected: int = 0
 var drop_rng := RandomNumberGenerator.new()
+var cantifa_rng := RandomNumberGenerator.new()
+## Tests: -1 = the level cap, otherwise a forced on-screen cap.
+var cantifa_cap_override := -1
+var _cantifa_posts: Array = []
 ## Tests can force drops: -1 = use the configured chance, 0/1 = never/always.
 var drop_override: float = -1.0
 ## Build 014: MSM Cam + weapon slots (Player children, added in _ready).
@@ -93,6 +97,7 @@ func _ready() -> void:
 	add_child(fx_layer)
 	karens_enabled = LevelConfig.karens_enabled(level_number)
 	drop_rng.randomize()
+	cantifa_rng.randomize()
 	var entities_node := get_node_or_null("Entities")
 	if entities_node != null:
 		pickups_layer = Node2D.new()
@@ -141,6 +146,7 @@ func _ready() -> void:
 	state.begin_round(LevelConfig.ROUND_TOTAL_HUMANS, humans.size(), target_rescued, level_number)
 	for human in humans:
 		_connect_human(human)
+	_roll_initial_cantifa(humans)
 
 	var camp := _camp()
 	if camp != null and camp.has_signal("human_generated"):
@@ -391,7 +397,10 @@ func _check_lost_track() -> void:
 	_lost_track_timer += get_process_delta_time()
 	if _lost_track_timer < 1.0:
 		return
-	var missing := state.total_humans - state.resolved_humans()
+	var missing := state.total_humans - state.resolved_humans() - state.cantifa_slots
+	if missing <= 0:
+		_lost_track_timer = 0.0
+		return
 	push_warning("Round accounting: %d humans unaccounted for; counting as lost" % missing)
 	for i in missing:
 		state.add_human_death()
@@ -664,6 +673,174 @@ func current_score() -> int:
 	return int(progress.score) if progress != null and "score" in progress else level_points
 
 
+# ------------------------------------------------------------------ build 017 cantifa
+
+func cantifa_cap_now() -> int:
+	if cantifa_cap_override >= 0:
+		return cantifa_cap_override
+	return LevelConfig.cantifa_cap(level_number)
+
+
+func cantifa_allowed() -> bool:
+	if is_in_group("bonus_level") or is_in_group("boss_level"):
+		return false
+	return LevelConfig.cantifa_enabled(level_number)
+
+
+func _count_cantifa() -> int:
+	var n := 0
+	for c in get_tree().get_nodes_in_group("cantifa"):
+		if is_instance_valid(c) and not c.is_queued_for_deletion() and not ("fleeing" in c and c.fleeing):
+			n += 1
+	return n
+
+
+## True when this human-spawn roll should be a Cantifa instead.
+func cantifa_roll_replaces() -> bool:
+	if not cantifa_allowed():
+		return false
+	if _count_cantifa() >= cantifa_cap_now():
+		return false
+	if state.max_possible_saves() - 1 < state.target_rescued:
+		return false
+	if state.spawned_humans >= state.total_humans:
+		return false
+	return cantifa_rng.randi() % LevelConfig.CANTIFA_SPAWN_EVERY == 0
+
+
+func _roll_initial_cantifa(humans: Array) -> void:
+	if not cantifa_allowed():
+		return
+	for h in humans:
+		if not is_instance_valid(h):
+			continue
+		if not cantifa_roll_replaces():
+			continue
+		state.convert_initial_to_cantifa()
+		spawn_cantifa_from_edge()
+		h.queue_free()
+
+
+## Camp arrival that came up Cantifa. Caller still consumes the camp's
+## remaining count. Returns true when a Cantifa was spawned.
+func spawn_cantifa_from_roll() -> bool:
+	if not state.note_cantifa_slot():
+		return false
+	spawn_cantifa_from_edge()
+	_refresh_live_counts()
+	return true
+
+
+func spawn_cantifa_from_edge() -> Node:
+	var parent := get_node_or_null("Entities/Humans")
+	if parent == null:
+		parent = get_node_or_null("Entities")
+	var at := _cantifa_edge_point()
+	var c := Cantifa.make(parent, at)
+	c.level = self
+	_assign_cantifa_post(c)
+	c.arriving = true
+	return c
+
+
+func _cantifa_edge_point() -> Vector2:
+	var layer = get_node_or_null("Ground")
+	if layer == null or not layer.has_method("tile_center"):
+		return Vector2.ZERO
+	var w: int = layer.map_width
+	var h: int = layer.map_height
+	var side := cantifa_rng.randi() % 4
+	var cell := Vector2i(2, 2)
+	var along := cantifa_rng.randi_range(6, maxi(w, h) - 7)
+	match side:
+		0:
+			cell = Vector2i(clampi(along, 4, w - 5), 1)
+		1:
+			cell = Vector2i(w - 2, clampi(along, 4, h - 5))
+		2:
+			cell = Vector2i(clampi(along, 4, w - 5), h - 2)
+		_:
+			cell = Vector2i(1, clampi(along, 4, h - 5))
+	return layer.to_global(layer.tile_center(cell))
+
+
+func cantifa_posts() -> Array:
+	if not _cantifa_posts.is_empty():
+		return _cantifa_posts
+	var safe := get_node_or_null("Entities/SafeZone") as Node2D
+	var camp := get_node_or_null("Entities/HumanCamp") as Node2D
+	var layer = get_node_or_null("Ground")
+	if safe != null:
+		_ring_posts(safe.global_position, LevelConfig.CANTIFA_SAFE_POST, camp.global_position if camp != null else Vector2.INF, LevelConfig.CANTIFA_CAMP_KEEP_OUT, layer)
+	if camp != null:
+		_ring_posts(camp.global_position, LevelConfig.CANTIFA_CAMP_POST, safe.global_position if safe != null else Vector2.INF, LevelConfig.CANTIFA_SAFE_KEEP_OUT, layer)
+	return _cantifa_posts
+
+
+func _ring_posts(center: Vector2, radius: float, avoid: Vector2, avoid_r: float, layer) -> void:
+	var n := LevelConfig.CANTIFA_POSTS_PER_ZONE
+	for i in n:
+		var ang := TAU * float(i) / float(n) + 0.4
+		var p: Vector2 = center + Vector2.from_angle(ang) * radius
+		p = _outside(p, avoid, avoid_r + 20.0)
+		if layer != null and layer.has_method("clamp_to_interior"):
+			var local: Vector2 = layer.to_local(p)
+			var cell: Vector2i = layer.local_pos_to_local_cell(local)
+			if not layer.is_interior_local(cell, 2):
+				p = layer.to_global(layer.clamp_to_interior(local, 3))
+		p = _outside(p, center, radius * 0.92)
+		p = _outside(p, avoid, avoid_r + 20.0)
+		if p.distance_to(center) < radius * 0.9:
+			continue
+		if p.distance_to(avoid) < avoid_r:
+			continue
+		var face := p.direction_to(center)
+		if face.length_squared() < 0.01:
+			face = Vector2.DOWN
+		_cantifa_posts.append({"pos": p, "face": face})
+
+
+func _outside(p: Vector2, center: Vector2, dist: float) -> Vector2:
+	var off := p - center
+	if off.length() >= dist:
+		return p
+	var dir := off.normalized() if off.length() > 1.0 else Vector2.RIGHT
+	return center + dir * dist
+
+
+func _assign_cantifa_post(c: Cantifa) -> void:
+	var posts := cantifa_posts()
+	var best: Dictionary = {}
+	var best_d := INF
+	for post in posts:
+		var taken := false
+		for other in get_tree().get_nodes_in_group("cantifa"):
+			if other == c or not is_instance_valid(other):
+				continue
+			if (other as Node2D).global_position.distance_to(post["pos"]) < 28.0 or ("post_pos" in other and (other.post_pos as Vector2).distance_to(post["pos"]) < 8.0):
+				taken = true
+				break
+		if taken:
+			continue
+		var d: float = c.global_position.distance_to(post["pos"])
+		if d < best_d:
+			best_d = d
+			best = post
+	if best.is_empty() and not posts.is_empty():
+		best = posts[cantifa_rng.randi() % posts.size()]
+	if best.is_empty():
+		c.post_pos = c.global_position
+		c.post_face = Vector2.DOWN
+		return
+	c.post_pos = best["pos"]
+	c.post_face = best["face"]
+
+
+func on_cantifa_driven_off(c: Node2D) -> void:
+	_award(LevelConfig.POINTS_CANTIFA, c.global_position, Color(1.0, 0.55, 0.35))
+	_refresh_live_counts()
+
+
 func _award(points: int, world_pos: Vector2, color: Color) -> void:
 	level_points += points
 	var progress := _progress()
@@ -796,6 +973,8 @@ func _refresh_live_counts() -> void:
 		var camp := _camp()
 		var held: bool = camp != null and camp.has_method("held_by_karens") and camp.is_generating() and camp.held_by_karens()
 		hud.set_karens(living_karens(), held)
+	if hud.has_method("set_cantifa"):
+		hud.set_cantifa(_count_cantifa())
 
 
 func _on_won() -> void:

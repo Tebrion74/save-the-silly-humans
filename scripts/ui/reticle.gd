@@ -141,7 +141,7 @@ static func is_whip_target(n: Node) -> bool:
 		return false
 	if "exploding" in n and n.exploding:
 		return false
-	if n.is_in_group("sheep") or n.is_in_group("boss"):
+	if n.is_in_group("sheep") or n.is_in_group("boss") or n.is_in_group("cantifa"):
 		return true
 	return "possessed" in n and bool(n.possessed)
 

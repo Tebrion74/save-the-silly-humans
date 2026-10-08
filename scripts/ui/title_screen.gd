@@ -8,7 +8,7 @@ extends Control
 ## Mouse emulation from touch is off, so touches are hit-tested by hand.
 
 const GAME_SCENE := "res://scenes/Main.tscn"
-const BUILD_LABEL := "BUILD 016"
+const BUILD_LABEL := "BUILD 017"
 const COPYRIGHT := "© 2026 ECHELON PUBLISHERS GROUP"
 const HORIZON := 440.0
 const TITLE_SHADER := preload("res://assets/shaders/title_text.gdshader")
@@ -109,6 +109,10 @@ func _input(event: InputEvent) -> void:
 			# Build 016 (debug builds only): straight to the bonus stage
 			start_stage("bonus")
 			get_viewport().set_input_as_handled()
+		elif OS.is_debug_build() and (k == KEY_C or kc == KEY_C):
+			# Build 017 (debug builds only): level 4, where Cantifa start
+			start_level(4)
+			get_viewport().set_input_as_handled()
 		elif k in [KEY_ESCAPE, KEY_BACKSPACE] or kc in [KEY_ESCAPE, KEY_BACKSPACE]:
 			close_howto()
 			get_viewport().set_input_as_handled()
@@ -193,6 +197,21 @@ func start_boss() -> void:
 
 ## Build 016: debug builds only. B = Trustin, V = Huval, G = bonus stage: a
 ## fresh run starting at that stage (CONTINUE then follows the normal order).
+## Build 017: debug builds only. Jump straight into a level (C = level 4).
+func start_level(n: int) -> void:
+	if not OS.is_debug_build() or _starting:
+		return
+	_starting = true
+	var progress := get_node_or_null("/root/GameProgress")
+	if progress != null:
+		progress.current_level = maxi(n, 1)
+	close_howto()
+	_flash.color = Color(1, 1, 1, 0.0)
+	var tw := create_tween()
+	tw.tween_property(_flash, "color", Color(0, 0, 0, 1.0), 0.15)
+	tw.tween_callback(func() -> void: get_tree().change_scene_to_file(GAME_SCENE))
+
+
 func start_stage(stage: String) -> void:
 	if not OS.is_debug_build():
 		return
@@ -391,7 +410,7 @@ func _menu_button(node_name: String, text: String, font_size: int, bg: Color, bg
 
 const HOWTO_PC := "WASD  —  move   ·   MOUSE  —  aim the reticle\nLEFT CLICK  —  WHIP   ·   cam: hold REC\nRIGHT CLICK  —  GRAB & throw   ·   cam: SWING\nQ / WHEEL / 1-2  —  swap weapon   ·   M  —  sound\nR  —  restart   ·   N / ENTER  —  next level"
 const HOWTO_TOUCH := "JOYSTICK (bottom left)  —  move\nBOTTOM-RIGHT  —  WHIP   ·   cam: hold REC\nTOP-RIGHT  —  GRAB   ·   cam: SWING\nTOP-LEFT  —  swap weapon   ·   SPEAKER  —  sound\nWHIP auto-aims  ·  crosshair = weapon reach"
-const HOWTO_RULES := "• Herd silly humans into the green SAFE ZONE. Throw POSSESSED humans in to save them too.\n• The CAMP sends humans, the SHEEP DEN breeds sheep. Hit the SAVE TARGET; lose if the rancher falls.\n• LEVEL 3+: 4 possessed together become KARENS: they mob you, convert humans, shut the camp.\n• POWER-UPS never time out. Whip mods stay till you grab another. FIRE: 10 lashes. SHOCKWAVE: 3.\n• MSM CAM (rare): hold REC to film a 39° cone. Filmed humans walk to safety; filmed Karens go VIRAL!\n• Filming drains the BATTERY (spares auto-load, carry 3), breeds sheep, and Karens LOVE it.\n• Two moves per weapon: WHIP / GRAB, or MSM CAM REC / SWING (shove + stun, no damage, no battery).\n• SCORE: 200 per human · 50 per sheep or possessed · 100 per Karen. Sheep speed up each level!\n• RETICLE / crosshair turns GREEN when a target's in range (whip reach or cam cone); RED = nothing to hit.\n• BOSSES: TRUSTIN JUDEAU after LEVEL 2, HUVAL YARHEYHEY after LEVEL 5. Don't touch them. Die = retry boss.\n• BONUS STAGE after LEVEL 1, then every 3 levels: pop flying sheep for 45 s. You can't get hurt there!"
+const HOWTO_RULES := "• Herd silly humans into the green SAFE ZONE. Throw POSSESSED humans in to save them too.\n• The CAMP sends humans, the SHEEP DEN breeds sheep. Hit the SAVE TARGET; lose if the rancher falls.\n• LEVEL 3+: 4 possessed together become KARENS: they mob you, convert humans, shut the camp.\n• POWER-UPS never time out. Whip mods stay till you grab another. FIRE: 10 lashes. SHOCKWAVE: 3.\n• MSM CAM (rare): hold REC to film a 39° cone. Filmed humans walk to safety; filmed Karens go VIRAL!\n• Filming drains the BATTERY (spares auto-load, carry 3), breeds sheep, and Karens LOVE it.\n• Two moves per weapon: WHIP / GRAB, or MSM CAM REC / SWING (shove + stun, no damage, no battery).\n• SCORE: 200 per human · 50 per sheep or possessed · 100 per Karen. Sheep speed up each level!\n• RETICLE / crosshair turns GREEN when a target's in range (whip reach or cam cone); RED = nothing to hit.\n• BOSSES: TRUSTIN JUDEAU after LEVEL 2, HUVAL YARHEYHEY after LEVEL 5. Don't touch them. Die = retry boss.\n• BONUS STAGE after LEVEL 1, then every 3 levels: pop flying sheep for 45 s. You can't get hurt there!\n• LEVEL 4+: CANTIFA post outside the zones and shoot. Film: humans run, Karens ENRAGE."
 
 
 func _build_howto() -> void:
@@ -435,8 +454,8 @@ func _build_howto() -> void:
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	howto_panel.add_child(line)
 	howto_panel.add_child(_howto_heading("OBJECTIVE", Vector2(110, 312), Color(1.0, 0.55, 0.12)))
-	var rules := _howto_body(HOWTO_RULES, Vector2(110, 342), Vector2(1060, 250), 16)
-	rules.add_theme_constant_override("line_spacing", -2)
+	var rules := _howto_body(HOWTO_RULES, Vector2(110, 338), Vector2(1060, 248), 15)
+	rules.add_theme_constant_override("line_spacing", -4)
 	rules.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	howto_panel.add_child(rules)
 	back_button = _menu_button("BackButton", "BACK", 30,

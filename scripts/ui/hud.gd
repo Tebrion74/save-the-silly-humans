@@ -35,6 +35,8 @@ var converted_label: Label
 ## Build 013
 var karens_label: Label
 var karens_row: Control
+var cantifa_label: Label
+var cantifa_row: Control
 ## Build 014
 var inventory_panel: InventoryPanel
 var cam_overlay: CamOverlay
@@ -114,6 +116,9 @@ func _ready() -> void:
 	karens_label = _stat_row(_right, "KARENS", "0", 2, 0, true, Color(1.0, 0.45, 0.8))
 	karens_row = karens_label.get_parent()
 	karens_row.visible = false
+	cantifa_label = _stat_row(_right, "CANTIFA", "0", 2, 0, true, Color(1.0, 0.55, 0.28))
+	cantifa_row = cantifa_label.get_parent()
+	cantifa_row.visible = false
 
 	inventory_panel = InventoryPanel.new()
 	inventory_panel.name = "InventoryPanel"
@@ -460,6 +465,7 @@ func set_level_info(level: int, target: int, total: int) -> void:
 	_total = total
 	level_value_label.text = str(level)
 	karens_row.visible = LevelConfig.karens_enabled(level)
+	cantifa_row.visible = LevelConfig.cantifa_enabled(level)
 	level_label.text = "LEVEL %d\nSAVE %d HUMANS" % [level, target]
 	level_label.modulate.a = 1.0
 	var tw := create_tween()
@@ -501,6 +507,15 @@ func _update_arrivals() -> void:
 
 
 ## Build 013: living Karens + whether they are holding the camp.
+func set_cantifa(count: int) -> void:
+	if cantifa_label == null:
+		return
+	cantifa_label.text = str(count)
+	cantifa_label.label_settings.font_color = Color(1.0, 0.55, 0.28) if count > 0 else NUM_COL
+	if count > 0:
+		cantifa_row.visible = true
+
+
 func set_karens(count: int, camp_held: bool) -> void:
 	karens_label.text = str(count)
 	karens_label.label_settings.font_color = Color(1.0, 0.45, 0.8) if count > 0 else NUM_COL

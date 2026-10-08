@@ -166,14 +166,14 @@ func _apply_crack_powerups(owner_position: Vector2, direction: Vector2, target: 
 	if has_power("fire_whip"):
 		if target != null:
 			Burn.ignite(target)
-		for group in ["possessed", "sheep", "boss"]:
+		for group in ["possessed", "sheep", "boss", "cantifa"]:
 			for c in get_tree().get_nodes_in_group(group):
 				if c is Node2D and (c as Node2D).global_position.distance_to(tip) <= LevelConfig.FIRE_IGNITE_RADIUS:
 					Burn.ignite(c)
 	if has_power("shockwave"):
 		# Build 015b: the boss is no longer in the splash list; a shockwave crack
 		# only hurts him when the lash itself connects (target above).
-		for group in ["possessed", "sheep"]:
+		for group in ["possessed", "sheep", "cantifa"]:
 			for c in get_tree().get_nodes_in_group(group):
 				if c == target or not c is Node2D or not is_instance_valid(c):
 					continue

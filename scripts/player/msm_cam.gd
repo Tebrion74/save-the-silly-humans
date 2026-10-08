@@ -296,6 +296,27 @@ func _film(delta: float) -> void:
 		if is_instance_valid(b) and not ("exploding" in b and b.exploding) and in_cone((b as Node2D).global_position) \
 				and b.has_method("cam_film"):
 			b.cam_film(delta)
+	# Build 017: a Cantifa in the cone panics the humans on screen and enrages
+	# every Karen. The Cantifa is not convinced; they turn and may shoot back.
+	var filming_cantifa := false
+	for c in tree.get_nodes_in_group("cantifa"):
+		if not is_instance_valid(c) or not c is Node2D or ("fleeing" in c and c.fleeing):
+			continue
+		if in_cone((c as Node2D).global_position):
+			filming_cantifa = true
+			if c.has_method("note_filmed"):
+				c.note_filmed()
+	if filming_cantifa:
+		for h in tree.get_nodes_in_group("humans"):
+			if not is_instance_valid(h) or not h is Node2D:
+				continue
+			if ("possessed" in h and h.possessed) or ("rescued" in h and h.rescued):
+				continue
+			if in_cone((h as Node2D).global_position) and h.has_method("start_stampede"):
+				h.start_stampede()
+		for k in tree.get_nodes_in_group("karens"):
+			if is_instance_valid(k) and k.has_method("cam_enrage") and not ("exploding" in k and k.exploding):
+				k.cam_enrage()
 	var living := 0
 	for k in tree.get_nodes_in_group("karens"):
 		if not is_instance_valid(k) or k.is_queued_for_deletion() or ("exploding" in k and k.exploding):

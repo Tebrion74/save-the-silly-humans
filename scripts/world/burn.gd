@@ -15,7 +15,7 @@ static func can_burn(node: Node) -> bool:
 		return false
 	if "exploding" in node and node.exploding:
 		return false
-	if node.is_in_group("sheep"):
+	if node.is_in_group("sheep") or node.is_in_group("cantifa"):
 		return true
 	return node.is_in_group("possessed") and "possessed" in node and node.possessed
 
@@ -31,6 +31,10 @@ static func ignite(node: Node) -> bool:
 		return node.boss_ignite()
 	if not can_burn(node):
 		return false
+	# One fire hit drives a Cantifa off immediately (don't wait for a burn tick).
+	if node.is_in_group("cantifa") and node.has_method("fire_damage"):
+		node.fire_damage()
+		return true
 	var b := node.get_node_or_null("Burn") as Burn
 	if b != null:
 		b.time_left = LevelConfig.FIRE_DURATION

@@ -45,6 +45,8 @@ static func run(lvl: Node, scenario: String) -> void:
 	var cam: MsmCam = lvl.cam
 	pu.grant("msm_cam")
 	match scenario:
+		"cantifa_post", "cantifa_shoot", "cantifa_film":
+			_stage_cantifa(lvl, p, scenario)
 		"cam_humans":
 			cam.battery = 13.0
 			pu.spare_batteries = 2
@@ -104,6 +106,78 @@ static func run(lvl: Node, scenario: String) -> void:
 			auto.cam = cam
 			lvl.add_child(auto)
 	pu.changed.emit()
+
+
+
+## Build 017 screenshots. Posts Cantifa just outside the safe zone.
+static func _stage_cantifa(lvl: Node, p: Node2D, scenario: String) -> void:
+	var safe := lvl.get_node_or_null("Entities/SafeZone") as Node2D
+	if safe == null:
+		return
+	p.global_position = safe.global_position + Vector2(-40, -250)
+	p.facing = Vector2.DOWN
+	# park the opening humans so the posts read clearly
+	var hi := 0
+	for h in lvl.get_tree().get_nodes_in_group("humans"):
+		if h is Node2D:
+			(h as Node2D).global_position = safe.global_position + Vector2(-420, -80 + hi * 36)
+			hi += 1
+	var posts: Array = lvl.cantifa_posts()
+	var want := 3
+	var made: Array = []
+	for i in posts.size():
+		if made.size() >= want:
+			break
+		var post: Dictionary = posts[i]
+		if (post["pos"] as Vector2).distance_to(safe.global_position) > 220.0:
+			continue
+		var c: Cantifa = Cantifa.make(lvl.get_node("Entities/Humans"), post["pos"])
+		c.level = lvl
+		c.post_pos = post["pos"]
+		c.post_face = post["face"]
+		c.arriving = false
+		made.append(c)
+	if made.is_empty():
+		return
+	if scenario == "cantifa_shoot":
+		var gun: Cantifa = made[0]
+		var best_d := gun.global_position.distance_to(p.global_position)
+		for c in made:
+			var d: float = (c as Node2D).global_position.distance_to(p.global_position)
+			# the one just outside the zone, not the corner
+			if d < best_d and d > 80.0:
+				best_d = d
+				gun = c
+		gun.windup = 8.0
+		var aim: Vector2 = gun.global_position.direction_to(p.global_position).normalized()
+		var b := CantifaBullet.launch(lvl.get_node("Entities"), gun.global_position + aim * 40.0, aim)
+		b.speed = 0.0
+		b.max_dist = 9999.0
+	if scenario == "cantifa_film":
+		var cam: MsmCam = lvl.cam
+		lvl.power_ups.grant("msm_cam")
+		cam.battery = 16.0
+		# stand so the cone covers a Cantifa and two humans
+		var gun2: Node2D = made[0]
+		p.global_position = gun2.global_position + Vector2(0, -160)
+		p.facing = Vector2.DOWN
+		cam.debug_aim = Vector2.DOWN
+		cam.debug_force_film = true
+		var humans := lvl.get_tree().get_nodes_in_group("humans")
+		for i in mini(3, humans.size()):
+			(humans[i] as Node2D).global_position = gun2.global_position + Vector2(-30 + i * 40, 70)
+		var camp := lvl.get_node_or_null("Entities/HumanCamp")
+		if camp != null:
+			for o in [Vector2(180, 40), Vector2(220, -30)]:
+				var kh = camp.spawn_one(false)
+				if kh == null:
+					break
+				var spr := kh.get_node_or_null("Sprite") as Node2D
+				if spr:
+					spr.scale = Vector2.ONE
+				(kh as Node2D).global_position = p.global_position + o
+				kh._become_possessed()
+				kh.become_karen()
 
 
 static func _park_sheep(lvl: Node, p: Node2D) -> void:

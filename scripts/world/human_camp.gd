@@ -103,11 +103,20 @@ func _process(delta: float) -> void:
 
 
 ## Spawns one human now (also used by tests). Returns it, or null when done.
-func spawn_one() -> Node:
+func spawn_one(allow_cantifa: bool = true) -> Node:
 	if remaining <= 0:
 		_active = false
 		return null
 	var level := get_tree().get_first_node_in_group("level_controller")
+	if allow_cantifa and level != null and level.has_method("cantifa_roll_replaces") and level.cantifa_roll_replaces():
+		if level.spawn_cantifa_from_roll():
+			remaining -= 1
+			generated += 1
+			_timer = 0.0
+			if remaining <= 0:
+				_active = false
+				generation_finished.emit()
+			return null
 	var parent: Node = null
 	if level != null:
 		parent = level.get_node_or_null("Entities/Humans")

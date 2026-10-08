@@ -6,7 +6,7 @@
 
 ▶ **Play it in your browser:** https://savethesillyhumans.org/game.php
 
-Current build: **016** (live: Galaga-style bonus stage, second boss Huval Yarheyhey) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
+Current build: **017** (live: Cantifa, a cartoon black-bloc mob that posts up and shoots) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
 
 Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://www.youtube.com/@SaveTheSillyHumans)
 
@@ -18,6 +18,7 @@ Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://
 - **Killer sheep.** They roam, hunt and bite. A sheep den keeps breeding more.
 - **Possessed humans.** Five bites and a silly human turns into a purple hunter. Explode them, or throw them into the safe zone to save them.
 - **Karens (level 3+).** Four possessed humans together become a Karen mob. They chase you, convert humans and shut down the camp.
+- **Cantifa (level 4+, 017).** A cartoon black-bloc mob, not a Karen and not a person you can save. One in five humans spawned is one instead, walking in from off the map. They post just outside the safe zone and the camp and shoot the rancher (telegraphed, dodgeable). Two whip hits or one fire hit drives them off. Filming one sends humans on camera running for safety and enrages Karens.
 - **MSM Cam.** A 1980s shoulder camcorder. Film silly humans to convince them to walk to safety, expose Karens to go VIRAL, or swing it to knock enemies back. Watch the battery.
 - **Power-ups and inventory.** Long Whip, Strong Throw, Whip Shot, Fire Whip, Shockwave, Health, batteries. Power-ups never time out, and your inventory carries into the next level.
 - **Rounds, levels and scoring.** Hit the save target to win, with a Genesis-style HUD and a high score.
@@ -87,7 +88,7 @@ scripts/              Game logic
   boss/               boss arenas, Trustin Judeau (015) and Huval Yarheyhey + programmed sheep (016)
   bonus/              Galaga-style bonus stage: waves, flying sheep, tally (016)
   audio/              sound buses, music and the sound setting (build 015b)
-  humans/ sheep/      AI for silly humans, possessed humans, Karens and sheep
+  humans/ sheep/      AI for silly humans, possessed humans, Karens, Cantifa (017) and sheep
   world/              safe zone, camp, sheep den, power-ups, fire, terrain painter
   ui/                 title screen, HUD, touch controls, reticle, pixel font
   level_config.gd     all tuning numbers
@@ -100,7 +101,7 @@ LICENSE               MIT
 
 ## Build history and downloads
 
-Every build, from the first prototype through the 009 hotfixes to 016, has a [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) with its notes and the original source zip. The releases for **007, 008, 009d and 010 through 016** also include that build's playable Web export (`web-beta-<build>.zip`), so you can host any of those versions yourself: unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c, so those releases have source only. The full history is in [docs/DEVLOG.md](docs/DEVLOG.md).
+Every build, from the first prototype through the 009 hotfixes to 017, has a [GitHub release](https://github.com/Tebrion74/save-the-silly-humans/releases) with its notes and the original source zip. The releases for **007, 008, 009d and 010 through 017** also include that build's playable Web export (`web-beta-<build>.zip`), so you can host any of those versions yourself: unzip it and serve `index.html` from any web server. No Web exports exist for the prototypes, builds 001–006, or 009, 009b and 009c, so those releases have source only. The full history is in [docs/DEVLOG.md](docs/DEVLOG.md).
 
 ## Assets
 

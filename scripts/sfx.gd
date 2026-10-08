@@ -260,6 +260,17 @@ static func get_sound(sound_name: String) -> AudioStreamWAV:
 				var u := float(i) / n
 				ph += (lerpf(1800.0, 500.0, u) + sin(u * 90.0) * 120.0) / rate
 				s.append((fmod(ph, 1.0) * 2.0 - 1.0) * 0.2 * (1.0 - u))
+		"rifle":     # Cantifa shot: short crack + low thud
+			var n := int(rate * 0.09)
+			for i in n:
+				var u := float(i) / n
+				var env := (1.0 - u) * (1.0 - u)
+				s.append((rng.randf() * 2.0 - 1.0) * 0.45 * env)
+			s.append_array(_notes([[140.0, 0.05], [90.0, 0.06]], 0.28, 0.3))
+		"stagger":   # whip on a Cantifa: dull bonk
+			s = _notes([[220.0, 0.05], [140.0, 0.08]], 0.28, 0.35)
+		"flee":      # driven off: falling two-note scurry
+			s = _notes([[660.0, 0.06], [440.0, 0.06], [300.0, 0.1]], 0.2, 0.4)
 		"teleport":  # glitchy warble
 			var n := int(rate * 0.22)
 			var ph := 0.0

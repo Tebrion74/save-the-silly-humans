@@ -86,6 +86,8 @@ var stampede_timer: float = 0.0
 var _since_filmed: float = 999.0
 ## Karens: seconds of camera excitement left (faster, erratic, toward the cam).
 var cam_love: float = 0.0
+## Build 017: angrier than cam_love while a Cantifa is being filmed.
+var cantifa_rage: float = 0.0
 var _zig_phase: float = 0.0
 ## Sheep / possessed / Karens: camcorder SWING stagger (can't act).
 var stagger_timer: float = 0.0
@@ -239,6 +241,10 @@ func _physics_possessed(delta: float) -> void:
 		knockback_velocity = knockback_velocity.lerp(Vector2.ZERO, delta * 7.0)
 
 	update_animation(velocity)
+	if cantifa_rage > 0.0 and _flash_timer <= 0.0:
+		sprite.modulate = Color(1.45, 0.72, 0.72)
+	elif karen and cantifa_rage <= 0.0 and _flash_timer <= 0.0:
+		sprite.modulate = KAREN_MODULATE
 	move_and_slide()
 	_soft_clamp_interior()
 	if was_thrown_recently():
@@ -577,9 +583,13 @@ func _physics_karen(delta: float) -> void:
 			target = buddy
 	# Build 014: Karens love cameras - while filmed (and CAM_KAREN_LINGER s
 	# after) they rush the camera faster, zig-zagging and jittering.
-	var loving := cam_love > 0.0
-	if loving:
+	if cantifa_rage > 0.0:
+		cantifa_rage -= delta
+	var loving := cam_love > 0.0 or cantifa_rage > 0.0
+	var enraged := cantifa_rage > 0.0
+	if cam_love > 0.0:
 		cam_love -= delta
+	if loving:
 		if player != null and not ("_dead" in player and player._dead):
 			target = player
 	hunt_target = target
@@ -588,12 +598,16 @@ func _physics_karen(delta: float) -> void:
 	if target != null:
 		var fwd := global_position.direction_to(target.global_position)
 		var spd := LevelConfig.karen_speed(_level())
-		if loving:
+		if enraged:
+			spd *= LevelConfig.CANTIFA_RAGE_SPEED_MULT
+		elif cam_love > 0.0:
 			spd *= LevelConfig.CAM_KAREN_SPEED_MULT
+		if loving:
 			var t := Time.get_ticks_msec() / 1000.0
 			var side := Vector2(-fwd.y, fwd.x)
-			var zig := sin(t * TAU * LevelConfig.CAM_KAREN_ZIGZAG_HZ + _zig_phase) * LevelConfig.CAM_KAREN_ZIGZAG_AMP
-			zig += randf_range(-0.45, 0.45)
+			var amp := LevelConfig.CANTIFA_RAGE_ZIG_AMP if enraged else LevelConfig.CAM_KAREN_ZIGZAG_AMP
+			var zig := sin(t * TAU * LevelConfig.CAM_KAREN_ZIGZAG_HZ + _zig_phase) * amp
+			zig += randf_range(-0.85, 0.85) if enraged else randf_range(-0.45, 0.45)
 			v = (fwd + side * zig) * spd
 		else:
 			v = fwd * spd
@@ -615,6 +629,8 @@ func _physics_karen(delta: float) -> void:
 		velocity += knockback_velocity
 		knockback_velocity = knockback_velocity.lerp(Vector2.ZERO, delta * 7.0)
 	update_animation(velocity)
+	if cantifa_rage > 0.0 and _flash_timer <= 0.0:
+		sprite.modulate = Color(1.45, 0.72, 0.72)
 	move_and_slide()
 	_soft_clamp_interior()
 	if was_thrown_recently():
@@ -821,6 +837,15 @@ func cam_excite() -> void:
 	if not karen or exploding:
 		return
 	cam_love = LevelConfig.CAM_KAREN_LINGER
+	_ensure_badge()
+
+
+## Build 017: a Cantifa is in the camcorder cone. Stronger and angrier than
+## cam_excite, and it keeps refreshing while the filming goes on.
+func cam_enrage() -> void:
+	if not karen or exploding:
+		return
+	cantifa_rage = LevelConfig.CANTIFA_RAGE_TIME
 	_ensure_badge()
 
 
