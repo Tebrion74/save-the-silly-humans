@@ -437,3 +437,151 @@ static func run_huval(lvl: Node, scenario: String) -> void:
 			boss.ai_enabled = false
 			await tree.create_timer(0.3).timeout
 			boss.take_hit(1, "whip", p.global_position)
+
+
+## Build 018: BEORGE KUSH JR. screenshots ("kush_title", "kush_fight",
+## "kush_strike", "kush_strafe", "kush_carpet", "kush_banner", "kush_salute",
+## "kush_win"). Debug builds only.
+static func run_kush(lvl: Node, scenario: String) -> void:
+	if not OS.is_debug_build():
+		return
+	var p := lvl.get_node_or_null("Entities/Player") as Node2D
+	var boss = lvl.boss
+	if p == null or boss == null:
+		return
+	print("[debug] kush scenario ", scenario)
+	p.begin_grab_ghost(600.0)
+	if scenario == "kush_title":
+		return
+	if lvl.hud != null and lvl.hud.title_card != null:
+		lvl.hud.title_card.visible = false
+		lvl.hud.title_card.position.x = 5000.0
+	boss._set_state(BeorgeKush.S.MOVE)
+	boss._gap = 99.0
+	boss.global_position = p.global_position + Vector2(-40, -260)
+	p.global_position += Vector2(60, 0)
+	var tree := lvl.get_tree()
+	match scenario:
+		"kush_fight":
+			boss.hearts = 9
+			lvl.hud.set_boss_hearts(9, boss.max_hearts)
+			boss._set_state(BeorgeKush.S.MOVE)
+			boss.ai_enabled = false
+			boss._call_strike(p)
+			await tree.create_timer(0.35).timeout
+			boss.global_position = p.global_position + Vector2(-150, -150)
+			boss._set_state(BeorgeKush.S.WINDUP)
+			boss.attack = "strafe"
+		"kush_strike":
+			boss.hearts = 12
+			lvl.hud.set_boss_hearts(12, boss.max_hearts)
+			boss.force_attack("strike")
+		"kush_strafe":
+			boss.hearts = 8
+			lvl.hud.set_boss_hearts(8, boss.max_hearts)
+			boss.force_attack("strafe")
+		"kush_carpet":
+			boss.hearts = 4
+			lvl.hud.set_boss_hearts(4, boss.max_hearts)
+			boss.force_attack("carpet")
+		"kush_banner":
+			boss.hearts = 10
+			lvl.hud.set_boss_hearts(10, boss.max_hearts)
+			boss.take_hit(1, "whip", p.global_position)
+		"kush_salute":
+			var pu: PowerUps = lvl.power_ups
+			pu.grant("msm_cam")
+			lvl.cam.battery = 14.0
+			p.global_position = boss.global_position + Vector2(-60, 260)
+			lvl.cam.debug_aim = p.global_position.direction_to(boss.global_position)
+			lvl.cam.debug_force_film = true
+			pu.changed.emit()
+			boss.force_attack("strike")
+		"kush_win":
+			boss.hearts = 1
+			lvl.hud.set_boss_hearts(1, boss.max_hearts)
+			boss.ai_enabled = false
+			await tree.create_timer(0.3).timeout
+			boss.take_hit(1, "whip", p.global_position)
+
+
+## Build 018: KLAUS SCHWAB screenshots ("klaus_title", "klaus_fight",
+## "klaus_reset", "klaus_envelopes", "klaus_double", "klaus_panel",
+## "klaus_press", "klaus_win"). Debug builds only.
+static func run_klaus(lvl: Node, scenario: String) -> void:
+	if not OS.is_debug_build():
+		return
+	var p := lvl.get_node_or_null("Entities/Player") as Node2D
+	var boss = lvl.boss
+	if p == null or boss == null:
+		return
+	print("[debug] klaus scenario ", scenario)
+	p.begin_grab_ghost(600.0)
+	if scenario == "klaus_title":
+		return
+	if lvl.hud != null and lvl.hud.title_card != null:
+		lvl.hud.title_card.visible = false
+		lvl.hud.title_card.position.x = 5000.0
+	boss._set_state(KlausSchwab.S.MOVE)
+	boss._gap = 99.0
+	boss.global_position = p.global_position + Vector2(-40, -260)
+	p.global_position += Vector2(60, 0)
+	var tree := lvl.get_tree()
+	match scenario:
+		"klaus_fight":
+			boss.hearts = 11
+			lvl.hud.set_boss_hearts(11, boss.max_hearts)
+			boss.ai_enabled = false
+			var dt = boss._spawn_delegate(p, "trustin")
+			dt.tell = 3.0   # screenshot: caught mid fade-in, aim line showing
+			dt.global_position = p.global_position + Vector2(-250, -120)
+			var dh = boss._spawn_delegate(p, "huval")
+			dh.tell = 3.0
+			dh.global_position = p.global_position + Vector2(260, -140)
+			dh.spawn_points = boss.pick_spawn_points(dh.global_position, p.global_position, 2)
+			for off in [Vector2(-240, 60), Vector2(220, -100)]:
+				var s = boss.spawn_robo(p.global_position + off)
+				s.warp_in = 0.0
+			await tree.create_timer(0.2).timeout
+			boss._set_state(KlausSchwab.S.WINDUP)
+			boss.attack = "envelopes"
+		"klaus_reset":
+			boss.hearts = 9
+			lvl.hud.set_boss_hearts(9, boss.max_hearts)
+			boss.ai_enabled = false
+			boss.global_position = p.global_position + Vector2(-20, -180)
+			var ring = boss._spawn_reset(p)
+			ring.tell = 3.0   # screenshot: the telegraph (rings + green gaps)
+			boss._set_state(KlausSchwab.S.WINDUP)
+			boss.attack = "reset"
+		"klaus_envelopes":
+			boss.hearts = 7
+			lvl.hud.set_boss_hearts(7, boss.max_hearts)
+			boss.force_attack("envelopes")
+			boss.ai_enabled = false   # screenshot: hold the telegraphed fan
+			await tree.create_timer(0.45).timeout
+			boss._aim_locked = true
+		"klaus_double":
+			boss.hearts = 7
+			lvl.hud.set_boss_hearts(7, boss.max_hearts)
+			boss.force_attack("double")
+		"klaus_panel":
+			boss.hearts = 14
+			lvl.hud.set_boss_hearts(14, boss.max_hearts)
+			boss.take_hit(1, "whip", p.global_position)
+		"klaus_press":
+			var pu: PowerUps = lvl.power_ups
+			pu.grant("msm_cam")
+			lvl.cam.battery = 14.0
+			boss._spawn_delegate(p, "trustin")
+			p.global_position = boss.global_position + Vector2(-60, 260)
+			lvl.cam.debug_aim = p.global_position.direction_to(boss.global_position)
+			lvl.cam.debug_force_film = true
+			pu.changed.emit()
+			boss.force_attack("poutine")
+		"klaus_win":
+			boss.hearts = 1
+			lvl.hud.set_boss_hearts(1, boss.max_hearts)
+			boss.ai_enabled = false
+			await tree.create_timer(0.3).timeout
+			boss.take_hit(1, "whip", p.global_position)

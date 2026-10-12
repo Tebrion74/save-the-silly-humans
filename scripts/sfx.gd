@@ -278,6 +278,68 @@ static func get_sound(sound_name: String) -> AudioStreamWAV:
 				var u := float(i) / n
 				ph += (600.0 + 500.0 * sin(u * 50.0)) / rate
 				s.append((1.0 if fmod(ph, 1.0) < 0.5 else -1.0) * 0.14 * (1.0 - u))
+		# ---- build 018: Beorge Kush Jr. (airstrikes) ----
+		"radio":     # radio call: squelch burst + two beeps
+			var n := int(rate * 0.08)
+			for i in n:
+				s.append((rng.randf() * 2.0 - 1.0) * 0.18 * (1.0 - float(i) / n))
+			s.append_array(_notes([[1200.0, 0.05], [0.0, 0.03], [1200.0, 0.05]], 0.16, 0.5))
+		"mark":      # target painted: short high ping
+			s = _notes([[1760.0, 0.03], [2350.0, 0.05]], 0.14, 0.25)
+		"warn":      # strafing run warning: two-tone klaxon
+			s = _notes([[880.0, 0.1], [660.0, 0.1], [880.0, 0.1], [660.0, 0.1]], 0.16, 0.5)
+		"bomb":      # explosion: low noise boom with a pitch-dropping thump
+			var n := int(rate * 0.42)
+			var lp := 0.0
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				lp = lerpf(lp, rng.randf_range(-1.0, 1.0), 0.18)
+				ph += lerpf(120.0, 40.0, u) / rate
+				s.append((lp * 1.6 + sin(ph * TAU) * 0.5) * 0.42 * (1.0 - u) * (1.0 - u))
+		"jet":       # jet flyover: filtered noise swelling and fading
+			var n := int(rate * 0.9)
+			var lp := 0.0
+			for i in n:
+				var u := float(i) / n
+				lp = lerpf(lp, rng.randf_range(-1.0, 1.0), lerpf(0.08, 0.35, sin(u * PI)))
+				s.append(lp * 0.4 * sin(u * PI))
+		"strafe":    # gun run: rapid noise clicks
+			for k in 14:
+				var nn := int(rate * 0.025)
+				for i in nn:
+					s.append((rng.randf() * 2.0 - 1.0) * 0.3 * (1.0 - float(i) / nn))
+				for i in int(rate * 0.012):
+					s.append(0.0)
+		# ---- build 018: Klaus Schwab (summit) ----
+		"hologram":  # delegate fades in: shimmering rising arpeggio
+			s = _notes([[523.0, 0.04], [784.0, 0.04], [1047.0, 0.04], [1568.0, 0.08]], 0.11, 0.25)
+		"dispel":    # delegate dispelled: falling sparkle
+			s = _notes([[2093.0, 0.03], [1568.0, 0.03], [1047.0, 0.04], [523.0, 0.06]], 0.12, 0.25)
+		"gavel":     # panel / conduct: wooden knock
+			s = _notes([[300.0, 0.03], [0.0, 0.05], [300.0, 0.04]], 0.3, 0.2)
+		"paper":     # envelopes thrown: papery noise flick
+			var n := int(rate * 0.14)
+			var hp := 0.0
+			for i in n:
+				var u := float(i) / n
+				var r := rng.randf_range(-1.0, 1.0)
+				s.append((r - hp) * 0.22 * (1.0 - u))
+				hp = r
+		"reset_tell":   # GREAT RESET tell: rising alarm
+			var n := int(rate * 0.5)
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += lerpf(300.0, 900.0, u) / rate
+				s.append((1.0 if fmod(ph, 1.0) < 0.5 else -1.0) * 0.12 * minf(1.0, (1.0 - u) * 4.0))
+		"reset":     # GREAT RESET wave: deep whoomp
+			var n := int(rate * 0.5)
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += lerpf(160.0, 50.0, u) / rate
+				s.append((sin(ph * TAU) * 0.5 + rng.randf_range(-0.12, 0.12)) * (1.0 - u))
 		_:
 			s = _notes([[880.0, 0.05]])
 	var w := _wav(s, rate)

@@ -451,13 +451,20 @@ static func boss_phase(hearts: int) -> int:
 ##      Yarheyhey after 5)
 ## then level L + 1. So with the defaults:
 ##   L1 > BONUS 1 > L2 > TRUSTIN > L3 > L4 > BONUS 2 > L5 > HUVAL > L6 > L7 >
-##   BONUS 3 > L8 > L9 > L10 > BONUS 4 > ...
+##   BONUS 3 > L8 > KUSH > L9 > L10 > BONUS 4 > L11 > SCHWAB > L12 > L13 >
+##   BONUS 5 > ... (build 018 adds Beorge Kush Jr. after 8, Klaus Schwab after 11)
 ## If a bonus and a boss ever share a slot: level > bonus > boss > next level.
 const BONUS_FIRST_AFTER := 1
 const BONUS_EVERY := 3
 const BONUS_SCENE := "res://scenes/levels/BonusStage.tscn"
 const BOSS2_AFTER_LEVEL := 5
 const BOSS2_SCENE := "res://scenes/levels/Boss2Arena.tscn"
+## Build 018: boss 3 (Beorge Kush Jr.) between levels 8 and 9, boss 4
+## (Klaus Schwab) between levels 11 and 12. Each placement is this one value.
+const BOSS3_AFTER_LEVEL := 8
+const BOSS3_SCENE := "res://scenes/levels/Boss3Arena.tscn"
+const BOSS4_AFTER_LEVEL := 11
+const BOSS4_SCENE := "res://scenes/levels/Boss4Arena.tscn"
 
 
 # ---------------------------------------------------------------- build 016 bonus stage
@@ -590,3 +597,177 @@ static func boss2_phase(hearts: int) -> int:
 	if hearts <= BOSS2_PHASE2_HEARTS:
 		return 2
 	return 1
+
+
+# ---------------------------------------------------------------- build 018 boss 3
+## BEORGE KUSH JR., THE AIRSTRIKE ACE (scripts/boss/kush.gd, kush_level.gd,
+## airstrike.gd, scenes/levels/Boss3Arena.tscn). An ex fighter pilot who
+## radios in his air force. Same hit rules as the other bosses (whip / shot /
+## lash-only shockwave = 1 heart, fire = 1 delayed heart per 6 s, grab and
+## swing shove + stagger, contact = 1 heart). Harder than Huval.
+const BOSS3_NAME := "BEORGE KUSH JR."
+const BOSS3_TITLE := "THE AIRSTRIKE ACE"
+const BOSS3_HEARTS := 15
+## Phases by hearts left: 15-11 / 10-7 / 6-4 / rage 3-1.
+const BOSS3_PHASE2_HEARTS := 10
+const BOSS3_PHASE3_HEARTS := 6
+const BOSS3_RAGE_HEARTS := 3
+## At these hearts he unfurls the MISSION ACCOMPLISHED banner: invulnerable
+## for BOSS3_BANNER_TIME, then an airstrike is called straight away.
+const BOSS3_BANNER_HEARTS := [9, 4]
+const BOSS3_BANNER_TIME := 1.5
+## Movement (swaggering, keeps out of whip reach like the others).
+const BOSS3_SPEED := 120.0
+const BOSS3_SPEED_RAGE := 150.0
+const BOSS3_PREF_DIST := 300.0
+const BOSS3_RETREAT_DIST := 170.0
+const BOSS3_RETREAT_MULT := 1.5
+## Attack rhythm (pause after each call, per phase 1..4).
+const BOSS3_ATTACK_GAP := [1.25, 1.05, 0.9, 0.75]
+## Every attack starts with a RADIO CALL: he holds the radio to his ear ("!",
+## crackle) for this long. Filming him or a swing/grab during the call cancels
+## it before anything is marked.
+const BOSS3_RADIO_TELL := [0.6, 0.55, 0.5, 0.45]
+## AIRSTRIKE: red target marks drop on the ground (the first on you, the rest
+## around you), a jet streaks over, and each mark blasts after BOSS3_MARK_TIME.
+const BOSS3_STRIKE_MARKS := [3, 4, 5, 6]
+const BOSS3_MARK_TIME := [1.1, 1.0, 0.92, 0.85]
+const BOSS3_BLAST_RADIUS := 55.0
+const BOSS3_MARK_SPREAD := Vector2(60.0, 180.0)  ## other marks: this far from you
+const BOSS3_MARK_MIN_SEP := 75.0
+const BOSS3_MARK_LEAD := 0.45           ## 2nd mark leads your velocity by this many seconds
+## STRAFING RUN (phase 2+): a lane through you flashes DANGER for
+## BOSS3_STRAFE_TELL, then a jet fires down it. Rage: two crossing lanes.
+const BOSS3_STRAFE_TELL := [0.85, 0.8, 0.75, 0.7]
+const BOSS3_STRAFE_HALF_WIDTH := 34.0
+const BOSS3_STRAFE_SPEED := 1500.0      ## jet speed along the lane (px/s)
+const BOSS3_STRAFE_GUN_REACH := 55.0    ## the bullets hit this close to the jet's gun point
+## CARPET BOMBING (phase 3+): a line of marks marching through you, each
+## blasting BOSS3_CARPET_TIME after it appears; step sideways out of the line.
+const BOSS3_CARPET_COUNT := 7
+const BOSS3_CARPET_SPACING := 62.0
+const BOSS3_CARPET_STAGGER := 0.11
+const BOSS3_CARPET_TIME := 1.1
+const BOSS3_CARPET_RADIUS := 44.0
+## Weighted attack menu per phase.
+const BOSS3_ATTACKS := [
+	{"strike": 1},
+	{"strike": 55, "strafe": 45},
+	{"strike": 40, "strafe": 30, "carpet": 30},
+	{"strike": 40, "strafe": 30, "carpet": 30},
+]
+## Rage combos: chance that an airstrike is chained into a strafing run.
+const BOSS3_COMBO_CHANCE := [0.0, 0.15, 0.3, 0.5]
+## FRIENDLY FIRE: Beorge caught in one of his own blasts loses a heart
+## (normal i-frames apply). Lure him onto the marks!
+const BOSS3_FRIENDLY_FIRE := true
+## MSM Cam: he SALUTES for the camera (stops, cancels a radio call) up to
+## BOSS3_SALUTE_MAX, lingers BOSS_POSE_LINGER, then camera-shy BOSS_POSE_COOLDOWN.
+## Marks already on the ground still blast (the jets are already inbound).
+const BOSS3_SALUTE_MAX := 1.0
+## Scoring.
+const BOSS3_POINTS_PER_HEART := 100
+const BOSS3_DEFEAT_BONUS := 5000
+const BOSS3_HEALTH_BONUS := 300
+const BOSS3_TIME_PAR := 150.0
+const POINTS_FRIENDLY_FIRE := 150       ## extra, per heart he loses to his own blasts
+
+
+static func boss3_phase(hearts: int) -> int:
+	if hearts <= BOSS3_RAGE_HEARTS:
+		return 4
+	if hearts <= BOSS3_PHASE3_HEARTS:
+		return 3
+	if hearts <= BOSS3_PHASE2_HEARTS:
+		return 2
+	return 1
+
+
+# ---------------------------------------------------------------- build 018 boss 4
+## KLAUS SCHWAB, CHAIRMAN OF THE GREAT RESET (scripts/boss/klaus.gd,
+## klaus_level.gd, delegate.gd, scenes/levels/Boss4Arena.tscn). The puppet
+## master of the summit: he summons hologram DELEGATES of Trustin Judeau
+## (poutine) and Huval Yarheyhey (programmed sheep) and adds his own
+## attacks. Same hit rules as the other bosses. The hardest boss so far.
+const BOSS4_NAME := "KLAUS SCHWAB"
+const BOSS4_TITLE := "CHAIRMAN OF THE GREAT RESET"
+const BOSS4_HEARTS := 18
+## Phases by hearts left: 18-14 / 13-9 / 8-5 / rage 4-1.
+const BOSS4_PHASE2_HEARTS := 13
+const BOSS4_PHASE3_HEARTS := 8
+const BOSS4_RAGE_HEARTS := 4
+## At these hearts he calls a PANEL DISCUSSION (invulnerable, gavel ring)
+## for BOSS4_PANEL_TIME and ends it with a free GREAT RESET wave.
+const BOSS4_PANEL_HEARTS := [13, 8, 4]
+const BOSS4_PANEL_TIME := 1.5
+## Movement.
+const BOSS4_SPEED := 100.0
+const BOSS4_SPEED_RAGE := 130.0
+const BOSS4_PREF_DIST := 320.0
+const BOSS4_RETREAT_DIST := 180.0
+const BOSS4_RETREAT_MULT := 1.5
+## Rage: PRIVATE JET hops (same telegraph as Huval's teleport: rings at the
+## destination for BOSS4_HOP_TELL).
+const BOSS4_HOP_TELL := 0.45
+const BOSS4_HOP_EVERY := Vector2(3.5, 5.0)
+const BOSS4_HOP_MIN_DIST := 260.0
+## Attack rhythm. Every attack starts with a short CONDUCTING tell (arms up).
+const BOSS4_ATTACK_GAP := [1.6, 1.4, 1.2, 1.0]
+const BOSS4_CONDUCT_TELL := [0.45, 0.4, 0.38, 0.32]
+## DELEGATES: translucent holograms that appear BOSS4_DELEGATE_DIST from you,
+## fade in for BOSS4_DELEGATE_TELL (aim line / spawn rings), act, then fade.
+## They can't be hurt, but the MSM Cam DISPELS any delegate it films.
+const BOSS4_DELEGATE_TELL := [0.85, 0.8, 0.72, 0.62]
+const BOSS4_DELEGATE_DIST := Vector2(250.0, 340.0)
+const BOSS4_DELEGATE_LINGER := 0.45
+## Trustin delegate poutine per phase: "single", "spread3", "spread5"/"lob2", "volley".
+const BOSS4_POUTINE_MODE := ["single", "spread3", "spread5", "volley"]
+const BOSS4_VOLLEY_COUNT := 3
+## Huval delegate programmed sheep per summon and the cap alive at once.
+const BOSS4_SHEEP_COUNT := [1, 1, 2, 2]
+const BOSS4_SHEEP_CAP := [3, 3, 4, 5]
+## INVITATIONS (signature): a fan of envelopes, telegraphed by fan lines.
+const BOSS4_ENVELOPES := [3, 4, 5, 6]
+const BOSS4_ENVELOPE_FAN_DEG := 20.0    ## between envelopes (~70 px lanes at 200 px)
+const BOSS4_ENVELOPE_SPEED := 280.0
+const BOSS4_ENVELOPE_TELL := [0.7, 0.65, 0.6, 0.55]
+const BOSS4_ENVELOPE_HIT_RADIUS := 17.0
+## THE GREAT RESET (phase 2+, signature): an expanding ring from him with two
+## gaps. The rings and the gaps show for BOSS4_RESET_TELL first; one gap is
+## always within BOSS4_RESET_GAP_NEAR_DEG of your direction.
+const BOSS4_RESET_TELL := [1.0, 0.95, 0.85, 0.75]
+const BOSS4_RESET_SPEED := 280.0
+const BOSS4_RESET_MAX_RADIUS := 760.0
+const BOSS4_RESET_THICK := 16.0
+const BOSS4_RESET_GAPS := 2
+const BOSS4_RESET_GAP_DEG := 48.0
+const BOSS4_RESET_GAP_NEAR_DEG := 50.0
+## Weighted attack menu per phase. "double" = both delegates at once.
+const BOSS4_ATTACKS := [
+	{"poutine": 40, "sheep": 30, "envelopes": 30},
+	{"poutine": 28, "sheep": 22, "envelopes": 20, "reset": 30},
+	{"poutine": 20, "sheep": 18, "envelopes": 17, "reset": 25, "double": 20},
+	{"poutine": 18, "sheep": 15, "envelopes": 17, "reset": 25, "double": 25},
+]
+## Rage combos: chance that an attack is chained straight into an envelope fan.
+const BOSS4_COMBO_CHANCE := [0.0, 0.0, 0.2, 0.4]
+## MSM Cam: "NO PRESS!" he shields his face (stops, cancels his tell and every
+## delegate still fading in) up to BOSS4_PRESS_MAX, then camera-shy.
+const BOSS4_PRESS_MAX := 1.0
+## Scoring.
+const BOSS4_POINTS_PER_HEART := 100
+const BOSS4_DEFEAT_BONUS := 7500
+const BOSS4_HEALTH_BONUS := 300
+const BOSS4_TIME_PAR := 180.0
+const POINTS_DISPEL := 100              ## per delegate dispelled with the cam
+
+
+static func boss4_phase(hearts: int) -> int:
+	if hearts <= BOSS4_RAGE_HEARTS:
+		return 4
+	if hearts <= BOSS4_PHASE3_HEARTS:
+		return 3
+	if hearts <= BOSS4_PHASE2_HEARTS:
+		return 2
+	return 1
+

@@ -768,6 +768,13 @@ func set_boss_mode(boss_name: String, boss_title: String, hearts_left: int, max_
 	boss_bar = BossBar.new()
 	boss_bar.name = "BossBar"
 	boss_bar.boss_name = boss_name
+	match boss_name:   # build 018: rage flash at each boss's own threshold
+		LevelConfig.BOSS2_NAME:
+			boss_bar.rage_hearts = LevelConfig.BOSS2_RAGE_HEARTS
+		LevelConfig.BOSS3_NAME:
+			boss_bar.rage_hearts = LevelConfig.BOSS3_RAGE_HEARTS
+		LevelConfig.BOSS4_NAME:
+			boss_bar.rage_hearts = LevelConfig.BOSS4_RAGE_HEARTS
 	boss_bar.set_hearts(hearts_left, max_hearts, false)
 	$Root.add_child(boss_bar)
 	_build_title_card(boss_name, boss_title)
@@ -787,6 +794,15 @@ func _place_boss_bar(touch: bool, vs: Vector2) -> void:
 		var left := TouchLayout.swap_dims(vs).z + SoundIcon.SIZE.x + 20.0   # 015b: room for the speaker icon
 		var right := vs.x - TouchLayout.wedge_dims(vs).z
 		cx = (left + right) * 0.5
+		# build 018: Klaus's 18-heart bar is wider than the strip; shrink it to
+		# fit instead of sliding under the speaker icon
+		var k := clampf((right - left - 8.0) / w, 0.6, 1.0)
+		boss_bar.scale = Vector2(k, k)
+		w *= k
+	else:
+		boss_bar.scale = Vector2.ONE
+		# build 018: keep wide bars (Klaus, 18 hearts) clear of the SCORE digits
+		cx = maxf(cx, 412.0 + w * 0.5)
 	boss_bar.position = Vector2(roundf(cx - w * 0.5), 12.0)
 	boss_bar.size = boss_bar.bar_size()
 
@@ -892,9 +908,17 @@ func show_boss_end(won: bool, message: String, breakdown: Dictionary = {}) -> vo
 	var hph := int(breakdown.get("health_per_heart", LevelConfig.BOSS_HEALTH_BONUS))
 	_breakdown_row("HEARTS", "%d x%d" % [hh, pph], str(int(breakdown.get("hearts_points", 0))))
 	# Build 016 (Huval): his programmed / micro sheep
-	if breakdown.has("robo"):
+	if breakdown.has("robo") and breakdown.has("dispelled"):
+		# Build 018 (Klaus): one combined row so the panel keeps Huval's 9 rows
+		_breakdown_row("SHEEP", "%d+%d" % [int(breakdown.get("robo", 0)), int(breakdown.get("micro", 0))], str(int(breakdown.get("robo_points", 0)) + int(breakdown.get("micro_points", 0))))
+	elif breakdown.has("robo"):
 		_breakdown_row("PROGRAMMED", "%d x%d" % [int(breakdown.get("robo", 0)), LevelConfig.POINTS_ROBO], str(int(breakdown.get("robo_points", 0))))
 		_breakdown_row("MICRO SHEEP", "%d x%d" % [int(breakdown.get("micro", 0)), LevelConfig.POINTS_MICRO], str(int(breakdown.get("micro_points", 0))))
+	# Build 018: Beorge Kush Jr. friendly fire / Klaus Schwab dispelled delegates
+	if breakdown.has("friendly"):
+		_breakdown_row("FRIENDLY FIRE", "%d x%d" % [int(breakdown.get("friendly", 0)), LevelConfig.POINTS_FRIENDLY_FIRE], str(int(breakdown.get("friendly_points", 0))))
+	if breakdown.has("dispelled"):
+		_breakdown_row("DISPELLED", "%d x%d" % [int(breakdown.get("dispelled", 0)), LevelConfig.POINTS_DISPEL], str(int(breakdown.get("dispelled_points", 0))))
 	if won:
 		_breakdown_row("DEFEAT BONUS", "", str(int(breakdown.get("defeat_bonus", 0))))
 		var hb := int(breakdown.get("health_bonus", 0))
@@ -1208,6 +1232,8 @@ class BossBar extends Control:
 	func bar_size() -> Vector2:
 		return Vector2(maxf(max_hearts * STEP + 24.0, PixelFont.text_width(boss_name, 2) + 70.0), 66.0)
 
+	var rage_hearts: int = LevelConfig.BOSS_RAGE_HEARTS   ## build 018: per boss
+
 	func set_hearts(h: int, m: int, animate: bool) -> void:
 		if animate and h < hearts:
 			_lost_index = h
@@ -1222,7 +1248,7 @@ class BossBar extends Control:
 		if _flash > 0.0:
 			_flash = maxf(_flash - delta, 0.0)
 			queue_redraw()
-		elif hearts <= LevelConfig.BOSS_RAGE_HEARTS and hearts > 0:
+		elif hearts <= rage_hearts and hearts > 0:
 			queue_redraw()
 
 	func _draw() -> void:
@@ -1230,7 +1256,7 @@ class BossBar extends Control:
 		draw_rect(Rect2(Vector2(5, 5), sz), Color(0, 0, 0.05, 0.45))
 		draw_rect(Rect2(Vector2.ZERO, sz), Color(0.04, 0.05, 0.16, 0.85))
 		var border := Color(1.0, 0.55, 0.12)
-		if hearts <= LevelConfig.BOSS_RAGE_HEARTS and hearts > 0 and fmod(_t, 0.5) < 0.25:
+		if hearts <= rage_hearts and hearts > 0 and fmod(_t, 0.5) < 0.25:
 			border = Color(1.0, 0.3, 0.25)
 		draw_rect(Rect2(Vector2.ZERO, sz), border, false, 3.0)
 		var f := PixelFont.get_font()

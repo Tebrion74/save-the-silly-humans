@@ -5,9 +5,10 @@ extends RefCounted
 ## See LevelConfig "build 016 progression" for the order.
 
 
-## Build 015 API: true when a boss fight (either boss) follows `level`.
+## Build 015 API: true when a boss fight (any boss) follows `level`.
 static func boss_follows(level: int) -> bool:
-	return level == LevelConfig.BOSS_AFTER_LEVEL or level == LevelConfig.BOSS2_AFTER_LEVEL
+	return level == LevelConfig.BOSS_AFTER_LEVEL or level == LevelConfig.BOSS2_AFTER_LEVEL \
+		or level == LevelConfig.BOSS3_AFTER_LEVEL or level == LevelConfig.BOSS4_AFTER_LEVEL
 
 
 ## True when the bonus stage follows `level` (1, 4, 7, 10, ... by default).
@@ -22,11 +23,15 @@ static func bonus_index(level: int, first: int = LevelConfig.BONUS_FIRST_AFTER, 
 
 
 ## Stages played after clearing `level`, in order: "bonus" first, then the
-## boss ("boss1" Trustin, "boss2" Huval). Empty = straight to level + 1.
-## The optional arguments exist so tests can check coinciding slots.
+## boss ("boss1" Trustin, "boss2" Huval, build 018: "boss3" Beorge Kush Jr.,
+## "boss4" Klaus Schwab). Empty = straight to level + 1.
+## The optional arguments exist so tests can check coinciding slots (the
+## build 018 bosses are appended at the end so 016 callers keep working).
 static func stages_after(level: int, boss1_after: int = LevelConfig.BOSS_AFTER_LEVEL,
 		boss2_after: int = LevelConfig.BOSS2_AFTER_LEVEL,
-		bonus_first: int = LevelConfig.BONUS_FIRST_AFTER, bonus_every: int = LevelConfig.BONUS_EVERY) -> Array[String]:
+		bonus_first: int = LevelConfig.BONUS_FIRST_AFTER, bonus_every: int = LevelConfig.BONUS_EVERY,
+		boss3_after: int = LevelConfig.BOSS3_AFTER_LEVEL,
+		boss4_after: int = LevelConfig.BOSS4_AFTER_LEVEL) -> Array[String]:
 	var out: Array[String] = []
 	if bonus_follows(level, bonus_first, bonus_every):
 		out.append("bonus")
@@ -34,6 +39,10 @@ static func stages_after(level: int, boss1_after: int = LevelConfig.BOSS_AFTER_L
 		out.append("boss1")
 	if level == boss2_after:
 		out.append("boss2")
+	if level == boss3_after:
+		out.append("boss3")
+	if level == boss4_after:
+		out.append("boss4")
 	return out
 
 
@@ -45,6 +54,10 @@ static func stage_scene(stage: String) -> String:
 			return LevelConfig.BOSS_SCENE
 		"boss2":
 			return LevelConfig.BOSS2_SCENE
+		"boss3":
+			return LevelConfig.BOSS3_SCENE
+		"boss4":
+			return LevelConfig.BOSS4_SCENE
 	return LevelConfig.GAME_SCENE
 
 
@@ -57,6 +70,10 @@ static func stage_label(stage: String) -> String:
 			return LevelConfig.BOSS_NAME
 		"boss2":
 			return LevelConfig.BOSS2_NAME
+		"boss3":
+			return LevelConfig.BOSS3_NAME
+		"boss4":
+			return LevelConfig.BOSS4_NAME
 	return ""
 
 
@@ -64,11 +81,13 @@ static func stage_label(stage: String) -> String:
 ## (tests + README).
 static func progression(levels: int, boss1_after: int = LevelConfig.BOSS_AFTER_LEVEL,
 		boss2_after: int = LevelConfig.BOSS2_AFTER_LEVEL,
-		bonus_first: int = LevelConfig.BONUS_FIRST_AFTER, bonus_every: int = LevelConfig.BONUS_EVERY) -> Array[String]:
+		bonus_first: int = LevelConfig.BONUS_FIRST_AFTER, bonus_every: int = LevelConfig.BONUS_EVERY,
+		boss3_after: int = LevelConfig.BOSS3_AFTER_LEVEL,
+		boss4_after: int = LevelConfig.BOSS4_AFTER_LEVEL) -> Array[String]:
 	var out: Array[String] = []
 	for l in range(1, levels + 1):
 		out.append("L%d" % l)
-		for s in stages_after(l, boss1_after, boss2_after, bonus_first, bonus_every):
+		for s in stages_after(l, boss1_after, boss2_after, bonus_first, bonus_every, boss3_after, boss4_after):
 			if s == "bonus":
 				out.append("BONUS%d" % bonus_index(l, bonus_first, bonus_every))
 			else:

@@ -5,6 +5,9 @@
                                        assets/audio/music_boss.wav    (015b)
                                        assets/audio/music_bonus.wav   (016)
                                        assets/audio/music_boss2.wav   (016)
+                                       assets/audio/music_boss3.wav   (018)
+                                       assets/audio/music_boss4.wav   (018)
+    python3 tools/gen_music.py boss3 boss4   -> only those tracks
 
 Four NES-style voices, all synthesised here (no samples, no third-party
 material): pulse lead, thin pulse arpeggio, triangle bass and noise drums.
@@ -294,9 +297,105 @@ def boss2_theme():
     s.write(os.path.join(OUT, 'music_boss2.wav'))
 
 
+# ---------------------------------------------------------------- build 018 boss 3
+def boss3_theme():
+    """'Danger Close': a brassy G minor flight-deck march, 144 BPM, 16 bars,
+    snare rolls, an afterburner 'whoosh' (falling pulse) every 4 bars, for the
+    Beorge Kush Jr. fight."""
+    s = Song(144, 16)
+    s.rng = np.random.default_rng(1818)
+    prog = [('G2', 'min'), ('G2', 'min'), ('Eb2', 'maj'), ('D2', 'maj')] * 2 + \
+           [('C2', 'min'), ('D2', 'maj'), ('G2', 'min'), ('F2', 'maj'),
+            ('Eb2', 'maj'), ('C2', 'min'), ('D2', 'sus'), ('D2', 'maj')]
+    L = {
+        0: [(0, 3, 'G4'), (3, 1, 'G4'), (4, 2, 'Bb4'), (6, 2, 'D5'), (8, 4, 'G5'), (12, 2, 'F5'), (14, 2, 'D5')],
+        1: [(0, 2, 'Eb5'), (2, 2, 'D5'), (4, 2, 'C5'), (6, 2, 'Bb4'), (8, 6, 'A4'), (14, 2, 'D5')],
+        2: [(0, 3, 'G5'), (3, 1, 'F5'), (4, 2, 'Eb5'), (6, 2, 'G5'), (8, 3, 'Bb5'), (11, 1, 'A5'), (12, 4, 'G5')],
+        3: [(0, 2, 'F#5'), (2, 2, 'A5'), (4, 4, 'D6'), (8, 2, 'C6'), (10, 2, 'A5'), (12, 4, 'F#5')],
+        4: [(0, 2, 'C5'), (2, 2, 'Eb5'), (4, 4, 'G5'), (8, 2, 'F5'), (10, 2, 'Eb5'), (12, 4, 'C5')],
+        5: [(0, 1, 'D5'), (1, 1, 'D5'), (2, 2, 'F#5'), (4, 2, 'A5'), (6, 2, 'F#5'), (8, 8, 'D5')],
+    }
+    order = [0, 1, 0, 3, 2, 1, 2, 3, 4, 5, 0, 2, 4, 1, 5, 3]
+    for bar, ((rn, kind), li) in enumerate(zip(prog, order)):
+        root = midi(rn)
+        base = bar * 16
+        tones = chord_tones(root, kind)
+        for st, ln, nm in L[li]:
+            # brass-ish: lead doubled an octave down on a wider pulse
+            s.tone(base + st, ln, midi(nm), 0.17, duty=0.25, vib=0.006 if ln >= 4 else 0.0)
+            s.tone(base + st, ln, midi(nm) - 12, 0.08, duty=0.5)
+        # stabby chord hits on the off-beats (march feel)
+        for i in (2, 6, 10, 14):
+            for t in tones:
+                s.tone(base + i, 1, t + 24, 0.045, duty=0.125, decay=14)
+        # march bass: root / fifth on the beat
+        for i in range(4):
+            iv = 0 if i % 2 == 0 else 7
+            s.tone(base + i * 4, 3, root + 12 + iv, 0.36, wave_='tri')
+        for i in range(16):
+            if i in (0, 8):
+                s.kick(base + i, 0.62)
+            if i in (4, 12):
+                s.snare(base + i, 0.38)
+            if i in (14, 15) or (bar % 2 == 1 and i in (6, 7)):
+                s.snare(base + i, 0.16)     # rudiment flams
+            if i % 2 == 1:
+                s.hat(base + i, 0.1)
+        if bar % 4 == 3:
+            for i in range(8, 16):
+                s.snare(base + i, 0.12 + 0.025 * (i - 8))   # snare roll
+            s.tone(base + 12, 4, midi('G6'), 0.07, duty=0.5, slide=-0.9)   # afterburner whoosh
+    s.write(os.path.join(OUT, 'music_boss3.wav'))
+
+
+# ---------------------------------------------------------------- build 018 boss 4
+def boss4_theme():
+    """'Summit Waltz': an ominous C minor waltz (3/4, 12 sixteenths per bar),
+    176 BPM, 24 bars: an organ-ish doubled lead, a sweeping oom-pah-pah bass
+    and a bell on every downbeat, for the Klaus Schwab fight."""
+    s = Song(176, 24, steps_per_bar=12)
+    s.rng = np.random.default_rng(1819)
+    prog = [('C2', 'min'), ('C2', 'min'), ('Ab1', 'maj'), ('G1', 'maj')] * 2 + \
+           [('F1', 'min'), ('G1', 'maj'), ('C2', 'min'), ('Eb2', 'maj')] * 2 + \
+           [('Ab1', 'maj'), ('F1', 'min'), ('D2', 'min'), ('G1', 'maj')] * 2
+    L = {
+        0: [(0, 4, 'C5'), (4, 2, 'Eb5'), (6, 2, 'G5'), (8, 4, 'C6')],
+        1: [(0, 4, 'B5'), (4, 4, 'G5'), (8, 4, 'Eb5')],
+        2: [(0, 4, 'Ab5'), (4, 2, 'G5'), (6, 2, 'F5'), (8, 4, 'Eb5')],
+        3: [(0, 6, 'D5'), (6, 2, 'F5'), (8, 2, 'G5'), (10, 2, 'B5')],
+        4: [(0, 4, 'F5'), (4, 4, 'Ab5'), (8, 4, 'C6')],
+        5: [(0, 2, 'B5'), (2, 2, 'C6'), (4, 2, 'D6'), (6, 6, 'G5')],
+        6: [(0, 8, 'Eb5'), (8, 4, 'D5')],
+    }
+    order = [0, 1, 2, 3, 0, 1, 2, 5, 4, 3, 0, 6, 4, 5, 0, 6, 2, 4, 6, 3, 2, 4, 1, 5]
+    for bar, ((rn, kind), li) in enumerate(zip(prog, order)):
+        root = midi(rn)
+        base = bar * 12
+        tones = chord_tones(root, kind)
+        for st, ln, nm in L[li]:
+            m = midi(nm)
+            s.tone(base + st, ln, m, 0.15, duty=0.5, vib=0.01 if ln >= 4 else 0.0)
+            s.tone(base + st, ln, m + 7, 0.05, duty=0.25)       # organ fifth
+        # oom-pah-pah: bass on 1, chord on 2 and 3
+        s.tone(base, 4, root + 12, 0.38, wave_='tri')
+        for i in (4, 8):
+            for t in tones:
+                s.tone(base + i, 2, t + 24, 0.05, duty=0.125, decay=7)
+        # bell (high pulse with a fast decay) on every downbeat, louder every 4 bars
+        s.tone(base, 3, tones[0] + 48, 0.09 if bar % 4 == 0 else 0.05, duty=0.125, decay=5)
+        s.kick(base, 0.5)
+        s.hat(base + 4, 0.08)
+        s.hat(base + 8, 0.08)
+        if bar % 4 == 3:
+            s.snare(base + 8, 0.25)
+            s.snare(base + 10, 0.28)
+    s.write(os.path.join(OUT, 'music_boss4.wav'))
+
+
 if __name__ == '__main__':
+    import sys
     os.makedirs(OUT, exist_ok=True)
-    level_theme()
-    boss_theme()
-    bonus_theme()
-    boss2_theme()
+    tracks = {'level': level_theme, 'boss': boss_theme, 'bonus': bonus_theme, 'boss2': boss2_theme,
+              'boss3': boss3_theme, 'boss4': boss4_theme}
+    for name in (sys.argv[1:] or list(tracks)):
+        tracks[name]()

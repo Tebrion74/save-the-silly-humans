@@ -28,6 +28,10 @@ func _run() -> void:
 			scene = "res://scenes/Main.tscn"
 		elif sc.begins_with("huval"):
 			scene = gp.start_at_stage("boss2")
+		elif sc.begins_with("kush"):
+			scene = gp.start_at_stage("boss3")
+		elif sc.begins_with("klaus"):
+			scene = gp.start_at_stage("boss4")
 		elif sc.begins_with("bonus"):
 			var n := 1
 			if sc.length() > 5 and sc.substr(5, 1).is_valid_int():

@@ -149,6 +149,10 @@ func _ready() -> void:
 		paint_data_plaza()
 	elif layout == "bonus_field":
 		paint_bonus_field()
+	elif layout == "airfield":
+		paint_airfield()
+	elif layout == "summit":
+		paint_summit()
 	else:
 		paint_level01()
 
@@ -667,6 +671,14 @@ func _paint_tint(origin: Vector2i) -> void:
 				if x % 4 == 0 or y % 4 == 0:
 					col = col * Color(0.82, 0.92, 1.0)
 				col.a = 1.0
+			elif _arena and f < 0.5 and _style == "airfield":
+				# Build 018: grey flight deck (runway markings: kush_level.gd)
+				col = col * Color(0.8, 0.82, 0.84)
+				col.a = 1.0
+			elif _arena and f < 0.5 and _style == "summit":
+				# Build 018: cold alpine plaza (snow decals: klaus_level.gd)
+				col = col * Color(0.9, 0.95, 1.0)
+				col.a = 1.0
 			elif _arena and f < 0.5 and _style == "bonus":
 				# Build 016: sunny checker meadow for the bonus stage
 				col = col * (Color(1.06, 1.04, 0.92) if (x / 3 + y / 3) % 2 == 0 else Color(0.97, 1.0, 0.9))
@@ -758,6 +770,43 @@ func paint_data_plaza() -> void:
 	paint_level01()
 
 
+## Build 018: flight deck / airfield for BEORGE KUSH JR. (same 42x28 frame
+## and slots as the other boss arenas): wide paved deck, pines in the corners.
+func paint_airfield() -> void:
+	_arena = true
+	_style = "airfield"
+	_woods_v = [
+		{"c": Vector2(3.0, 3.5), "r": Vector2(3.5, 3.0), "mix": "pine"},
+		{"c": Vector2(39.0, 3.5), "r": Vector2(3.5, 3.0), "mix": "pine"},
+	]
+	_ponds_v = []
+	_clear_v = ARENA_CLEARINGS
+	_trails_v = [
+		{"w": 0.9, "p": [Vector2(21.0, 7.2), Vector2(21.0, 9.0)]},
+		{"w": 0.6, "p": [Vector2(21.0, 24.5), Vector2(21.0, 27.0)]},
+	]
+	paint_level01()
+
+
+## Build 018: snowy alpine summit plaza for KLAUS SCHWAB (same frame/slots).
+func paint_summit() -> void:
+	_arena = true
+	_style = "summit"
+	_woods_v = [
+		{"c": Vector2(3.5, 4.0), "r": Vector2(4.0, 3.5), "mix": "pine"},
+		{"c": Vector2(38.5, 4.0), "r": Vector2(4.0, 3.5), "mix": "pine"},
+		{"c": Vector2(2.5, 25.5), "r": Vector2(3.0, 2.5), "mix": "pine"},
+		{"c": Vector2(39.5, 25.5), "r": Vector2(3.0, 2.5), "mix": "pine"},
+	]
+	_ponds_v = []
+	_clear_v = ARENA_CLEARINGS
+	_trails_v = [
+		{"w": 0.9, "p": [Vector2(21.0, 7.2), Vector2(21.0, 9.0)]},
+		{"w": 0.6, "p": [Vector2(21.0, 24.5), Vector2(21.0, 27.0)]},
+	]
+	paint_level01()
+
+
 ## Build 016: the bonus-stage meadow (40x23 = the whole screen): open grass,
 ## flower patches, a few trees in the top corners, nothing blocking.
 func paint_bonus_field() -> void:
@@ -789,6 +838,16 @@ func _layout_arena_vertices() -> void:
 			# forecourt in front of the building
 			if absf(p.x - 21.0) < 6.5 and p.y > 6.0 and p.y < 8.6:
 				_path[i] = 1
+			if _style == "airfield":
+				# Build 018: the whole deck is paved
+				if p.x > 4.0 and p.y > 8.6 and p.x < 38.0 and p.y < 26.0:
+					_path[i] = 1
+				continue
+			if _style == "summit":
+				# Build 018: cleared stone paths in a cross + a ring
+				if p.x > 5.0 and p.x < 37.0 and p.y > 9.0 and p.y < 25.0 and (absf(p.x - 21.0) < 1.6 or absf(p.y - 17.0) < 1.2 or absf(Vector2((p.x - 21.0) / 1.6, p.y - 17.0).length() - 5.5) < 0.7):
+					_path[i] = 1
+				continue
 			if _style == "plaza":
 				# Build 016: paved plaza: a wide rectangle + planters (dirt squares)
 				if p.x > 5.0 and p.x < 37.0 and p.y > 9.0 and p.y < 25.0 and (int(p.x) % 8 == 1 or int(p.y) % 6 == 4 or absf(p.x - 21.0) < 1.6):

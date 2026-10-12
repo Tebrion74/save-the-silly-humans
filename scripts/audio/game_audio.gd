@@ -27,6 +27,8 @@ const TRACKS := {
 	"boss": preload("res://assets/audio/music_boss.wav"),
 	"bonus": preload("res://assets/audio/music_bonus.wav"),
 	"boss2": preload("res://assets/audio/music_boss2.wav"),
+	"boss3": preload("res://assets/audio/music_boss3.wav"),   # build 018: Danger Close
+	"boss4": preload("res://assets/audio/music_boss4.wav"),   # build 018: Summit Waltz
 }
 
 var setting := 0

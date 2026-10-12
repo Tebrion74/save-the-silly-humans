@@ -115,7 +115,7 @@ func finish_stage() -> String:
 	return next_stage_scene()
 
 
-## Debug: a fresh run that starts at `stage` ("bonus", "boss1", "boss2"),
+## Debug: a fresh run that starts at `stage` ("bonus", "boss1".."boss4"),
 ## exactly as if its level had just been cleared. `bonus_n` picks which bonus
 ## stage (1 = after level 1, 2 = after level 4, ...).
 func start_at_stage(stage: String, bonus_n: int = 1) -> String:
@@ -126,6 +126,10 @@ func start_at_stage(stage: String, bonus_n: int = 1) -> String:
 			level = LevelConfig.BONUS_FIRST_AFTER + (maxi(bonus_n, 1) - 1) * LevelConfig.BONUS_EVERY
 		"boss2":
 			level = LevelConfig.BOSS2_AFTER_LEVEL
+		"boss3":
+			level = LevelConfig.BOSS3_AFTER_LEVEL
+		"boss4":
+			level = LevelConfig.BOSS4_AFTER_LEVEL
 	current_level = level
 	stage_queue = GameProgressCheck.stages_after(level)
 	stage_return_level = level + 1

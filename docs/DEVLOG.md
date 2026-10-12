@@ -32,7 +32,8 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [015](#build-015) | 2026-10-07 ~22:22 MT | Live | boss battle: Trustin Judeau (between level 2 and level 3) |
 | [015b](#build-015b) | 2026-10-08 ~09:47 MT | Live | boss only after level 2, harder boss, sound and music everywhere |
 | [016](#build-016) | 2026-10-08 ~13:05 MT | Live | Galaga-style bonus stage, boss 2 Huval Yarheyhey |
-| [017](#build-017) | 2026-10-08 ~16:34 MT | Live | Cantifa: posted gunmen, from level 4 |
+| [017](#build-017) | 2026-10-08 ~16:34 MT | Replaced by 018 | Cantifa: posted gunmen, from level 4 |
+| [018](#build-018) | 2026-10-09 ~00:27 MT (final export 2026-10-11 ~10:42 MT) | Live | bosses 3 and 4: Beorge Kush Jr., Klaus Schwab |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -1324,7 +1325,7 @@ Screenshots: `stsh-build016-01-bonus-title.png`, `-02-bonus-waves.png`, `-03-bon
 <a id="build-017"></a>
 
 **Date:** 2026-10-08 ~16:34 MT  
-**Status:** **LIVE** 2026-10-08 ~16:43 MT. Current build.
+**Status:** Replaced by build 018 at ~20:35 MT on 2026-10-11.
 
 Everything from 016, plus the changes below. The in-game label reads `BUILD 017`.
 
@@ -1382,7 +1383,60 @@ Survivability bot, 25 s, 6 runs, seed 77 (the rifle numbers were left as designe
 Screenshots: `stsh-build017-01-posted.png`, `-02-shooting.png`, `-03-filmed.png`, `-04-howto.png`, `-05-mobile.png`.
 
 ### Web build
-`web-beta-017/`, exported with the same Web preset (`--export-release`). Cache bust: `index.js?v=017` and `"mainPack":"index.pck?v=017"` (with a matching `fileSizes` entry), so link it as `…/index.html?v=017`. `index.pck` is 3,124,340 bytes. **LIVE** 2026-10-08 ~16:43 MT on https://savethesillyhumans.org/game.php; only `index.pck` and `index.html` changed (the engine `.js`/`.wasm`, audio worklets and icons are byte-identical to 016). Live `index.pck` sha256 `{sha}`. Verified live in headless Chrome: BUILD 017 on the title, B/V/G/C do nothing, level music plays (peak ≈ 0.23 RMS), no console errors.
+`web-beta-017/`, exported with the same Web preset (`--export-release`). Cache bust: `index.js?v=017` and `"mainPack":"index.pck?v=017"` (with a matching `fileSizes` entry), so link it as `…/index.html?v=017`. `index.pck` is 3,124,340 bytes. **LIVE** 2026-10-08 ~16:43 MT on https://savethesillyhumans.org/game.php; only `index.pck` and `index.html` changed (the engine `.js`/`.wasm`, audio worklets and icons are byte-identical to 016). Live `index.pck` sha256 `7e5eafd38abc292ba2af2eea1182bde1c992bd8d52a5099106440de79b3297eb`. Verified live in headless Chrome: BUILD 017 on the title, B/V/G/C do nothing, level music plays (peak ≈ 0.23 RMS), no console errors.
+
+## Build 018: bosses 3 and 4, BEORGE KUSH JR. and KLAUS SCHWAB
+<a id="build-018"></a>
+
+**Date:** 2026-10-11 ~10:42 MT  
+**Status:** **LIVE** 2026-10-11 ~20:35 MT (deployed manually by Robert). Current build.
+
+Everything from 017, plus the changes below. The in-game label reads `BUILD 018`.
+
+Two new good-natured cartoon-parody bosses. All art and audio is original and generated (`tools/gen_boss3.py`, `tools/gen_boss4.py`, `tools/gen_music.py`; `music_boss3.wav`, `music_boss4.wav`; new procedural SFX in `scripts/sfx.gd`). The menu has no boss buttons in release builds. Debug keys and scenarios are gated by `OS.is_debug_build()`. Dying in a boss fight retries that boss with the score you started it with.
+
+**Progression** (`BOSS3_AFTER_LEVEL := 8`, `BOSS4_AFTER_LEVEL := 11`):
+L1 > BONUS 1 > L2 > TRUSTIN > L3 > L4 > BONUS 2 > L5 > HUVAL > L6 > L7 > BONUS 3 > L8 > **KUSH** > L9 > L10 > BONUS 4 > L11 > **KLAUS** > L12 > L13 > BONUS 5 > ...
+If a bonus and a boss ever share a slot, the order is level > bonus > boss > next level (tested by moving the bosses onto bonus slots).
+
+### Boss 3: BEORGE KUSH JR., THE AIRSTRIKE ACE (flight-deck / airfield arena)
+- **15 hearts.** Phases at 15 / 10 / 6 / rage 3. MISSION ACCOMPLISHED banner at 9 and 4 hearts: invulnerable for 1.5 s, then an airstrike.
+- Every attack starts with a RADIO CALL tell of 0.6 / 0.55 / 0.5 / 0.45 s. The gap between attacks is 1.25 / 1.05 / 0.9 / 0.75 s.
+- **Strike:** 3 / 4 / 5 / 6 red target marks (the first on you, the second leading you by 0.45 s, the rest 60–180 px around you, at least 75 px apart). Marks land after 1.1 / 1.0 / 0.92 / 0.85 s. Blast radius 55.
+- **Strafe** (phase 2+): a DANGER lane 68 px wide with a 0.85–0.7 s tell, then a jet at 1500 px/s. In rage there are two crossing lanes.
+- **Carpet** (phase 3+): 7 marks, 62 px apart, 0.11 s stagger, radius 44.
+- Attack mix by phase: strike only / 55:45 strike:strafe / 40:30:30 with carpet. Strike→strafe combo chance: 0 / 15 / 30 / 50 %.
+- **FRIENDLY FIRE:** caught in his own blast, he loses a heart (+150 points).
+- **MSM CAM:** he SALUTES (stops, cancels the radio call), for up to 1.0 s.
+- **Score:** 100 per heart, 5000 for the defeat, 300 per player heart left, 150 s time par.
+
+### Boss 4: KLAUS SCHWAB, CHAIRMAN OF THE GREAT RESET (snowy summit arena)
+- **18 hearts.** Phases at 18 / 13 / 8 / rage 4. PANEL DISCUSSION at 13, 8 and 4 hearts: invulnerable for 1.5 s, then a free GREAT RESET.
+- He CONDUCTS (0.45–0.32 s tell) and summons hologram DELEGATES (0.85–0.62 s fade-in, 250–340 px from you). The Trustin delegate throws poutine (single / spread3 / spread5 / volley of 3). The Huval delegate clicks in programmed sheep (1 / 1 / 2 / 2, cap 3 / 3 / 4 / 5); throw them back into him for 1 heart. Filming a delegate dispels it (+100). From phase 3, both delegates can come at once ("double").
+- **INVITATIONS:** a fan of 3 / 4 / 5 / 6 envelopes, 20° apart, at 280 px/s, hit radius 17, tell 0.7–0.55 s.
+- **THE GREAT RESET** (phase 2+): an expanding ring (280 px/s, 16 px thick, to 760 px) with 2 green gaps of 48°. Tell 1.0 / 0.95 / 0.85 / 0.75 s.
+- Rage: PRIVATE JET hops every 3.5–5 s (0.45 s destination tell) and envelope combos (0 / 0 / 20 / 40 %). The gap between attacks is 1.6 / 1.4 / 1.2 / 1.0 s.
+- **MSM CAM:** "NO PRESS!" He hides his face, which cancels his tell and every delegate still fading in, for up to 1.0 s.
+- **Score:** 100 per heart, 7500 for the defeat, 300 per player heart left, 180 s time par, plus SHEEP and DISPELLED rows.
+
+### Layout fixes
+- The Kush banner flies beside his head, or below his boots near the top of the screen. The Klaus labels (PANEL DISCUSSION / NO PRESS!) sit below his feet, so the HUD never covers them.
+- On the Klaus win panel, PROGRAMMED and MICRO SHEEP are merged into one SHEEP row, so the panel keeps 9 rows.
+- The wide boss bar (18 hearts) stays clear of the SCORE digits on PC and scales down to fit between the wedges on touch.
+- How to Play was condensed to 13 lines at 14 px, so nothing runs under BACK.
+
+### Tests and bots
+`_test_018.gd` (kept outside the project): **106/106**. Headless smoke of all 14 scenes: OK. The bot (`_bot_018.gd`) ran 24 runs per skill (seeds 77 and 91). Win rates:
+
+| Skill | Trustin (reg.) | Huval (reg.) | Kush | Klaus |
+|---|---|---|---|---|
+| perfect | 12/12 | 12/12 | 23/23 | 24/24 |
+| good | – | – | 23/24 | 21/24 |
+| average | 12/12 | 10/12 | 13/23 | 3/24 |
+| weak | – | – | 4/24 | 0/22 |
+
+### Web build
+`/workspace/web-beta-018/`, `?v=018` (`index.js?v=018`, `"mainPack":"index.pck?v=018"` with a matching `fileSizes` entry). `index.pck` is 4,372,552 bytes, sha256 `709ffd12c6895e02792be48b936f78b4fa8aea99afde77de7abb8588c80f0705`. The `.wasm` is unchanged. Verified in local headless Chrome: BUILD 018, K/J/B/V/G do nothing in release, level 1 plays with music, no console errors. **LIVE** 2026-10-11 ~20:35 MT on https://savethesillyhumans.org/game.php, deployed manually by Robert (only `index.pck` and `index.html` changed in `/beta/`, plus `game.php` / `game.html`). Live `index.pck` sha256 `709ffd12c6895e02792be48b936f78b4fa8aea99afde77de7abb8588c80f0705`. Rollback copy of the 017 site: `~/rollback-017` on the server.
 
 ## Appendix: project reference notes
 

@@ -296,6 +296,11 @@ func _film(delta: float) -> void:
 		if is_instance_valid(b) and not ("exploding" in b and b.exploding) and in_cone((b as Node2D).global_position) \
 				and b.has_method("cam_film"):
 			b.cam_film(delta)
+	# Build 018: filming a summit hologram delegate dispels it (Summit.Delegate).
+	for dg in tree.get_nodes_in_group("delegate"):
+		if is_instance_valid(dg) and dg is Node2D and in_cone((dg as Node2D).global_position) \
+				and dg.has_method("cam_film"):
+			dg.cam_film(delta)
 	# Build 017: a Cantifa in the cone panics the humans on screen and enrages
 	# every Karen. The Cantifa is not convinced; they turn and may shoot back.
 	var filming_cantifa := false
