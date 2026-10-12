@@ -6,7 +6,7 @@
 
 ▶ **Play it in your browser:** https://savethesillyhumans.org/game.php
 
-Current build: **018** (live: bosses 3 and 4, Beorge Kush Jr. and Klaus Schwab) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
+Current build: **019** (live: WASD stuck-key fix, arrow keys; boss 4 is now Shlaus Kwobb) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
 
 Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://www.youtube.com/@SaveTheSillyHumans)
 
@@ -22,10 +22,10 @@ Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://
 - **MSM Cam.** A 1980s shoulder camcorder. Film silly humans to convince them to walk to safety, expose Karens to go VIRAL, or swing it to knock enemies back. Watch the battery.
 - **Power-ups and inventory.** Long Whip, Strong Throw, Whip Shot, Fire Whip, Shockwave, Health, batteries. Power-ups never time out, and your inventory carries into the next level.
 - **Rounds, levels and scoring.** Hit the save target to win, with a Genesis-style HUD and a high score.
-- **Boss battles.** Clear level 2 to face TRUSTIN JUDEAU, Prime Minister of Poutine: 10 hearts, telegraphed poutine attacks that escalate in three phases and a rage mode. Clear level 5 to face **HUVAL YARHEYHEY, Prophet of the Algorithm (016)**: 12 hearts, telegraphed PROGRAMMED SHEEP that split into fast MICRO SHEEP when hit (a bite costs a heart, a micro nibble half a heart), a lecture ray, SYSTEM UPDATEs that speed up his flock, and rage teleports. Clear level 8 to face **BEORGE KUSH JR., The Airstrike Ace (018)**: 15 hearts, radioed-in airstrike marks, strafing jets and carpet bombing; lure him onto his own marks. Clear level 11 to face **KLAUS SCHWAB, Chairman of the Great Reset (018)**: 18 hearts, hologram delegates of the earlier bosses (film them to dispel them), envelope fans and THE GREAT RESET, an expanding ring with two gaps. Don't touch any boss; dying retries the fight.
+- **Boss battles.** Clear level 2 to face TRUSTIN JUDEAU, Prime Minister of Poutine: 10 hearts, telegraphed poutine attacks that escalate in three phases and a rage mode. Clear level 5 to face **HUVAL YARHEYHEY, Prophet of the Algorithm (016)**: 12 hearts, telegraphed PROGRAMMED SHEEP that split into fast MICRO SHEEP when hit (a bite costs a heart, a micro nibble half a heart), a lecture ray, SYSTEM UPDATEs that speed up his flock, and rage teleports. Clear level 8 to face **BEORGE KUSH JR., The Airstrike Ace (018)**: 15 hearts, radioed-in airstrike marks, strafing jets and carpet bombing; lure him onto his own marks. Clear level 11 to face **SHLAUS KWOBB, Chairman of the Great Reset (018; renamed in 019)**: 18 hearts, hologram delegates of the earlier bosses (film them to dispel them), envelope fans and THE GREAT RESET, an expanding ring with two gaps. Don't touch any boss; dying retries the fight.
 - **Bonus stage (016).** After level 1 and then every 3 levels (4, 7, 10, …): a Galaga-style 45-second challenge stage. Eight waves of flying sheep swoop across the field. Pop them before they leave. 100 per hit, +500 for a whole wave, and PERFECT! SPECIAL BONUS 10000 for all of them. You can't get hurt, and power-ups work without being used up. Each repeat brings more and faster sheep.
-- **Progression.** L1 → bonus → L2 → Trustin → L3 → L4 → bonus → L5 → Huval → L6 → L7 → bonus → L8 → Kush → L9 → L10 → bonus → L11 → Klaus → L12 → … When a bonus and a boss share a slot, the bonus comes first.
-- **Sound and music (015b, 016).** Generated sound effects for everything (whip, grabs, saves, explosions, cam, bosses, UI) and six original chiptune loops: levels, Trustin, the bonus stage, Huval, Kush and Klaus. M (or the speaker icon on touch) cycles sound ON / LOW / OFF.
+- **Progression.** L1 → bonus → L2 → Trustin → L3 → L4 → bonus → L5 → Huval → L6 → L7 → bonus → L8 → Kush → L9 → L10 → bonus → L11 → Shlaus → L12 → … When a bonus and a boss share a slot, the bonus comes first.
+- **Sound and music (015b, 016).** Generated sound effects for everything (whip, grabs, saves, explosions, cam, bosses, UI) and six original chiptune loops: levels, Trustin, the bonus stage, Huval, Kush and Shlaus. M (or the speaker icon on touch) cycles sound ON / LOW / OFF.
 - **PC and touch controls.** Mouse and keyboard with an aim reticle, or a touch joystick with corner wedges and aim assist.
 
 ## Controls
@@ -85,7 +85,7 @@ export_presets.cfg    Web export preset
 scenes/               Title, Main, levels, player, humans, sheep, world, UI
 scripts/              Game logic
   player/             rancher, whip, MSM Cam, weapons, power-up inventory
-  boss/               boss arenas, Trustin Judeau (015), Huval Yarheyhey + programmed sheep (016), Beorge Kush Jr. and Klaus Schwab (018)
+  boss/               boss arenas, Trustin Judeau (015), Huval Yarheyhey + programmed sheep (016), Beorge Kush Jr. and Shlaus Kwobb (018)
   bonus/              Galaga-style bonus stage: waves, flying sheep, tally (016)
   audio/              sound buses, music and the sound setting (build 015b)
   humans/ sheep/      AI for silly humans, possessed humans, Karens, Cantifa (017) and sheep
@@ -107,7 +107,7 @@ Every build, from the first prototype through the 009 hotfixes to 017, has a [Gi
 
 All art and audio in this game is **original work, made for this project**:
 
-- **Sprites:** the rancher, silly humans, possessed humans, Karens and sheep sheets (`assets/characters/`), drawn for the game. The boss, Trustin Judeau (`assets/boss/`), is an invented, good-natured cartoon parody generated by `tools/gen_boss.py` (no real likeness or photos). Boss 2, Huval Yarheyhey, his programmed and micro sheep and the Data Plaza arena (`assets/boss2/`, build 016) are generated the same way by `tools/gen_boss2.py`. Bosses 3 and 4, Beorge Kush Jr. with his jet and flight deck (`assets/boss3/`) and Klaus Schwab with the summit hall (`assets/boss4/`), build 018, come from `tools/gen_boss3.py` and `tools/gen_boss4.py`. STSH Pixel Pack v1 → v2 (16-bit) → v3 (build 007, 32-bit).
+- **Sprites:** the rancher, silly humans, possessed humans, Karens and sheep sheets (`assets/characters/`), drawn for the game. The boss, Trustin Judeau (`assets/boss/`), is an invented, good-natured cartoon parody generated by `tools/gen_boss.py` (no real likeness or photos). Boss 2, Huval Yarheyhey, his programmed and micro sheep and the Data Plaza arena (`assets/boss2/`, build 016) are generated the same way by `tools/gen_boss2.py`. Bosses 3 and 4, Beorge Kush Jr. with his jet and flight deck (`assets/boss3/`) and Shlaus Kwobb with the summit hall (`assets/boss4/`), build 018, come from `tools/gen_boss3.py` and `tools/gen_boss4.py`. STSH Pixel Pack v1 → v2 (16-bit) → v3 (build 007, 32-bit).
 - **FX:** whip crack and explosion sheets (`assets/fx/`), plus effects drawn in code (whip lash, reticle, fire, shockwave, camcorder, VIRAL callout).
 - **Terrain and props:** grass, dirt, paths, forest floor, water, trees, rocks, fences and decor (`assets/tiles/`), generated by the Python scripts in `tools/` (`gen_terrain.py`, `gen_props.py`, `artlib.py`) and assembled into the TileSet by `tools/build_tileset.gd`.
 - **Sound:** sound effects are generated procedurally at runtime (`scripts/sfx.gd`). The music loops (`assets/audio/music_level.wav` "Ranch Hand Hustle" and `music_boss.wav` "Question Period", build 015b; `music_bonus.wav` and `music_boss2.wav`, build 016; `music_boss3.wav` and `music_boss4.wav`, build 018) are original chiptunes generated by `tools/gen_music.py`.

@@ -8,7 +8,7 @@ extends Control
 ## Mouse emulation from touch is off, so touches are hit-tested by hand.
 
 const GAME_SCENE := "res://scenes/Main.tscn"
-const BUILD_LABEL := "BUILD 018"
+const BUILD_LABEL := "BUILD 019"
 const COPYRIGHT := "© 2026 ECHELON PUBLISHERS GROUP"
 const HORIZON := 440.0
 const TITLE_SHADER := preload("res://assets/shaders/title_text.gdshader")
@@ -118,7 +118,7 @@ func _input(event: InputEvent) -> void:
 			start_stage("boss3")
 			get_viewport().set_input_as_handled()
 		elif OS.is_debug_build() and (k == KEY_J or kc == KEY_J):
-			# Build 018 (debug builds only): straight to boss 4, Klaus Schwab
+			# Build 018 (debug builds only): straight to boss 4, Shlaus Kwobb
 			start_stage("boss4")
 			get_viewport().set_input_as_handled()
 		elif k in [KEY_ESCAPE, KEY_BACKSPACE] or kc in [KEY_ESCAPE, KEY_BACKSPACE]:
@@ -251,7 +251,7 @@ func _debug_stage_scene(scenario: String) -> String:
 		return progress.start_at_stage("boss2")
 	if scenario.begins_with("kush"):
 		return progress.start_at_stage("boss3")
-	if scenario.begins_with("klaus"):
+	if scenario.begins_with("shlaus"):
 		return progress.start_at_stage("boss4")
 	if scenario.begins_with("bonus"):
 		var n := 1
@@ -420,7 +420,7 @@ func _menu_button(node_name: String, text: String, font_size: int, bg: Color, bg
 	return b
 
 
-const HOWTO_PC := "WASD  —  move   ·   MOUSE  —  aim the reticle\nLEFT CLICK  —  WHIP   ·   cam: hold REC\nRIGHT CLICK  —  GRAB & throw   ·   cam: SWING\nQ / WHEEL / 1-2  —  swap weapon   ·   M  —  sound\nR  —  restart   ·   N / ENTER  —  next level"
+const HOWTO_PC := "WASD / ARROWS  —  move   ·   MOUSE  —  aim\nLEFT CLICK  —  WHIP   ·   cam: hold REC\nRIGHT CLICK  —  GRAB & throw   ·   cam: SWING\nQ / WHEEL / 1-2  —  swap weapon   ·   M  —  sound\nR  —  restart   ·   N / ENTER  —  next level"
 const HOWTO_TOUCH := "JOYSTICK (bottom left)  —  move\nBOTTOM-RIGHT  —  WHIP   ·   cam: hold REC\nTOP-RIGHT  —  GRAB   ·   cam: SWING\nTOP-LEFT  —  swap weapon   ·   SPEAKER  —  sound\nWHIP auto-aims  ·  crosshair = weapon reach"
 const HOWTO_RULES := "• Herd silly humans into the green SAFE ZONE. Throw POSSESSED humans in to save them too.
 • The CAMP sends humans, the SHEEP DEN breeds sheep. Hit the SAVE TARGET; lose if the rancher falls.
@@ -431,8 +431,8 @@ const HOWTO_RULES := "• Herd silly humans into the green SAFE ZONE. Throw POSS
 • Two moves per weapon: WHIP / GRAB, or MSM CAM REC / SWING (shove + stun, no damage, no battery).
 • SCORE: 200 per human · 50 per sheep or possessed · 100 per Karen. Sheep speed up each level!
 • RETICLE turns GREEN when a target's in range (whip reach or cam cone); RED = nothing to hit.
-• BOSSES after LEVEL 2 (TRUSTIN), 5 (HUVAL), 8 (BEORGE KUSH JR.), 11 (KLAUS SCHWAB). Don't touch them. Die = retry boss.
-• KUSH: leave the red marks and strafing lanes, lure him onto his own marks. KLAUS: film his delegates, use the green RESET gaps.
+• BOSSES after LEVEL 2 (TRUSTIN), 5 (HUVAL), 8 (BEORGE KUSH JR.), 11 (SHLAUS KWOBB). Don't touch them. Die = retry boss.
+• KUSH: leave the red marks and strafing lanes, lure him onto his own marks. SHLAUS: film his delegates, use the green RESET gaps.
 • BONUS STAGE after LEVEL 1, then every 3 levels: pop flying sheep for 45 s. You can't get hurt there!
 • LEVEL 4+: CANTIFA post outside the zones and shoot. Film: humans run, Karens ENRAGE."
 

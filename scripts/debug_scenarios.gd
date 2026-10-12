@@ -505,30 +505,30 @@ static func run_kush(lvl: Node, scenario: String) -> void:
 			boss.take_hit(1, "whip", p.global_position)
 
 
-## Build 018: KLAUS SCHWAB screenshots ("klaus_title", "klaus_fight",
-## "klaus_reset", "klaus_envelopes", "klaus_double", "klaus_panel",
-## "klaus_press", "klaus_win"). Debug builds only.
-static func run_klaus(lvl: Node, scenario: String) -> void:
+## Build 018: SHLAUS KWOBB screenshots ("shlaus_title", "shlaus_fight",
+## "shlaus_reset", "shlaus_envelopes", "shlaus_double", "shlaus_panel",
+## "shlaus_press", "shlaus_win"). Debug builds only.
+static func run_shlaus(lvl: Node, scenario: String) -> void:
 	if not OS.is_debug_build():
 		return
 	var p := lvl.get_node_or_null("Entities/Player") as Node2D
 	var boss = lvl.boss
 	if p == null or boss == null:
 		return
-	print("[debug] klaus scenario ", scenario)
+	print("[debug] shlaus scenario ", scenario)
 	p.begin_grab_ghost(600.0)
-	if scenario == "klaus_title":
+	if scenario == "shlaus_title":
 		return
 	if lvl.hud != null and lvl.hud.title_card != null:
 		lvl.hud.title_card.visible = false
 		lvl.hud.title_card.position.x = 5000.0
-	boss._set_state(KlausSchwab.S.MOVE)
+	boss._set_state(ShlausKwobb.S.MOVE)
 	boss._gap = 99.0
 	boss.global_position = p.global_position + Vector2(-40, -260)
 	p.global_position += Vector2(60, 0)
 	var tree := lvl.get_tree()
 	match scenario:
-		"klaus_fight":
+		"shlaus_fight":
 			boss.hearts = 11
 			lvl.hud.set_boss_hearts(11, boss.max_hearts)
 			boss.ai_enabled = false
@@ -543,33 +543,33 @@ static func run_klaus(lvl: Node, scenario: String) -> void:
 				var s = boss.spawn_robo(p.global_position + off)
 				s.warp_in = 0.0
 			await tree.create_timer(0.2).timeout
-			boss._set_state(KlausSchwab.S.WINDUP)
+			boss._set_state(ShlausKwobb.S.WINDUP)
 			boss.attack = "envelopes"
-		"klaus_reset":
+		"shlaus_reset":
 			boss.hearts = 9
 			lvl.hud.set_boss_hearts(9, boss.max_hearts)
 			boss.ai_enabled = false
 			boss.global_position = p.global_position + Vector2(-20, -180)
 			var ring = boss._spawn_reset(p)
 			ring.tell = 3.0   # screenshot: the telegraph (rings + green gaps)
-			boss._set_state(KlausSchwab.S.WINDUP)
+			boss._set_state(ShlausKwobb.S.WINDUP)
 			boss.attack = "reset"
-		"klaus_envelopes":
+		"shlaus_envelopes":
 			boss.hearts = 7
 			lvl.hud.set_boss_hearts(7, boss.max_hearts)
 			boss.force_attack("envelopes")
 			boss.ai_enabled = false   # screenshot: hold the telegraphed fan
 			await tree.create_timer(0.45).timeout
 			boss._aim_locked = true
-		"klaus_double":
+		"shlaus_double":
 			boss.hearts = 7
 			lvl.hud.set_boss_hearts(7, boss.max_hearts)
 			boss.force_attack("double")
-		"klaus_panel":
+		"shlaus_panel":
 			boss.hearts = 14
 			lvl.hud.set_boss_hearts(14, boss.max_hearts)
 			boss.take_hit(1, "whip", p.global_position)
-		"klaus_press":
+		"shlaus_press":
 			var pu: PowerUps = lvl.power_ups
 			pu.grant("msm_cam")
 			lvl.cam.battery = 14.0
@@ -579,7 +579,7 @@ static func run_klaus(lvl: Node, scenario: String) -> void:
 			lvl.cam.debug_force_film = true
 			pu.changed.emit()
 			boss.force_attack("poutine")
-		"klaus_win":
+		"shlaus_win":
 			boss.hearts = 1
 			lvl.hud.set_boss_hearts(1, boss.max_hearts)
 			boss.ai_enabled = false

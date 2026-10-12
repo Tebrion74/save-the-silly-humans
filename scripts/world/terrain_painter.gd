@@ -676,7 +676,7 @@ func _paint_tint(origin: Vector2i) -> void:
 				col = col * Color(0.8, 0.82, 0.84)
 				col.a = 1.0
 			elif _arena and f < 0.5 and _style == "summit":
-				# Build 018: cold alpine plaza (snow decals: klaus_level.gd)
+				# Build 018: cold alpine plaza (snow decals: shlaus_level.gd)
 				col = col * Color(0.9, 0.95, 1.0)
 				col.a = 1.0
 			elif _arena and f < 0.5 and _style == "bonus":
@@ -788,7 +788,7 @@ func paint_airfield() -> void:
 	paint_level01()
 
 
-## Build 018: snowy alpine summit plaza for KLAUS SCHWAB (same frame/slots).
+## Build 018: snowy alpine summit plaza for SHLAUS KWOBB (same frame/slots).
 func paint_summit() -> void:
 	_arena = true
 	_style = "summit"

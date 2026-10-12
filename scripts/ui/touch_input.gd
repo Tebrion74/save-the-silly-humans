@@ -26,6 +26,83 @@ func _ready() -> void:
 			active = true
 			forced = true
 			break
+	_hook_web_focus()
+
+
+# ------------------------------------------------------------ build 019: stuck keys
+## Build 019 WASD fix. If a movement key is released while the game does not
+## have keyboard focus (alt-tab, a click on the page around the game iframe,
+## the browser UI), the key-up never reaches Godot: the key and its move_*
+## action stay "pressed" forever. The rancher keeps walking that way and the
+## opposite key only cancels it (looks "locked out") until the stuck key is
+## pressed again. So: whenever the game loses OR regains focus, send a real
+## key-up for every key still marked held (clears key and action state the
+## same way a normal release does). Godot's focus notifications cover
+## desktop; on the web the browser's blur / focus / visibilitychange are
+## hooked directly, because the web build does not release keys on blur.
+const RELEASE_KEYS: Array[Key] = [KEY_W, KEY_A, KEY_S, KEY_D, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT,
+	KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_META, KEY_SPACE, KEY_Q]
+const RELEASE_ACTIONS: Array[StringName] = [&"move_left", &"move_right", &"move_up", &"move_down", &"whip", &"whip_grab"]
+var _js_focus_cbs: Array = []   # keep the JS callbacks alive
+var _release_pending := false
+## How many times held input was dropped (tests).
+var focus_releases := 0
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT \
+			or what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_WM_WINDOW_FOCUS_IN \
+			or what == NOTIFICATION_APPLICATION_PAUSED:
+		release_held_input()
+
+
+func _hook_web_focus() -> void:
+	if not OS.has_feature("web"):
+		return
+	var win = JavaScriptBridge.get_interface("window")
+	var doc = JavaScriptBridge.get_interface("document")
+	if win == null or doc == null:
+		return
+	var cb = JavaScriptBridge.create_callback(_on_web_focus_change)
+	_js_focus_cbs.append(cb)
+	win.addEventListener("blur", cb)
+	win.addEventListener("focus", cb)
+	doc.addEventListener("visibilitychange", cb)
+	var canvas = doc.querySelector("canvas")
+	if canvas != null:
+		canvas.addEventListener("blur", cb)
+		canvas.addEventListener("focus", cb)
+
+
+func _on_web_focus_change(_args: Array) -> void:
+	# JS callback: defer to the main loop
+	_release_pending = true
+
+
+func _process(_delta: float) -> void:
+	if _release_pending:
+		_release_pending = false
+		release_held_input()
+
+
+## Release every held key / move action exactly as if the player let go.
+func release_held_input() -> void:
+	var any := false
+	for k in RELEASE_KEYS:
+		if Input.is_physical_key_pressed(k) or Input.is_key_pressed(k):
+			var e := InputEventKey.new()
+			e.physical_keycode = k
+			e.keycode = k
+			e.pressed = false
+			Input.parse_input_event(e)
+			any = true
+	for a in RELEASE_ACTIONS:
+		if InputMap.has_action(a) and Input.is_action_pressed(a):
+			Input.action_release(a)
+			any = true
+	if any:
+		focus_releases += 1
+	whip_held = false
 
 
 ## Last time (ms) any finger touched or dragged; mouse events right after a touch

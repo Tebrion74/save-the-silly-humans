@@ -1,5 +1,5 @@
 extends "res://scripts/boss/huval_level.gd"
-## Build 018: the KLAUS SCHWAB boss level (scenes/levels/Boss4Arena.tscn).
+## Build 018: the SHLAUS KWOBB boss level (scenes/levels/Boss4Arena.tscn).
 ##
 ## Sits between level LevelConfig.BOSS4_AFTER_LEVEL (11) and level 12. Same
 ## flow as the other bosses (boss_level.gd). Extends huval_level.gd so the
@@ -28,12 +28,12 @@ func _configure_boss() -> void:
 	defeat_bonus_points = LevelConfig.BOSS4_DEFEAT_BONUS
 	health_bonus_per_heart = LevelConfig.BOSS4_HEALTH_BONUS
 	time_par = LevelConfig.BOSS4_TIME_PAR
-	add_to_group("klaus_level")
+	add_to_group("shlaus_level")
 
 
 func _customise_title_card() -> void:
 	if hud and hud.has_method("set_title_card_art"):
-		hud.set_title_card_art(KlausSchwab.SHEET, Rect2(4 * 96, 0, 96, 84),
+		hud.set_title_card_art(ShlausKwobb.SHEET, Rect2(4 * 96, 0, 96, 84),
 			"FILM HIS DELEGATES AWAY · WHIP HIM 18 TIMES")
 
 
@@ -73,8 +73,8 @@ func _place_boss_arena() -> void:
 	cs.position = Vector2(0, -55.0)
 	body.add_child(cs)
 	bld.add_child(body)
-	boss = KlausSchwab.new()
-	boss.name = "KlausSchwab"
+	boss = ShlausKwobb.new()
+	boss.name = "ShlausKwobb"
 	boss.level = self
 	boss.arena = arena_rect
 	ents.add_child(boss)
@@ -93,8 +93,8 @@ func _unlock_rescues_after_physics() -> void:
 		hud.show_boss_title_card()
 	print("[boss4] arena ready; hearts=", boss.hearts)
 	var prog := _progress()
-	if OS.is_debug_build() and prog != null and "debug_scenario" in prog and String(prog.debug_scenario).begins_with("klaus"):
-		DebugScenarios.run_klaus(self, String(prog.debug_scenario))
+	if OS.is_debug_build() and prog != null and "debug_scenario" in prog and String(prog.debug_scenario).begins_with("shlaus"):
+		DebugScenarios.run_shlaus(self, String(prog.debug_scenario))
 
 
 func _on_delegate_spawned(d: Node) -> void:
@@ -141,7 +141,7 @@ func defeat_line() -> String:
 
 
 func lose_text() -> String:
-	return "Klaus Schwab has reset you!  PLAY AGAIN restarts the boss fight."
+	return "Shlaus Kwobb has reset you!  PLAY AGAIN restarts the boss fight."
 
 
 func win_text() -> String:

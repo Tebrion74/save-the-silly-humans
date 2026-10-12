@@ -794,14 +794,14 @@ func _place_boss_bar(touch: bool, vs: Vector2) -> void:
 		var left := TouchLayout.swap_dims(vs).z + SoundIcon.SIZE.x + 20.0   # 015b: room for the speaker icon
 		var right := vs.x - TouchLayout.wedge_dims(vs).z
 		cx = (left + right) * 0.5
-		# build 018: Klaus's 18-heart bar is wider than the strip; shrink it to
+		# build 018: Shlaus's 18-heart bar is wider than the strip; shrink it to
 		# fit instead of sliding under the speaker icon
 		var k := clampf((right - left - 8.0) / w, 0.6, 1.0)
 		boss_bar.scale = Vector2(k, k)
 		w *= k
 	else:
 		boss_bar.scale = Vector2.ONE
-		# build 018: keep wide bars (Klaus, 18 hearts) clear of the SCORE digits
+		# build 018: keep wide bars (Shlaus, 18 hearts) clear of the SCORE digits
 		cx = maxf(cx, 412.0 + w * 0.5)
 	boss_bar.position = Vector2(roundf(cx - w * 0.5), 12.0)
 	boss_bar.size = boss_bar.bar_size()
@@ -909,12 +909,12 @@ func show_boss_end(won: bool, message: String, breakdown: Dictionary = {}) -> vo
 	_breakdown_row("HEARTS", "%d x%d" % [hh, pph], str(int(breakdown.get("hearts_points", 0))))
 	# Build 016 (Huval): his programmed / micro sheep
 	if breakdown.has("robo") and breakdown.has("dispelled"):
-		# Build 018 (Klaus): one combined row so the panel keeps Huval's 9 rows
+		# Build 018 (Shlaus): one combined row so the panel keeps Huval's 9 rows
 		_breakdown_row("SHEEP", "%d+%d" % [int(breakdown.get("robo", 0)), int(breakdown.get("micro", 0))], str(int(breakdown.get("robo_points", 0)) + int(breakdown.get("micro_points", 0))))
 	elif breakdown.has("robo"):
 		_breakdown_row("PROGRAMMED", "%d x%d" % [int(breakdown.get("robo", 0)), LevelConfig.POINTS_ROBO], str(int(breakdown.get("robo_points", 0))))
 		_breakdown_row("MICRO SHEEP", "%d x%d" % [int(breakdown.get("micro", 0)), LevelConfig.POINTS_MICRO], str(int(breakdown.get("micro_points", 0))))
-	# Build 018: Beorge Kush Jr. friendly fire / Klaus Schwab dispelled delegates
+	# Build 018: Beorge Kush Jr. friendly fire / Shlaus Kwobb dispelled delegates
 	if breakdown.has("friendly"):
 		_breakdown_row("FRIENDLY FIRE", "%d x%d" % [int(breakdown.get("friendly", 0)), LevelConfig.POINTS_FRIENDLY_FIRE], str(int(breakdown.get("friendly_points", 0))))
 	if breakdown.has("dispelled"):

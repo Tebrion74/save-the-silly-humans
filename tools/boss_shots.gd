@@ -30,7 +30,7 @@ func _run() -> void:
 			scene = gp.start_at_stage("boss2")
 		elif sc.begins_with("kush"):
 			scene = gp.start_at_stage("boss3")
-		elif sc.begins_with("klaus"):
+		elif sc.begins_with("shlaus"):
 			scene = gp.start_at_stage("boss4")
 		elif sc.begins_with("bonus"):
 			var n := 1

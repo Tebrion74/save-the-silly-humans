@@ -1,6 +1,6 @@
 class_name Summit
 extends RefCounted
-## Build 018: Klaus Schwab's summit toolkit (all drawn in code; the delegates
+## Build 018: Shlaus Kwobb's summit toolkit (all drawn in code; the delegates
 ## reuse the Trustin Judeau / Huval Yarheyhey sheets as cyan holograms).
 ##   Summit.Delegate   a hologram DELEGATE that fades in (telegraph), acts once
 ##                     (Trustin: poutine; Huval: programmed sheep), then fades.
@@ -23,7 +23,7 @@ class Delegate extends Node2D:
 	signal dispelled(d: Node)
 	var kind := "trustin"
 	var level: Node = null
-	var klaus: Node = null
+	var shlaus: Node = null
 	var tell := 0.8
 	var phase := 1
 	var poutine_mode := "single"
@@ -172,8 +172,8 @@ class Delegate extends Node2D:
 		else:
 			Sfx.play(self, "clicker", -6.0)
 			for sp in spawn_points:
-				if klaus != null and is_instance_valid(klaus) and klaus.has_method("spawn_robo"):
-					klaus.spawn_robo(sp)
+				if shlaus != null and is_instance_valid(shlaus) and shlaus.has_method("spawn_robo"):
+					shlaus.spawn_robo(sp)
 			spawn_points.clear()
 
 	func _draw() -> void:

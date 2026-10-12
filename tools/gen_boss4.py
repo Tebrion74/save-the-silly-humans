@@ -1,8 +1,8 @@
-"""Build 018 art generator: boss 4 (KLAUS SCHWAB) and the Davos-style
+"""Build 018 art generator: boss 4 (SHLAUS KWOBB) and the Davos-style
 summit backdrop (Python + Pillow + numpy).
 
 Draws, from code only (no photos, no tracing, no third-party assets):
-  assets/boss4/klaus_96.png       Klaus Schwab sheet, 10 frames of 96x112:
+  assets/boss4/shlaus_96.png       Shlaus Kwobb sheet, 10 frames of 96x112:
                                   0-1 idle (fingertips together), 2-3 walk,
                                   4 RESET remote raised (wind-up), 5 conducting
                                   (summons / cast), 6 "no press!" hand up to the
@@ -10,7 +10,7 @@ Draws, from code only (no photos, no tracing, no third-party assets):
   assets/boss4/summit_hall.png    arena backdrop: an alpine conference centre
                                   with snowy peaks and a SUMMIT banner (352x184)
 
-Klaus Schwab here is a good-natured cartoon parody of a summit chairman:
+Shlaus Kwobb here is a good-natured cartoon parody of a summit chairman:
 tall, a bald dome with a white fringe, bushy white eyebrows, small rimless
 glasses, a stern little smile, a dark grey high-collar suit and a VIP lanyard.
 Drawn from shapes in this file only; no photo reference, no traced likeness.
@@ -43,7 +43,7 @@ gb.PAL.update({
 })
 
 
-def klaus(frame):
+def shlaus(frame):
     c = Canvas(FW, FH)
     oy = 12                     # a head taller than the others
     sit = frame in (8, 9)
@@ -270,8 +270,8 @@ def summit_hall():
 def main():
     sheet = Image.new('RGBA', (FW * 10, FH), (0, 0, 0, 0))
     for f in range(10):
-        sheet.alpha_composite(klaus(f), (f * FW, 0))
-    sheet.save(os.path.join(OUT, 'klaus_96.png'))
+        sheet.alpha_composite(shlaus(f), (f * FW, 0))
+    sheet.save(os.path.join(OUT, 'shlaus_96.png'))
     summit_hall().save(os.path.join(OUT, 'summit_hall.png'))
     print('wrote', OUT)
 

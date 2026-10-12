@@ -33,7 +33,8 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [015b](#build-015b) | 2026-10-08 ~09:47 MT | Live | boss only after level 2, harder boss, sound and music everywhere |
 | [016](#build-016) | 2026-10-08 ~13:05 MT | Live | Galaga-style bonus stage, boss 2 Huval Yarheyhey |
 | [017](#build-017) | 2026-10-08 ~16:34 MT | Replaced by 018 | Cantifa: posted gunmen, from level 4 |
-| [018](#build-018) | 2026-10-09 ~00:27 MT (final export 2026-10-11 ~10:42 MT) | Live | bosses 3 and 4: Beorge Kush Jr., Klaus Schwab |
+| [018](#build-018) | 2026-10-09 ~00:27 MT (final export 2026-10-11 ~10:42 MT) | Replaced by 019 | bosses 3 and 4: Beorge Kush Jr., Klaus Schwab |
+| [019](#build-019) | 2026-10-11 ~21:18 MT | Live | WASD stuck-key fix, boss 4 renamed Shlaus Kwobb |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -1389,7 +1390,7 @@ Screenshots: `stsh-build017-01-posted.png`, `-02-shooting.png`, `-03-filmed.png`
 <a id="build-018"></a>
 
 **Date:** 2026-10-11 ~10:42 MT  
-**Status:** **LIVE** 2026-10-11 ~20:35 MT (deployed manually by Robert). Current build.
+**Status:** Replaced by build 019 at ~21:27 MT on 2026-10-11.
 
 Everything from 017, plus the changes below. The in-game label reads `BUILD 018`.
 
@@ -1437,6 +1438,38 @@ If a bonus and a boss ever share a slot, the order is level > bonus > boss > nex
 
 ### Web build
 `/workspace/web-beta-018/`, `?v=018` (`index.js?v=018`, `"mainPack":"index.pck?v=018"` with a matching `fileSizes` entry). `index.pck` is 4,372,552 bytes, sha256 `709ffd12c6895e02792be48b936f78b4fa8aea99afde77de7abb8588c80f0705`. The `.wasm` is unchanged. Verified in local headless Chrome: BUILD 018, K/J/B/V/G do nothing in release, level 1 plays with music, no console errors. **LIVE** 2026-10-11 ~20:35 MT on https://savethesillyhumans.org/game.php, deployed manually by Robert (only `index.pck` and `index.html` changed in `/beta/`, plus `game.php` / `game.html`). Live `index.pck` sha256 `709ffd12c6895e02792be48b936f78b4fa8aea99afde77de7abb8588c80f0705`. Rollback copy of the 017 site: `~/rollback-017` on the server.
+
+## Build 019: WASD stuck-key fix, boss 4 renamed SHLAUS KWOBB
+<a id="build-019"></a>
+
+**Date:** 2026-10-11 ~21:18 MT  
+**Status:** **LIVE** 2026-10-11 ~21:27 MT (deployed manually by Robert). Current build.
+
+### WASD bug (PC)
+**Symptom (as reported):** some directions get locked out until the opposite key is pressed.
+
+**Root cause:** a key-up that never reaches the game. Movement already polls `Input.get_vector("move_left", "move_right", "move_up", "move_down")` every physics frame. That part is correct: opposite keys cancel, the other key comes back on release, diagonals work, and held keys survive level, bonus and boss scene changes (all re-verified). But if a movement key is released while the game doesn't have keyboard focus, the browser delivers the `keyup` to whatever has focus instead. That happens with a click on the page around the game iframe on game.php, alt-tab, or the browser UI. Godot's web build does not release held keys when focus is lost. The key and its `move_*` action stay "pressed" forever. The rancher keeps walking that way, and the opposite key only cancels it to a standstill (the "locked out" direction) until the stuck key is pressed and released again. Reproduced in headless Chrome: hold W, click outside the iframe, release W, click back; W stays held and S gives zero movement.
+
+**Fix** (`scripts/ui/touch_input.gd`, the always-on input autoload): `release_held_input()` sends a real key-up (`Input.parse_input_event`) for every movement / modifier key still marked held and releases the `move_*` / whip actions. It runs whenever the game loses **or regains** focus:
+- Godot's `NOTIFICATION_APPLICATION_FOCUS_OUT/IN`, `NOTIFICATION_WM_WINDOW_FOCUS_OUT/IN` and `NOTIFICATION_APPLICATION_PAUSED` (desktop),
+- on the web, the browser's `window` blur/focus, `document` `visibilitychange` and canvas blur/focus, hooked via `JavaScriptBridge` (deferred to the main loop).
+
+Also: the **arrow keys** now move too (added to `move_*`, physical keycodes like WASD, so AZERTY etc. use the same key positions). How to Play reads "WASD / ARROWS — move".
+
+**Tests:** `_wasd_019.gd` (kept outside the project) feeds real key events through `Input.parse_input_event` into the running game and checks both `Input.get_vector` and the rancher's velocity: **76/76**. It covers every single key, every opposite pair in both press and release orders, all four diagonals and diagonal rolls, arrows alone and mixed with WASD, key repeat (echo), focus out, focus in with a stale key, the web blur callback, and W held across changes into the bonus stage, Kush, Shlaus and a level. Headless Chrome (debug web export in an iframe, real keyboard): before the fix the outside-click case stuck W and S did nothing; after it, W clears on refocus and S works at once. W→S→release W, A→D→release D, Shift during release and a key held through title → level 1 (released mid-load) are all correct.
+
+### Rename: KLAUS SCHWAB → SHLAUS KWOBB
+Title unchanged: **CHAIRMAN OF THE GREAT RESET**. Renamed in the title card, boss bar, How to Play, lose message and code: `ShlausKwobb` (`scripts/boss/shlaus.gd`), `shlaus_level.gd`, `assets/boss4/shlaus_96.png`, `run_shlaus` and `shlaus_*` debug scenarios, the `shlaus_level` group, `BOSS4_NAME := "SHLAUS KWOBB"`. The 018 notes keep the old name as history.
+
+### Tests and bots
+Logic suite (renamed 018 suite): **106/106**. Smoke of all 14 scenes: OK. Boss 4 bot sanity (seed 77, 12 runs): perfect 12/12, good 12/12, same as 018.
+
+### Screenshots
+`stsh-build019-01-shlaus-title.png`, `-02-howto.png`, `-03-howto-mobile.png`, `-04-shlaus-fight.png`, `-05-shlaus-win.png`.
+
+### Web build
+`/workspace/web-beta-019/`, `?v=019`. `index.pck` 4,375,936 bytes, sha256 `7cf9267f2bb9ba3cc9b5c30ff4dddd3c01029eec553b479cab342ca4e5d123a4`. Only `index.pck` and `index.html` differ from 018. **LIVE** 2026-10-11 ~21:27 MT on https://savethesillyhumans.org/game.php, deployed manually by Robert (only `index.pck` and `index.html` changed in `/beta/`, plus `game.php` / `game.html`). Live `index.pck` sha256 `7cf9267f2bb9ba3cc9b5c30ff4dddd3c01029eec553b479cab342ca4e5d123a4`. Rollback copy of the 018 site: `~/rollback-018` on the server.
+
 
 ## Appendix: project reference notes
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dkc8q3rv43y6j"
-path="res://.godot/imported/klaus_96.png-5adbb443e97197715d2b7895cae8aeb4.ctex"
+uid="uid://b6fa57vccquix"
+path="res://.godot/imported/shlaus_96.png-b562a29af9b4f9307ae0d089cb6b2957.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/boss4/klaus_96.png"
-dest_files=["res://.godot/imported/klaus_96.png-5adbb443e97197715d2b7895cae8aeb4.ctex"]
+source_file="res://assets/boss4/shlaus_96.png"
+dest_files=["res://.godot/imported/shlaus_96.png-b562a29af9b4f9307ae0d089cb6b2957.ctex"]
 
 [params]
 

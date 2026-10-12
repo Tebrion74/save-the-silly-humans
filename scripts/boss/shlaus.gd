@@ -1,10 +1,10 @@
-class_name KlausSchwab
+class_name ShlausKwobb
 extends CharacterBody2D
-## Build 018 boss 4: KLAUS SCHWAB, CHAIRMAN OF THE GREAT RESET. A good-natured
+## Build 018 boss 4: SHLAUS KWOBB, CHAIRMAN OF THE GREAT RESET. A good-natured
 ## cartoon parody of the summit chairman (tall, bald dome with a white
 ## fringe, bushy eyebrows, rimless glasses, grey high-collar suit, VIP
 ## lanyard, a big red RESET remote). Art: tools/gen_boss4.py ->
-## assets/boss4/klaus_96.png. Arena: klaus_level.gd (a Davos-style summit).
+## assets/boss4/shlaus_96.png. Arena: shlaus_level.gd (a Davos-style summit).
 ##
 ## The puppet master: he CONDUCTS (arms up, "!") and summons hologram
 ## DELEGATES of the earlier bosses: Trustin Judeau throws poutine, Huval
@@ -31,7 +31,7 @@ signal defeated
 signal summoned(sheep: Node)
 signal delegate_spawned(d: Node)
 
-const SHEET := preload("res://assets/boss4/klaus_96.png")
+const SHEET := preload("res://assets/boss4/shlaus_96.png")
 enum S { INTRO, MOVE, TELL_DASH, DASH, WINDUP, VOLLEY, RECOVER, POSE, STAGGER, DEFEATED, PHOTO_OP, TELEPORT }
 
 const F_IDLE := 0
@@ -557,7 +557,7 @@ func _fx_parent() -> Node:
 
 
 ## Where a delegate appears: BOSS4_DELEGATE_DIST from you, inside the arena,
-## away from Klaus and from other delegates.
+## away from Shlaus and from other delegates.
 func pick_delegate_point(player_pos: Vector2) -> Vector2:
 	var inner := arena.grow(-30.0)
 	var best := global_position
@@ -614,7 +614,7 @@ func _spawn_delegate(p: Node2D, kind: String) -> Node:
 	var d := Summit.Delegate.new()
 	d.kind = kind
 	d.level = level
-	d.klaus = self
+	d.shlaus = self
 	d.phase = phase()
 	d.tell = float(LevelConfig.BOSS4_DELEGATE_TELL[i])
 	var mode: String = LevelConfig.BOSS4_POUTINE_MODE[i]

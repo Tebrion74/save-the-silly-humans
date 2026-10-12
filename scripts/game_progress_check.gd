@@ -24,7 +24,7 @@ static func bonus_index(level: int, first: int = LevelConfig.BONUS_FIRST_AFTER, 
 
 ## Stages played after clearing `level`, in order: "bonus" first, then the
 ## boss ("boss1" Trustin, "boss2" Huval, build 018: "boss3" Beorge Kush Jr.,
-## "boss4" Klaus Schwab). Empty = straight to level + 1.
+## "boss4" Shlaus Kwobb). Empty = straight to level + 1.
 ## The optional arguments exist so tests can check coinciding slots (the
 ## build 018 bosses are appended at the end so 016 callers keep working).
 static func stages_after(level: int, boss1_after: int = LevelConfig.BOSS_AFTER_LEVEL,

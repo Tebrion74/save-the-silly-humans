@@ -451,8 +451,8 @@ static func boss_phase(hearts: int) -> int:
 ##      Yarheyhey after 5)
 ## then level L + 1. So with the defaults:
 ##   L1 > BONUS 1 > L2 > TRUSTIN > L3 > L4 > BONUS 2 > L5 > HUVAL > L6 > L7 >
-##   BONUS 3 > L8 > KUSH > L9 > L10 > BONUS 4 > L11 > SCHWAB > L12 > L13 >
-##   BONUS 5 > ... (build 018 adds Beorge Kush Jr. after 8, Klaus Schwab after 11)
+##   BONUS 3 > L8 > KUSH > L9 > L10 > BONUS 4 > L11 > KWOBB > L12 > L13 >
+##   BONUS 5 > ... (build 018 adds Beorge Kush Jr. after 8, Shlaus Kwobb after 11)
 ## If a bonus and a boss ever share a slot: level > bonus > boss > next level.
 const BONUS_FIRST_AFTER := 1
 const BONUS_EVERY := 3
@@ -460,7 +460,7 @@ const BONUS_SCENE := "res://scenes/levels/BonusStage.tscn"
 const BOSS2_AFTER_LEVEL := 5
 const BOSS2_SCENE := "res://scenes/levels/Boss2Arena.tscn"
 ## Build 018: boss 3 (Beorge Kush Jr.) between levels 8 and 9, boss 4
-## (Klaus Schwab) between levels 11 and 12. Each placement is this one value.
+## (Shlaus Kwobb) between levels 11 and 12. Each placement is this one value.
 const BOSS3_AFTER_LEVEL := 8
 const BOSS3_SCENE := "res://scenes/levels/Boss3Arena.tscn"
 const BOSS4_AFTER_LEVEL := 11
@@ -684,12 +684,12 @@ static func boss3_phase(hearts: int) -> int:
 
 
 # ---------------------------------------------------------------- build 018 boss 4
-## KLAUS SCHWAB, CHAIRMAN OF THE GREAT RESET (scripts/boss/klaus.gd,
-## klaus_level.gd, delegate.gd, scenes/levels/Boss4Arena.tscn). The puppet
+## SHLAUS KWOBB, CHAIRMAN OF THE GREAT RESET (scripts/boss/shlaus.gd,
+## shlaus_level.gd, delegate.gd, scenes/levels/Boss4Arena.tscn). The puppet
 ## master of the summit: he summons hologram DELEGATES of Trustin Judeau
 ## (poutine) and Huval Yarheyhey (programmed sheep) and adds his own
 ## attacks. Same hit rules as the other bosses. The hardest boss so far.
-const BOSS4_NAME := "KLAUS SCHWAB"
+const BOSS4_NAME := "SHLAUS KWOBB"
 const BOSS4_TITLE := "CHAIRMAN OF THE GREAT RESET"
 const BOSS4_HEARTS := 18
 ## Phases by hearts left: 18-14 / 13-9 / 8-5 / rage 4-1.

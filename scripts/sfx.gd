@@ -311,7 +311,7 @@ static func get_sound(sound_name: String) -> AudioStreamWAV:
 					s.append((rng.randf() * 2.0 - 1.0) * 0.3 * (1.0 - float(i) / nn))
 				for i in int(rate * 0.012):
 					s.append(0.0)
-		# ---- build 018: Klaus Schwab (summit) ----
+		# ---- build 018: Shlaus Kwobb (summit) ----
 		"hologram":  # delegate fades in: shimmering rising arpeggio
 			s = _notes([[523.0, 0.04], [784.0, 0.04], [1047.0, 0.04], [1568.0, 0.08]], 0.11, 0.25)
 		"dispel":    # delegate dispelled: falling sparkle

@@ -352,7 +352,7 @@ def boss3_theme():
 def boss4_theme():
     """'Summit Waltz': an ominous C minor waltz (3/4, 12 sixteenths per bar),
     176 BPM, 24 bars: an organ-ish doubled lead, a sweeping oom-pah-pah bass
-    and a bell on every downbeat, for the Klaus Schwab fight."""
+    and a bell on every downbeat, for the Shlaus Kwobb fight."""
     s = Song(176, 24, steps_per_bar=12)
     s.rng = np.random.default_rng(1819)
     prog = [('C2', 'min'), ('C2', 'min'), ('Ab1', 'maj'), ('G1', 'maj')] * 2 + \
