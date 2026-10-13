@@ -155,7 +155,12 @@ class StarAura extends Node2D:
 
 ## True when the whip has the long reach (pickup mod or full hearts).
 func long_reach() -> bool:
-	return whip_mod == "long_whip" or full_heart_long
+	return whip_mod == "long_whip" or full_heart_long or _god()
+
+
+func _god() -> bool:
+	var bt := get_node_or_null("/root/BetaTools") if is_inside_tree() else null
+	return bt != null and bt.god
 
 
 func weapons() -> Node:
@@ -241,6 +246,8 @@ func take_spare_battery() -> bool:
 
 
 func is_active(kind: String) -> bool:
+	if _god() and kind in ["fire_whip", "shockwave", "long_whip", "strong_throw", "whip_shot"]:
+		return true
 	match kind:
 		"fire_whip":
 			return fire_charges > 0
@@ -290,7 +297,7 @@ func _apply() -> void:
 		return
 	_whip.whip_range = _base_range * (LevelConfig.LONG_WHIP_MULT if long_reach() else 1.0)
 	_whip.assist_range_mult = LevelConfig.LONG_WHIP_MULT if long_reach() else 1.0
-	_whip.throw_force = _base_throw * (LevelConfig.STRONG_THROW_MULT if whip_mod == "strong_throw" else 1.0)
+	_whip.throw_force = _base_throw * (LevelConfig.STRONG_THROW_MULT if (whip_mod == "strong_throw" or _god()) else 1.0)
 
 
 # ---------------------------------------------------------------- carry-over

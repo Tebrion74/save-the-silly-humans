@@ -36,7 +36,7 @@ func _run() -> void:
 			scene = gp.start_at_stage("boss5")
 		elif sc.begins_with("nancy"):
 			scene = gp.start_at_stage("boss6")
-		elif sc in ["star_combo", "reticle_busy", "extra_heart", "reticle_pc", "level"]:
+		elif sc in ["star_combo", "reticle_busy", "extra_heart", "reticle_pc", "level", "cheat"]:
 			scene = "res://scenes/Main.tscn"
 		elif sc.begins_with("bonus"):
 			var n := 1
@@ -46,9 +46,14 @@ func _run() -> void:
 		else:
 			scene = gp.start_at_stage("boss1")
 		change_scene_to_file(scene)
+	if sc_name() == "cheat":
+		await create_timer(0.5).timeout
+		root.get_node("BetaTools")._apply_code("7474")
 	await create_timer(maxf(delay - 0.4, 0.05)).timeout
 	_aim_cursor(sc_name())
-	await create_timer(0.4).timeout
+	if sc_name() == "bonus_multi":
+		await _bonus_multi()
+	await create_timer(0.4 if sc_name() != "bonus_multi" else 0.12).timeout
 	root.get_texture().get_image().save_png(out)
 	print("saved ", out)
 	quit()
@@ -81,3 +86,20 @@ func _aim_cursor(sc: String) -> void:
 					tgt = n
 	if tgt != null:
 		ma.cursor = tgt.get_global_transform_with_canvas().origin + Vector2(0, -12)
+
+
+## Build 022: line three flying sheep up on the lash and crack once.
+func _bonus_multi() -> void:
+	var p := get_first_node_in_group("player") as Node2D
+	if p == null:
+		return
+	var whip := p.get_node("Whip")
+	var ti = root.get_node("TouchInput")
+	var dir: Vector2 = p.global_position.direction_to(ti.get_aim_world(whip))
+	var sheep := get_nodes_in_group("bonus_sheep").filter(func(s): return s._started and not s.exploding)
+	for i in mini(4, sheep.size()):
+		sheep[i].global_position = p.global_position + dir * (70 + i * 50)
+		sheep[i].set_physics_process(false)
+	await process_frame
+	whip.cooldown = 0.0
+	whip.fire_whip()

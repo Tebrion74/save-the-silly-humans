@@ -101,7 +101,9 @@ func fire_whip() -> void:
 	if cooldown > 0.0:
 		return
 
-	cooldown = cooldown_time
+	var bonus_lvl := get_tree().get_first_node_in_group("bonus_level")
+	# Build 022: faster lash in bonus stages
+	cooldown = cooldown_time * (LevelConfig.BONUS_WHIP_COOLDOWN_MULT if bonus_lvl != null else 1.0)
 
 	var owner_position := global_position
 	var mouse_position := TouchInput.get_aim_world(self)
@@ -129,6 +131,9 @@ func fire_whip() -> void:
 			target = null
 		elif target.has_method("receive_whip"):
 			target.receive_whip(owner_position, whip_force)
+
+	if bonus_lvl != null:
+		_bonus_multi_pop(bonus_lvl, owner_position, target)
 
 	_crack_age = 0.0
 	_spark_sent_crack = false
@@ -542,3 +547,31 @@ func _draw() -> void:
 		if p >= 0.24:
 			var spark := clampf((p - 0.40) / 0.3, 0.0, 1.0) * fade
 			_draw_tip(_grab_pts[_grab_pts.size() - 1], spark, Color(0.55, 1.0, 1.0, fade))
+
+
+## Build 022: in bonus stages one crack pops EVERY flying sheep it overlaps:
+## anything within ray_hit_radius of the lash line, or near the crack tip.
+## Each pop scores normally (bonus_level._on_bonus_popped).
+func _bonus_multi_pop(bonus_lvl: Node, from: Vector2, first: Node) -> int:
+	var n := 1 if first != null else 0
+	var tip_r := LevelConfig.BONUS_MULTI_TIP_RADIUS
+	# the whole lash counts, out to full reach even when it snapped onto a sheep
+	var lash_end := whip_end
+	if from.distance_to(whip_end) < whip_range and from.distance_squared_to(whip_end) > 1.0:
+		lash_end = from + from.direction_to(whip_end) * whip_range
+	for sh in get_tree().get_nodes_in_group("bonus_sheep"):
+		if sh == first or not is_instance_valid(sh) or not (sh is Node2D):
+			continue
+		if "exploding" in sh and sh.exploding:
+			continue
+		var p: Vector2 = (sh as Node2D).global_position
+		var ab := lash_end - from
+		var t := clampf((p - from).dot(ab) / maxf(ab.length_squared(), 0.0001), 0.0, 1.0)
+		var d := p.distance_to(from + ab * t)
+		if d <= ray_hit_radius or p.distance_to(whip_end) <= tip_r:
+			if sh.has_method("receive_whip"):
+				sh.receive_whip(from, whip_force)
+				n += 1
+	if n >= 2 and bonus_lvl.has_method("spawn_score_popup"):
+		bonus_lvl.spawn_score_popup("MULTI x%d!" % n, whip_end + Vector2(0, -56), Color(0.5, 1.0, 1.0), 3)
+	return n

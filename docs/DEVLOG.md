@@ -36,7 +36,8 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [018](#build-018) | 2026-10-09 ~00:27 MT (final export 2026-10-11 ~10:42 MT) | Replaced by 019 | bosses 3 and 4: Beorge Kush Jr., Klaus Schwab |
 | [019](#build-019) | 2026-10-11 ~21:18 MT | Replaced by 020 | WASD stuck-key fix, boss 4 renamed Shlaus Kwobb |
 | [020](#build-020) | 2026-10-11 ~23:39 MT | Replaced by 021 | +hearts, INVINCIBLE star, timed power-ups, reticle, mouse lock, bosses Gill Bates and Nancy Pelotto |
-| [021](#build-021) | 2026-10-12 ~20:59 MT | Live | regional biomes for the regular levels |
+| [021](#build-021) | 2026-10-12 ~20:59 MT | Replaced by 022 | regional biomes for the regular levels |
+| [022](#build-022) | 2026-10-12 ~22:12 MT | Live | up to 12 hearts, faster multi-pop whip in bonus stages |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -1510,7 +1511,7 @@ Based on live 019. The in-game label reads `BUILD 020`.
 <a id="build-021"></a>
 
 **Date:** 2026-10-12 ~20:59 MT  
-**Status:** **LIVE** 2026-10-12 ~21:19 MT (deployed manually by Robert). Current build.
+**Status:** Replaced by build 022 at ~22:20 MT on 2026-10-12.
 
 Based on live 020. The in-game label reads `BUILD 021`. Bonus stages and boss arenas are unchanged.
 
@@ -1547,6 +1548,44 @@ The levels **before** each boss look like the natural environment of that boss's
 
 ### Web build
 `/workspace/web-beta-021/`, `?v=021`. `index.pck` is 6,137,988 bytes, sha256 `b445101430714d736c01f716e28e8a625f8fda358c9cf14348bfa336b59c9bc5`. `index.js` and `index.wasm` are identical to 020. The old `web-beta*` folders are excluded by `exclude_filter` and a `.gdignore` in each, and no `res://web-beta` paths are in the pck. The stray 020 title PNGs were deleted from the project, so the pck is smaller than 020's. **LIVE** 2026-10-12 ~21:19 MT on https://savethesillyhumans.org/game.php, deployed manually by Robert (only `index.pck` and `index.html` changed in `/beta/`, plus `game.php`). Live `index.pck` sha256 `b445101430714d736c01f716e28e8a625f8fda358c9cf14348bfa336b59c9bc5`. Rollback copy of the 020 site: `~/rollback-020` on the server. Robert has removed `game.html` from the server; `game.php` is the only page, and the rollback copy has no `game.html`.
+
+## Build 022: up to 12 hearts, faster multi-pop whip in bonus stages
+<a id="build-022"></a>
+
+**Date:** 2026-10-12 ~22:12 MT  
+**Status:** **LIVE** 2026-10-12 ~22:20 MT (deployed manually by Robert). Current build.
+
+Based on live 021. The in-game label reads `BUILD 022`.
+
+### Hearts: cap 8 → 12
+`LevelConfig.HEARTS_CAP := 12` is the only setting. The rule is unchanged: start with 5, +1 max heart every 2 levels completed, so 12 hearts arrive after level 14. The HUD heart bar keeps one row up to 8 hearts and wraps into two even rows above that (6 × 2 at 12, 180 × 52 px), so it fits under the score block on PC and mobile. How to Play reads "up to 12".
+
+**Boss bot impact** (24 runs each, avg / weak skill; 020 rules → 022). Hearts at each fight: Shlaus 10, Gill 12, Nancy 12.
+
+| Boss | avg 020 | avg 022 | weak 020 | weak 022 |
+|---|---|---|---|---|
+| Shlaus | 17 | 22 | 1 | 10 |
+| Gill | 7 | 20 | 0 | 2 |
+| Nancy | 4 | 11 | 0 | 3 |
+
+The difficulty ladder is still in order (Shlaus < Gill < Nancy), but the late bosses are clearly easier for average players.
+
+### Bonus stages
+- Whip cooldown ×0.5 (0.35 s → 0.175 s; `BONUS_WHIP_COOLDOWN_MULT`).
+- **Multi-hit:** one crack pops every flying sheep it overlaps. That means anything within the lash's hit radius along its full reach, or within 44 px of the tip (`BONUS_MULTI_TIP_RADIUS`). Each pop scores normally (and counts toward PERFECT waves). Two or more pops in one crack show "MULTI xN!".
+- Regular levels and bosses keep the normal cooldown and a single target.
+
+### Other
+- Internal beta tools added.
+
+### Tests
+`_test_022` 38/38, `_maps_021` 432/432, `_wasd_019` 76/76, smoke 16/0. `_test_020` 78/80 (its two 8-heart-cap checks are expected to fail now). `_test_019` 104/106 (expected).
+
+### Screenshots
+`stsh-build022-01-hearts12-pc.png`, `-02-hearts12-mobile`, `-03-bonus-multipop`, `-06-hearts12-boss`.
+
+### Web build
+`/workspace/web-beta-022/`, `?v=022`. `index.pck` is 6,150,824 bytes, sha256 `354aa2a98cb00eda45d9594084d731c5b192b35f8bb0785e8d863935b7d8e457`. `index.js` and `index.wasm` are identical to 021. No `game.html` on the server any more; the deploy only touches `game.php` and `/beta/`. **LIVE** 2026-10-12 ~22:20 MT on https://savethesillyhumans.org/game.php, deployed manually by Robert. Live `index.pck` sha256 `354aa2a98cb00eda45d9594084d731c5b192b35f8bb0785e8d863935b7d8e457`. Rollback copy of the 021 site: `~/rollback-021` on the server.
 
 ## Appendix: project reference notes
 

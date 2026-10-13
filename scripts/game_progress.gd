@@ -165,6 +165,9 @@ func finish_boss() -> void:
 
 ## START from the title: level 1, score 0.
 func reset_progress() -> void:
+	var bt := get_node_or_null("/root/BetaTools")
+	if bt != null:
+		bt.on_new_run()
 	current_level = 1
 	score = 0
 	level_start_score = 0
@@ -203,6 +206,10 @@ func carry_inventory(d: Dictionary) -> void:
 
 ## Round over: bump + persist the high score. Returns true for a new record.
 func commit_high_score() -> bool:
+	var bt := get_node_or_null("/root/BetaTools")
+	if bt != null and bt.tainted:
+		new_high_score = false
+		return false   # build 022: runs that used beta tools never save a score
 	if score > high_score:
 		high_score = score
 		new_high_score = true

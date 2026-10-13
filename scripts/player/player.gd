@@ -176,6 +176,9 @@ func take_damage(amount: int, source_position := Vector2.ZERO) -> void:
 	# grab window the rancher has no body, so contact bites are ignored too.
 	if _ghost_active:
 		return
+	var bt := get_node_or_null("/root/BetaTools")
+	if bt != null and bt.god:
+		return
 	# Build 020: INVINCIBLE (star power) - nothing hurts.
 	var pu := get_node_or_null("PowerUps")
 	if pu != null and "invincible_time" in pu and pu.invincible_time > 0.0:

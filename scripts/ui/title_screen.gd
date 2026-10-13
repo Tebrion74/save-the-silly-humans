@@ -8,7 +8,7 @@ extends Control
 ## Mouse emulation from touch is off, so touches are hit-tested by hand.
 
 const GAME_SCENE := "res://scenes/Main.tscn"
-const BUILD_LABEL := "BUILD 021"
+const BUILD_LABEL := "BUILD 022"
 const COPYRIGHT := "© 2026 ECHELON PUBLISHERS GROUP"
 const HORIZON := 440.0
 const TITLE_SHADER := preload("res://assets/shaders/title_text.gdshader")
@@ -72,6 +72,9 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		var t := event as InputEventScreenTouch
 		TouchInput.note_touch(t.index, t.pressed, false)
+		var bt := get_node_or_null("/root/BetaTools")
+		if bt != null and t.index == 0:
+			bt.note_title_touch(t.pressed, t.position)
 		if t.pressed:
 			if sound_icon != null and sound_icon.hit_rect().has_point(t.position):
 				sound_icon.toggle()
@@ -436,7 +439,7 @@ const HOWTO_PC := "WASD / ARROWS  —  move   ·   MOUSE  —  aim\nLEFT CLICK  
 const HOWTO_TOUCH := "JOYSTICK (bottom left)  —  move\nBOTTOM-RIGHT  —  WHIP   ·   cam: hold REC\nTOP-RIGHT  —  GRAB   ·   cam: SWING\nTOP-LEFT  —  swap weapon   ·   SPEAKER  —  sound\nWHIP auto-aims  ·  crosshair = weapon reach"
 const HOWTO_RULES := "• Herd silly humans into the green SAFE ZONE. Throw POSSESSED humans in to save them too.
 • CAMP sends humans, SHEEP DEN breeds sheep. SAVE TARGET: 5, then 6 after TRUSTIN, +1 per level.
-• HEARTS: +1 max every 2 levels (up to 8). FULL HEARTS = LONG WHIP until you take a hit.
+• HEARTS: +1 max every 2 levels (up to 12). FULL HEARTS = LONG WHIP until you take a hit.
 • LEVEL 3+: 4 possessed together become KARENS: they mob you, convert humans, shut the camp.
 • POWER-UPS drop and pop up on the map. Whip mods stay till you grab another. FIRE 10 · SHOCK 3.
 • INVINCIBLE (rare, 30 s): nothing hurts you. Whip anything flashing GREEN to SAVE it: 200, 400, 800... COMBO!

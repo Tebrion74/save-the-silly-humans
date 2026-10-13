@@ -1225,12 +1225,23 @@ class HeartBar extends Control:
 	func set_hp(h: int, m: int) -> void:
 		hp = h
 		max_hp = maxi(m, 1)
-		custom_minimum_size = Vector2(max_hp * 30, 26)
+		custom_minimum_size = Vector2(per_row() * 30, 26 * rows())
 		queue_redraw()
+
+	## Build 022: up to 8 hearts in one row; more wrap into two even rows.
+	func per_row() -> int:
+		return max_hp if max_hp <= 8 else (max_hp + 1) / 2
+
+	func rows() -> int:
+		return 1 if max_hp <= 8 else 2
+
+	func _slot(i: int) -> Vector2:
+		var pr := per_row()
+		return Vector2((i % pr) * 30, 2 + (i / pr) * 26)
 
 	func _draw() -> void:
 		for i in max_hp:
-			var o := Vector2(i * 30, 2)
+			var o := _slot(i)
 			var full := i < hp
 			var fill := Color(0.95, 0.15, 0.2) if full else Color(0.25, 0.2, 0.3)
 			var shine := Color(1, 0.75, 0.75) if full else Color(0.38, 0.33, 0.45)
@@ -1251,7 +1262,7 @@ class HeartBar extends Control:
 						draw_rect(Rect2(o + Vector2((x + 1) * PX, (y + 1) * PX), Vector2(PX, PX)), f2)
 			draw_rect(Rect2(o + Vector2(2 * PX, 2 * PX), Vector2(PX, PX)), shine)
 		if flash > 0.0 and max_hp > 0:
-			var lo := Vector2((max_hp - 1) * 30, 2)
+			var lo := _slot(max_hp - 1)
 			var a := 0.45 + 0.45 * absf(sin(_ft * 9.0))
 			draw_rect(Rect2(lo - Vector2(4, 4), Vector2(PX * 9 + 8, PX * 8 + 8)), Color(1.0, 0.95, 0.4, a), false, 3.0)
 			draw_string(ThemeDB.fallback_font, lo + Vector2(PX * 9 + 8, 18), "+1", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1.0, 0.95, 0.4, a))

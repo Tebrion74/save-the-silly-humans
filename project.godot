@@ -20,6 +20,7 @@ TouchInput="*res://scripts/ui/touch_input.gd"
 GameProgress="*res://scripts/game_progress.gd"
 GameAudio="*res://scripts/audio/game_audio.gd"
 MouseAim="*res://scripts/ui/mouse_aim.gd"
+BetaTools="*res://scripts/beta_tools.gd"
 
 [display]
 

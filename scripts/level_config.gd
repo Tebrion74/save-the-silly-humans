@@ -34,7 +34,7 @@ const ROUND_EXTRA_FROM_LEVEL := 10
 const ROUND_TOTAL_CAP := 24
 const HEARTS_BASE := 5
 const HEART_EVERY_LEVELS := 2
-const HEARTS_CAP := 8
+const HEARTS_CAP := 12   # build 022: was 8 (Robert: unfair cap)
 
 ## Killer sheep speed multiplier per level (level 1 = 1.0 = build 009 speed).
 const SHEEP_SPEED_STEP := 0.06
@@ -961,3 +961,9 @@ static func theme_for(level: int) -> String:
 	if level <= BOSS5_AFTER_LEVEL:
 		return "pnw"
 	return "norcal"
+
+
+# ------------------------------------------------------------------ Build 022
+## Bonus stages: whip cooldown x0.5 and one crack pops every sheep it overlaps.
+const BONUS_WHIP_COOLDOWN_MULT := 0.5
+const BONUS_MULTI_TIP_RADIUS := 44.0
