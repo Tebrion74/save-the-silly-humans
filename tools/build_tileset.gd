@@ -4,7 +4,9 @@ extends SceneTree
 ## (after python3 tools/gen_terrain.py && python3 tools/gen_props.py and an --import pass)
 
 const TS := 32
-const OUT := "res://assets/tiles/stsh_terrain_tileset.tres"
+var OUT := "res://assets/tiles/stsh_terrain_tileset.tres"
+## Build 021: --theme=<t> builds res://assets/tiles/biome/<t>/tileset.tres from that folder.
+var DIR := "res://assets/tiles/"
 
 const SRC_GROUND := 0
 const SRC_DIRT := 1
@@ -16,6 +18,10 @@ const SRC_DETAIL := 6
 
 
 func _initialize() -> void:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--theme="):
+			DIR = "res://assets/tiles/biome/%s/" % a.substr(8)
+			OUT = DIR + "tileset.tres"
 	var tm: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/tiles/terrain_meta.json"))
 	var pm: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/tiles/props_meta.json"))
 	var ts := TileSet.new()
@@ -43,7 +49,7 @@ func _initialize() -> void:
 	ts.set_terrain_color(4, 0, Color(0.5, 0.5, 0.55))
 
 	# --- ground: grass rows 0-1, wall row 2
-	var g := _atlas("res://assets/tiles/stsh_ground_atlas.png")
+	var g := _atlas(DIR + "stsh_ground_atlas.png")
 	ts.add_source(g, SRC_GROUND)
 	for y in 2:
 		for x in 16:
@@ -65,7 +71,7 @@ func _initialize() -> void:
 	# --- overlays
 	var overlay_paths := {SRC_DIRT: "dirt", SRC_PATH: "path", SRC_FOREST: "forest"}
 	for sid in overlay_paths:
-		var a := _atlas("res://assets/tiles/stsh_%s_atlas.png" % overlay_paths[sid])
+		var a := _atlas(DIR + "stsh_%s_atlas.png" % overlay_paths[sid])
 		ts.add_source(a, sid)
 		var tset: int = sid - 1
 		for m in 16:
@@ -78,7 +84,7 @@ func _initialize() -> void:
 			_corner_terrain(a.get_tile_data(c2, 0), tset, 15)
 
 	# --- water (animated, 4 frames, per-mask collision)
-	var w := _atlas("res://assets/tiles/stsh_water_atlas.png")
+	var w := _atlas(DIR + "stsh_water_atlas.png")
 	ts.add_source(w, SRC_WATER)
 	var wc: Dictionary = tm["water_collision"]
 	for m in 16:
@@ -88,7 +94,7 @@ func _initialize() -> void:
 		_water_tile(w, Vector2i(v * 4, 4), 15, wc)
 
 	# --- props (multi-cell, y-sorted, trunk/rock/fence collision)
-	var p := _atlas("res://assets/tiles/stsh_props_atlas.png")
+	var p := _atlas(DIR + "stsh_props_atlas.png")
 	ts.add_source(p, SRC_PROPS)
 	for prop in pm["props"]:
 		var c := Vector2i(int(prop["cell"][0]), int(prop["cell"][1]))
@@ -109,7 +115,7 @@ func _initialize() -> void:
 			i += 1
 
 	# --- flat details
-	var d := _atlas("res://assets/tiles/stsh_details_atlas.png")
+	var d := _atlas(DIR + "stsh_details_atlas.png")
 	ts.add_source(d, SRC_DETAIL)
 	for det in pm["details"]:
 		d.create_tile(Vector2i(int(det["cell"][0]), int(det["cell"][1])))

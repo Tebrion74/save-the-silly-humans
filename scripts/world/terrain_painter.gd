@@ -136,6 +136,13 @@ var _trunks: Array[Vector2i] = []
 var _noise := FastNoiseLite.new()
 var _noise2 := FastNoiseLite.new()
 var _rng := RandomNumberGenerator.new()
+## Build 021: regional biome for regular levels (LevelConfig.theme_for).
+## theme_override (debug / screenshots) wins when set.
+@export var theme_override: String = ""
+var theme := "prairie"
+var level_no := 1
+var _wadis: Array = []        # [{"w": half-width, "p": [Vector2...]}] dry sandy beds (dirt)
+var _sand_blobs: Array = []   # [{"c": Vector2, "r": Vector2}] beach / shore sand (dirt)
 
 
 func _ready() -> void:
@@ -204,6 +211,8 @@ func _layer(node_name: String) -> TileMapLayer:
 
 func paint_level01() -> void:
 	clear()
+	if not _arena:
+		_setup_theme()
 	_vw = map_width + 1
 	_vh = map_height + 1
 	_forest = _grid()
@@ -300,7 +309,7 @@ func _layout_vertices() -> void:
 			var p := Vector2(x, y)
 			var i := _vi(x, y)
 			# woodland floor
-			for w in WOODS:
+			for w in _woods_v:
 				if _blob(w["c"], w["r"] + Vector2(1.2, 1.2), p, 0.45):
 					_forest[i] = 1
 			# trails (+ meander noise so they are not ruler-straight)
@@ -322,7 +331,15 @@ func _layout_vertices() -> void:
 				if _blob2(dc, Vector2(2.4, 1.8), p, 0.6):
 					_dirt[i] = 1
 			# ponds, never near spawn slots, trails, or the wall
-			for pd in PONDS:
+			for wd in _wadis:
+				var pts: Array = wd["p"]
+				for k in range(pts.size() - 1):
+					if _seg_dist(p, pts[k], pts[k + 1]) < float(wd["w"]) + _noise.get_noise_2d(x * 2.3, y * 2.3) * 0.4:
+						_dirt[i] = 1
+			for sb in _sand_blobs:
+				if _blob2(sb["c"], sb["r"], p, 0.3):
+					_dirt[i] = 1
+			for pd in _ponds_v:
 				if _blob2(pd["c"], pd["r"], p, 0.45):
 					if _slot_cheb(p) >= 3.5 and _trail_dist(p) > 1.2 and x >= 4 and y >= 4 and x <= _vw - 5 and y <= _vh - 5:
 						_water[i] = 1
@@ -567,6 +584,23 @@ func _paint_props(layer: TileMapLayer, origin: Vector2i) -> void:
 
 func _pick_tree(mix: String) -> Vector2i:
 	var r := _rng.randi_range(0, 99)
+	# Build 021: regional tree mixes (the pine cell is cypress / cactus / redwood
+	# in those biome atlases, the oaks are olive / mesquite / beech-green / coast oak)
+	match theme:
+		"med":
+			return PINE if r < 38 else (OAK_FRUIT if r < 46 else OAKS[r % 3])
+		"texas":
+			return PINE if r < 22 else OAKS[r % 3]
+		"bavaria":
+			return PINE if r < 58 else (BIRCH if r < 70 else OAKS[r % 3])
+		"pnw":
+			return PINE if r < 82 else OAKS[1 + r % 2]
+		"norcal":
+			return PINE if r < 34 else OAKS[r % 3]
+		"prairie":
+			if level_no > 1 and mix != "pine":
+				# boreal edge: more aspen (birch cell) and spruce (pine)
+				return BIRCH if r < 26 else (PINE if r < 44 else OAKS[r % 3])
 	match mix:
 		"oak_pine":
 			return PINE if r < 40 else OAKS[r % 3]
@@ -657,6 +691,18 @@ func _paint_tint(origin: Vector2i) -> void:
 	var img := Image.create(map_width, map_height, false, Image.FORMAT_RGBA8)
 	var warm := Color(1.0, 1.0, 0.96)
 	var cool := Color(0.84, 0.9, 0.86)
+	if not _arena:
+		match theme:
+			"med":
+				warm = Color(1.04, 1.0, 0.9); cool = Color(0.92, 0.9, 0.84)
+			"texas":
+				warm = Color(1.05, 0.98, 0.88); cool = Color(0.92, 0.86, 0.8)
+			"bavaria":
+				warm = Color(1.0, 1.02, 0.96); cool = Color(0.82, 0.9, 0.88)
+			"pnw":
+				warm = Color(0.92, 0.98, 0.96); cool = Color(0.76, 0.84, 0.86)
+			"norcal":
+				warm = Color(1.06, 1.0, 0.88); cool = Color(0.94, 0.9, 0.82)
 	for y in range(map_height):
 		for x in range(map_width):
 			var n := (_noise2.get_noise_2d(x * 0.9 - 30.0, y * 0.9 + 12.0) + 1.0) * 0.5
@@ -881,3 +927,67 @@ func _paint_arena_props(layer: TileMapLayer, origin: Vector2i, cand: Array[Vecto
 		var c := Vector2i(x, 26)
 		if _free(c, 1, 2, false):
 			_put(layer, origin, c, FENCE_M if x != 8 and x != 31 else FENCE_L, 1, false)
+
+
+# ------------------------------------------------------------------ Build 021 biomes
+
+## Picks the region for this level, swaps in its tileset and varies the
+## layout per level. Zones, slots and trails never move (same spatial
+## relationships); only woods / ponds wobble and biome features change.
+func _setup_theme() -> void:
+	var gp = get_node_or_null("/root/GameProgress")
+	level_no = maxi(int(gp.current_level), 1) if gp != null else 1
+	theme = theme_override if theme_override != "" else LevelConfig.theme_for(level_no)
+	if theme != "prairie":
+		var ts := load("res://assets/tiles/biome/%s/tileset.tres" % theme) as TileSet
+		if ts != null:
+			tile_set = ts
+	_woods_v = WOODS.duplicate(true)
+	_ponds_v = PONDS.duplicate(true)
+	_wadis = []
+	_sand_blobs = []
+	if level_no <= 1 and theme_override == "":
+		return   # level 1 stays exactly the classic ranch
+	map_seed = 8008 + level_no * 7919
+	var r := RandomNumberGenerator.new()
+	r.seed = map_seed
+	for w in _woods_v:
+		w["c"] = (w["c"] as Vector2) + Vector2(r.randf_range(-2.0, 2.0), r.randf_range(-1.5, 1.5))
+		w["r"] = (w["r"] as Vector2) * r.randf_range(0.85, 1.12)
+	for pd in _ponds_v:
+		pd["c"] = (pd["c"] as Vector2) + Vector2(r.randf_range(-1.5, 1.5), r.randf_range(-1.2, 1.2))
+		pd["r"] = (pd["r"] as Vector2) * r.randf_range(0.85, 1.15)
+	match theme:
+		"med":
+			# semi-arid: one small spring, dry sandy wadis
+			var keep: Dictionary = _ponds_v[r.randi_range(0, _ponds_v.size() - 1)]
+			keep["r"] = (keep["r"] as Vector2) * 0.7
+			_ponds_v = [keep]
+			_wadis = [
+				{"w": 0.9, "p": [Vector2(18, 3), Vector2(21, 9), Vector2(19.5, 15), Vector2(23, 21) + Vector2(r.randf_range(-1, 1), 0)]},
+				{"w": 0.8, "p": [Vector2(70, 18), Vector2(64, 21), Vector2(56, 22.5), Vector2(49, 20 + r.randf_range(-1, 1))]},
+			]
+		"texas":
+			# a winding creek (cut by the trails = fords) + red-dirt patches
+			_ponds_v = [_ponds_v[2]]
+			var y0 := r.randf_range(-1.0, 1.0)
+			for k in 5:
+				_ponds_v.append({"c": Vector2(12.0 + k * 5.2, 19.5 + y0 + sin(k * 1.3) * 1.6), "r": Vector2(3.0, 1.1)})
+			_sand_blobs = [{"c": Vector2(48, 6), "r": Vector2(3.5, 2.0)}, {"c": Vector2(30, 46), "r": Vector2(4.0, 1.6)}]
+		"bavaria":
+			# a cool lake north of centre, one tarn
+			_ponds_v = [{"c": Vector2(31.5, 15.0) + Vector2(r.randf_range(-1, 1), 0), "r": Vector2(6.2, 3.4)}, _ponds_v[2]]
+		"pnw":
+			# denser, bigger rainforest + extra grey ponds
+			for w in _woods_v:
+				w["r"] = (w["r"] as Vector2) * 1.12
+			_ponds_v.append({"c": Vector2(48.0, 24.0), "r": Vector2(2.4, 1.8)})
+			_ponds_v.append({"c": Vector2(17.0, 22.5), "r": Vector2(2.2, 1.7)})
+		"norcal":
+			# coastal lagoon with a sandy beach, golden open hills
+			var lag: Dictionary = _ponds_v[2]
+			lag["r"] = Vector2(5.4, 3.4)
+			_sand_blobs = [{"c": lag["c"], "r": Vector2(7.6, 5.2)}]
+			_ponds_v = [_ponds_v[0], lag]
+			for w in _woods_v:
+				w["r"] = (w["r"] as Vector2) * 0.85

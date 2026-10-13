@@ -6,7 +6,7 @@
 
 ▶ **Play it in your browser:** https://savethesillyhumans.org/game.php
 
-Current build: **020** (live since 2026-10-12 ~20:20 MT: extra hearts, INVINCIBLE star combos, timed power-ups, bigger reticle, PC mouse lock, new bosses Gill Bates and Nancy Pelotto) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
+Current build: **021** (live since 2026-10-12 ~21:19 MT: regional biomes for the regular levels: prairie, Mediterranean, Texas, Bavaria, Pacific Northwest, Northern California) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
 
 Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://www.youtube.com/@SaveTheSillyHumans)
 

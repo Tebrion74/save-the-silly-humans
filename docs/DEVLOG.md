@@ -35,7 +35,8 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [017](#build-017) | 2026-10-08 ~16:34 MT | Replaced by 018 | Cantifa: posted gunmen, from level 4 |
 | [018](#build-018) | 2026-10-09 ~00:27 MT (final export 2026-10-11 ~10:42 MT) | Replaced by 019 | bosses 3 and 4: Beorge Kush Jr., Klaus Schwab |
 | [019](#build-019) | 2026-10-11 ~21:18 MT | Replaced by 020 | WASD stuck-key fix, boss 4 renamed Shlaus Kwobb |
-| [020](#build-020) | 2026-10-11 ~23:39 MT | Live | +hearts, INVINCIBLE star, timed power-ups, reticle, mouse lock, bosses Gill Bates and Nancy Pelotto |
+| [020](#build-020) | 2026-10-11 ~23:39 MT | Replaced by 021 | +hearts, INVINCIBLE star, timed power-ups, reticle, mouse lock, bosses Gill Bates and Nancy Pelotto |
+| [021](#build-021) | 2026-10-12 ~20:59 MT | Live | regional biomes for the regular levels |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -1476,7 +1477,7 @@ Logic suite (renamed 018 suite): **106/106**. Smoke of all 14 scenes: OK. Boss 4
 <a id="build-020"></a>
 
 **Date:** 2026-10-11 ~23:39 MT  
-**Status:** **LIVE** 2026-10-12 ~20:20 MT (deployed manually by Robert). Current build.
+**Status:** Replaced by build 021 at ~21:19 MT on 2026-10-12.
 
 Based on live 019. The in-game label reads `BUILD 020`.
 
@@ -1504,6 +1505,48 @@ Based on live 019. The in-game label reads `BUILD 020`.
 
 ### Web build
 `/workspace/web-beta-020/`, `?v=020`. `index.pck` 6,511,880 bytes, sha256 `6704f06bc131f17a4d50b8db4ce01925c283321f4a4e8e49ba046646796509cb`. `index.js` and `index.wasm` are identical to 019. **LIVE** 2026-10-12 ~20:20 MT on https://savethesillyhumans.org/game.php, deployed manually by Robert (only `index.pck` and `index.html` changed in `/beta/`, plus `game.php` / `game.html`). Live `index.pck` sha256 `6704f06bc131f17a4d50b8db4ce01925c283321f4a4e8e49ba046646796509cb`. Rollback copy of the 019 site: `~/rollback-019` on the server.
+
+## Build 021: regional biomes for the regular levels
+<a id="build-021"></a>
+
+**Date:** 2026-10-12 ~20:59 MT  
+**Status:** **LIVE** 2026-10-12 ~21:19 MT (deployed manually by Robert). Current build.
+
+Based on live 020. The in-game label reads `BUILD 021`. Bonus stages and boss arenas are unchanged.
+
+### Biomes
+The levels **before** each boss look like the natural environment of that boss's home region: terrain, plants, palette, water and ground only. There are no landmarks or buildings. `LevelConfig.theme_for(level)`:
+
+| Levels | Theme | Region (before) | Look |
+|---|---|---|---|
+| 1-2 | `prairie` | Canada (Trustin) | the classic ranch. L1 is byte-for-byte the old map; L2 adds more aspen (birch) and spruce |
+| 3-5 | `med` | Israel (Huval) | khaki semi-arid grass, pale limestone trails, olive trees, dark **cypress**, dry sandy **wadis**, a single small spring |
+| 6-8 | `texas` | Texas (Kush) | straw grassland, red dirt, mesquite, saguaro-style **cactus**, **prickly pear**, a winding **creek** (the trails cross it as fords) |
+| 9-11 | `bavaria` | Germany (Shlaus) | lush green fields, dense pine and beech, a cool **lake** north of the centre |
+| 12-14 | `pnw` | Seattle (Gill) | dark mossy rainforest, bigger and denser woods, **ferns**, extra grey-blue ponds |
+| 15-17 | `norcal` | N. California (Nancy) | golden grass hills, coast oaks, **redwoods**, a **lagoon with a sandy beach** |
+| 18+ | cycle | n/a | one level each: prairie, med, texas, bavaria, pnw, norcal, repeat |
+
+**Art.** `tools/gen_biomes.py` recolours all seven base atlases per theme, using separate rules for grass, dirt, trails, water, foliage and trunks. It also draws new props in the same pixel style into existing cells with the same footprint, so collision stays valid: cypress, cactus and redwood use the pine cell, prickly pear and ferns use the bush cells. `tools/build_tileset.gd -- --theme=<t>` writes `assets/tiles/biome/<t>/tileset.tres`. The painter (`terrain_painter.gd`, `_setup_theme`) swaps that tileset in for regular levels only, and adds per-theme tree mixes, water features and a light/shade tint.
+
+**Layout variation.** From L2, each level gets its own seed (`8008 + level × 7919`). The woods shift by up to ±2 cells and resize ×0.85–1.12. Ponds move by ±1.5 cells, and tree, rock and decor placement is re-rolled. The safe zone, camp, den, spawn slots, trails and Cantifa post rings **do not move**, so the zones keep the same spatial relationship. Trees still keep their 4-cell clearance around every slot and never stand on trails. Water never covers a trail.
+
+**Music.** Level music is unchanged. There are no suitable regional level tracks, and the boss tracks belong to their fights.
+
+### Tests and bots
+- `_maps_021.gd` (new, outside the project) paints L1-24 and runs a BFS over walkable cells (no props, wall or water): **432/432**. Every slot is reachable from the player, 100% of walkable cells are reachable (no sealed pockets), at least 89% of the edge ring is reachable, every Cantifa post is reachable, and every layout is unique.
+- `_test_020` 80/80, `_wasd_019` 76/76, smoke 16 scenes 0 fails, `_test_019` 104/106 (the expected old label and How to Play checks).
+- Level bot, 8 seeds per level (020 → 021):
+  - L1-9: 8/8 on every level.
+  - L10-17: 6, 7, 2, 7, 5, 7, 6, 5 (020 was 7, 6, 3, 3, 4, 4, 1 for L10-16).
+  - The remaining losses and timeouts also happen in 020. They come from the bot never re-throwing possessed humans, not from stuck spawns.
+- Chrome pointer-lock check on the release export passed.
+
+### Screenshots
+`stsh-build021-01-L1-prairie.png`, `-02-L2-prairie-boreal`, `-03-L3-med`, `-04-L6-texas`, `-05-L9-bavaria`, `-06-L12-pnw`, `-07-L15-norcal`, `-08-L12-pnw-mobile`.
+
+### Web build
+`/workspace/web-beta-021/`, `?v=021`. `index.pck` is 6,137,988 bytes, sha256 `b445101430714d736c01f716e28e8a625f8fda358c9cf14348bfa336b59c9bc5`. `index.js` and `index.wasm` are identical to 020. The old `web-beta*` folders are excluded by `exclude_filter` and a `.gdignore` in each, and no `res://web-beta` paths are in the pck. The stray 020 title PNGs were deleted from the project, so the pck is smaller than 020's. **LIVE** 2026-10-12 ~21:19 MT on https://savethesillyhumans.org/game.php, deployed manually by Robert (only `index.pck` and `index.html` changed in `/beta/`, plus `game.php`). Live `index.pck` sha256 `b445101430714d736c01f716e28e8a625f8fda358c9cf14348bfa336b59c9bc5`. Rollback copy of the 020 site: `~/rollback-020` on the server. Robert has removed `game.html` from the server; `game.php` is the only page, and the rollback copy has no `game.html`.
 
 ## Appendix: project reference notes
 

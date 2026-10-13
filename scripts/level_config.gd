@@ -929,3 +929,35 @@ static func boss_cfg(n: int) -> Dictionary:
 			if ks.begins_with(pre):
 				out[ks.substr(pre.length())] = consts[k]
 	return out
+
+
+# ------------------------------------------------------------------ Build 021
+## Regular-level biomes: the levels BEFORE each boss look like the natural
+## environment of that boss's home region (terrain, plants, palette, water
+## only; no landmarks). Bonus stages and boss arenas are unchanged.
+##   L1-2 prairie (Canadian ranch, before Trustin)   L3-5 med (Israel, before Huval)
+##   L6-8 texas (before Kush)                        L9-11 bavaria (before Shlaus)
+##   L12-14 pnw (Seattle, before Gill)               L15-17 norcal (before Nancy)
+##   L18+ cycles all six, one level each, in that order.
+const THEME_ORDER: Array[String] = ["prairie", "med", "texas", "bavaria", "pnw", "norcal"]
+const THEME_NAMES := {
+	"prairie": "PRAIRIE RANCH", "med": "OLIVE HILLS", "texas": "LONE STAR SCRUB",
+	"bavaria": "ALPINE FOREST", "pnw": "RAINFOREST", "norcal": "GOLDEN COAST",
+}
+const THEME_CYCLE_FROM := 18
+
+
+static func theme_for(level: int) -> String:
+	if level <= BOSS_AFTER_LEVEL:
+		return "prairie"
+	if level >= THEME_CYCLE_FROM:
+		return THEME_ORDER[(level - THEME_CYCLE_FROM) % THEME_ORDER.size()]
+	if level <= BOSS2_AFTER_LEVEL:
+		return "med"
+	if level <= BOSS3_AFTER_LEVEL:
+		return "texas"
+	if level <= BOSS4_AFTER_LEVEL:
+		return "bavaria"
+	if level <= BOSS5_AFTER_LEVEL:
+		return "pnw"
+	return "norcal"
