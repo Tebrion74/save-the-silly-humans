@@ -15,10 +15,26 @@ const INITIAL_SHEEP := 5
 const CAMP_LIVING_THRESHOLD := INITIAL_HUMANS
 const CAMP_MIN_SPAWN_INTERVAL := 5.0
 
-## Saves needed out of ROUND_TOTAL_HUMANS: level 1 = 5, +1 per level, capped.
+## Saves needed out of ROUND_TOTAL_HUMANS. Build 020: levels 1-2 (before the
+## Trustin boss) need 5; level 3 (after Trustin) needs 6, then +1 per level,
+## capped at TARGET_CAP (reached at level 12).
 const TARGET_LEVEL1 := 5
 const TARGET_STEP := 1
 const TARGET_CAP := 15
+const TARGET_AFTER_BOSS1 := 6
+
+## Build 020 extra hearts: +1 max heart for every HEART_EVERY_LEVELS levels
+## completed (5 at levels 1-2, 6 at 3-4, 7 at 5-6, 8 from level 7 on).
+## Capped at HEARTS_CAP so the HUD row stays short and late levels stay tense.
+## You start each level/stage with full hearts (unchanged).
+## Build 020 spawn adjustment: from ROUND_EXTRA_FROM_LEVEL the camp sends one
+## more human per level (cap ROUND_TOTAL_CAP), so the capped 15-save target
+## keeps some margin: L10 21, L11 22, L12 23, L13+ 24 humans (L1-9: 20).
+const ROUND_EXTRA_FROM_LEVEL := 10
+const ROUND_TOTAL_CAP := 24
+const HEARTS_BASE := 5
+const HEART_EVERY_LEVELS := 2
+const HEARTS_CAP := 8
 
 ## Killer sheep speed multiplier per level (level 1 = 1.0 = build 009 speed).
 const SHEEP_SPEED_STEP := 0.06
@@ -36,7 +52,20 @@ const HUMAN_WANDER_SPEED_MAX := 92.0
 
 static func target_for(level: int) -> int:
 	var lv := maxi(level, 1)
-	return mini(TARGET_LEVEL1 + (lv - 1) * TARGET_STEP, TARGET_CAP)
+	if lv <= BOSS_AFTER_LEVEL:
+		return TARGET_LEVEL1
+	return mini(TARGET_AFTER_BOSS1 + (lv - BOSS_AFTER_LEVEL - 1) * TARGET_STEP, TARGET_CAP)
+
+
+static func round_total_for(level: int) -> int:
+	if level < ROUND_EXTRA_FROM_LEVEL:
+		return ROUND_TOTAL_HUMANS
+	return mini(ROUND_TOTAL_HUMANS + level - ROUND_EXTRA_FROM_LEVEL + 1, ROUND_TOTAL_CAP)
+
+
+## Build 020: max hearts after `levels_completed` cleared levels.
+static func max_hearts_for(levels_completed: int) -> int:
+	return mini(HEARTS_BASE + maxi(levels_completed, 0) / HEART_EVERY_LEVELS, HEARTS_CAP)
 
 
 static func sheep_speed_mult(level: int) -> float:
@@ -147,9 +176,42 @@ static func cantifa_spread_deg(level: int) -> float:
 
 
 ## Power-ups: drop chance per kill, weighted type table, lifetimes.
-const DROP_CHANCE_SHEEP := 0.21      ## build 017: was 0.12 (x1.75)
-const DROP_CHANCE_POSSESSED := 0.385  ## build 017: was 0.22 (x1.75)
-const DROP_CHANCE_KAREN := 0.70       ## build 017: was 0.40 (x1.75)
+const DROP_CHANCE_SHEEP := 0.28      ## build 020: was 0.21 (017), 0.12 (016)
+const DROP_CHANCE_POSSESSED := 0.50   ## build 020: was 0.385 (017), 0.22 (016)
+const DROP_CHANCE_KAREN := 0.85       ## build 020: was 0.70 (017), 0.40 (016)
+## Build 020: timed map spawns (normal levels only). Every
+## POWERUP_MAP_INTERVAL seconds of play a random power-up appears on open
+## ground POWERUP_MAP_MIN_DIST..MAX_DIST px from the rancher, if fewer than
+## POWERUP_MAP_MAX_ON_MAP timed pickups are still lying around. The first one
+## comes after POWERUP_MAP_FIRST seconds. They use the normal 12 s lifetime.
+const POWERUP_MAP_FIRST := 12.0
+const POWERUP_MAP_INTERVAL := 20.0
+const POWERUP_MAP_MAX_ON_MAP := 2
+const POWERUP_MAP_MIN_DIST := 220.0
+const POWERUP_MAP_MAX_DIST := 650.0
+
+## Build 020 INVINCIBLE (star power). Rare pickup, normal levels only (never
+## dropped in boss or bonus stages). For INVINCIBLE_SECONDS the rancher can't
+## be hurt, and a whip crack on a silly human, possessed human / Karen,
+## Cantifa or sheep (they all flash green) SAVES it: it bolts away from the
+## rancher for STAR_FLEE_SECONDS, then runs to the safe zone (ghosting through
+## obstacles). Humans and possessed humans count as normal rescues when they
+## arrive; Cantifa and sheep just leave the field. Each star save scores
+## STAR_COMBO_BASE x 2^(combo-1): 200, 400, 800, 1600 ... The combo resets
+## if STAR_COMBO_WINDOW s pass without a save, and the per-save value is
+## capped at STAR_COMBO_BASE x 2^STAR_COMBO_MAX_DOUBLINGS (102 400).
+const INVINCIBLE_SECONDS := 30.0
+const INVINCIBLE_WARN_SECONDS := 3.0
+const STAR_COMBO_BASE := 200
+const STAR_COMBO_WINDOW := 4.0
+const STAR_COMBO_MAX_DOUBLINGS := 9
+const STAR_FLEE_SECONDS := 0.7
+const STAR_FLEE_SPEED := 330.0
+const STAR_RUN_SPEED := 300.0
+
+
+static func star_combo_points(combo: int) -> int:
+	return STAR_COMBO_BASE * (1 << clampi(combo - 1, 0, STAR_COMBO_MAX_DOUBLINGS))
 ## Weights for the type roll (HEALTH is the most common).
 ## Build 014 adds "msm_cam" and "battery"; their weights are adjusted at roll
 ## time (see CAM_* / BATTERY_* below).
@@ -162,6 +224,7 @@ const POWERUP_WEIGHTS := {
 	"whip_shot": 14,
 	"msm_cam": 8,
 	"battery": 5,
+	"invincible": 3,   ## build 020: rare (~2.5% of rolls), normal levels only
 }
 ## Build 014: power-ups have NO timers any more (see the build 014 section).
 ## Pickups vanish after this many seconds (they blink for the last 3 s).
@@ -306,14 +369,20 @@ static func wedge_outer_width(h: float, inner: float, angle_deg: float = WEDGE_A
 ## gameplay. Touch: a crosshair at the current weapon's reach along the facing.
 ## GREEN = the current weapon's PRIMARY would hit / affect a valid target,
 ## otherwise matte RED.
-const RETICLE_RADIUS := 11.0            ## ring radius (px, screen)
-const RETICLE_ARM := 7.0                ## crosshair arm length outside the ring
+const RETICLE_RADIUS := 15.0            ## ring radius (px, screen)
+const RETICLE_ARM := 9.0                ## crosshair arm length outside the ring
 const RETICLE_GAP := 3.0                ## arms start this far inside the ring
-const RETICLE_THICK := 2.0              ## line thickness (1 px dark outline added)
-const RETICLE_GREEN := Color(0.46, 1.0, 0.40)
-const RETICLE_RED := Color(0.72, 0.33, 0.31)        ## matte / desaturated
+const RETICLE_THICK := 3.0              ## line thickness (1 px dark outline added)
+const RETICLE_GREEN := Color(0.30, 1.0, 0.36)      ## build 020: brighter
+## build 020: "nothing to hit" is hot magenta (was a matte red that vanished
+## on dirt, tarmac and the boss arenas); same meaning
+const RETICLE_RED := Color(1.0, 0.24, 0.86)
+## bright halo between the dark outline and the colour (readable on any floor)
+const RETICLE_HALO := Color(1.0, 1.0, 1.0)
+## idle "breathing" pulse (scale), so it catches the eye in busy scenes
+const RETICLE_IDLE_PULSE := 0.08
 const RETICLE_OUTLINE := Color(0.06, 0.03, 0.08)
-const RETICLE_ALPHA := 0.92
+const RETICLE_ALPHA := 1.0
 ## PC whip: the reticle may sit this far past the whip's reach and still count
 ## as "in reach"; also the radius of the lock-on brackets drawn on the target.
 ## The target test itself is the whip's own PC aim assist (find_target: 70 px
@@ -465,6 +534,13 @@ const BOSS3_AFTER_LEVEL := 8
 const BOSS3_SCENE := "res://scenes/levels/Boss3Arena.tscn"
 const BOSS4_AFTER_LEVEL := 11
 const BOSS4_SCENE := "res://scenes/levels/Boss4Arena.tscn"
+## Build 020: boss 5 (Gill Bates) between levels 14 and 15, boss 6 (Nancy
+## Pelotto) between levels 17 and 18. Neither is a bonus slot (bonus stages
+## follow levels 1, 4, 7 ... = 1 mod 3; 14 and 17 are 2 mod 3).
+const BOSS5_AFTER_LEVEL := 14
+const BOSS5_SCENE := "res://scenes/levels/Boss5Arena.tscn"
+const BOSS6_AFTER_LEVEL := 17
+const BOSS6_SCENE := "res://scenes/levels/Boss6Arena.tscn"
 
 
 # ---------------------------------------------------------------- build 016 bonus stage
@@ -771,3 +847,85 @@ static func boss4_phase(hearts: int) -> int:
 		return 2
 	return 1
 
+
+# ---------------------------------------------------------------- build 020 bosses 5 + 6
+## Gill Bates and Nancy Pelotto reuse Shlaus Kwobb's fight engine
+## (shlaus.gd: delegates, programmed sheep, projectile fans, gap rings, hops,
+## panel shields, cam "no press") with their own skins and numbers. Any key
+## missing from BOSS5_* / BOSS6_* falls back to BOSS4_* (boss_cfg()).
+## Each one is tuned to be harder than the boss before it on the bot ladder.
+
+const BOSS5_NAME := "GILL BATES"
+const BOSS5_TITLE := "PATRON OF THE SERVER FARM"
+const BOSS5_HEARTS := 20
+const BOSS5_PHASE2_HEARTS := 15
+const BOSS5_PHASE3_HEARTS := 10
+const BOSS5_RAGE_HEARTS := 5
+const BOSS5_PANEL_HEARTS := [15, 10, 5]   ## "SYSTEM UPDATE" shield (panel)
+const BOSS5_SPEED := 108.0
+const BOSS5_SPEED_RAGE := 140.0
+const BOSS5_ATTACK_GAP := [1.5, 1.3, 1.1, 0.95]
+const BOSS5_CONDUCT_TELL := [0.42, 0.38, 0.35, 0.3]
+const BOSS5_DELEGATE_TELL := [0.8, 0.75, 0.68, 0.58]
+const BOSS5_SHEEP_COUNT := [1, 2, 2, 2]
+const BOSS5_SHEEP_CAP := [3, 4, 4, 5]
+const BOSS5_ENVELOPES := [4, 5, 6, 7]       ## FLOPPY PATCH fan
+const BOSS5_ENVELOPE_SPEED := 300.0
+const BOSS5_ENVELOPE_TELL := [0.65, 0.6, 0.55, 0.5]
+const BOSS5_RESET_TELL := [0.95, 0.9, 0.8, 0.72]   ## BLUE SCREEN ring
+const BOSS5_RESET_SPEED := 300.0
+const BOSS5_ATTACKS := [
+	{"sheep": 40, "envelopes": 35, "poutine": 25},
+	{"sheep": 28, "envelopes": 24, "poutine": 18, "reset": 30},
+	{"sheep": 22, "envelopes": 20, "poutine": 13, "reset": 25, "double": 20},
+	{"sheep": 18, "envelopes": 20, "poutine": 12, "reset": 25, "double": 25},
+]
+const BOSS5_COMBO_CHANCE := [0.0, 0.15, 0.3, 0.45]
+const BOSS5_POINTS_PER_HEART := 120
+const BOSS5_DEFEAT_BONUS := 9000
+const BOSS5_HEALTH_BONUS := 350
+const BOSS5_TIME_PAR := 200.0
+
+const BOSS6_NAME := "NANCY PELOTTO"
+const BOSS6_TITLE := "SPEAKER OF THE HOUSE"
+const BOSS6_HEARTS := 22
+const BOSS6_PHASE2_HEARTS := 17
+const BOSS6_PHASE3_HEARTS := 11
+const BOSS6_RAGE_HEARTS := 5
+const BOSS6_PANEL_HEARTS := [17, 11, 5]   ## "IN RECESS" shield (panel)
+const BOSS6_SPEED := 112.0
+const BOSS6_SPEED_RAGE := 150.0
+const BOSS6_ATTACK_GAP := [1.4, 1.2, 1.0, 0.9]
+const BOSS6_CONDUCT_TELL := [0.4, 0.36, 0.33, 0.28]
+const BOSS6_DELEGATE_TELL := [0.78, 0.72, 0.65, 0.55]
+const BOSS6_SHEEP_COUNT := [1, 2, 2, 3]
+const BOSS6_SHEEP_CAP := [3, 4, 5, 5]
+const BOSS6_ENVELOPES := [4, 5, 6, 7]       ## ICE CREAM fan
+const BOSS6_ENVELOPE_SPEED := 315.0
+const BOSS6_ENVELOPE_TELL := [0.62, 0.58, 0.52, 0.48]
+const BOSS6_RESET_TELL := [0.9, 0.85, 0.75, 0.68]  ## ORDER! gavel ring
+const BOSS6_RESET_SPEED := 310.0
+const BOSS6_ATTACKS := [
+	{"poutine": 30, "envelopes": 35, "reset": 35},
+	{"poutine": 22, "sheep": 18, "envelopes": 25, "reset": 35},
+	{"poutine": 18, "sheep": 15, "envelopes": 20, "reset": 27, "double": 20},
+	{"poutine": 15, "sheep": 13, "envelopes": 20, "reset": 27, "double": 25},
+]
+const BOSS6_COMBO_CHANCE := [0.1, 0.2, 0.35, 0.5]
+const BOSS6_POINTS_PER_HEART := 140
+const BOSS6_DEFEAT_BONUS := 10500
+const BOSS6_HEALTH_BONUS := 400
+const BOSS6_TIME_PAR := 220.0
+
+
+## Shlaus-engine tuning table for boss `n` (4, 5, 6): every BOSS4_* constant
+## (prefix stripped), overlaid with the BOSSn_* ones.
+static func boss_cfg(n: int) -> Dictionary:
+	var consts: Dictionary = (load("res://scripts/level_config.gd") as Script).get_script_constant_map()
+	var out := {}
+	for pre in ["BOSS4_", "BOSS%d_" % n]:
+		for k in consts:
+			var ks := String(k)
+			if ks.begins_with(pre):
+				out[ks.substr(pre.length())] = consts[k]
+	return out

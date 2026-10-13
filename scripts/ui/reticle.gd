@@ -50,6 +50,11 @@ func _ready() -> void:
 
 func _on_mouse_entered() -> void:
 	_mouse_inside = true
+	# build 020: a button released outside the game never reached Godot; drop
+	# the stale whip / grab press so the next click registers again
+	for a in [&"whip", &"whip_grab"]:
+		if Input.is_action_pressed(a):
+			Input.action_release(a)
 
 
 func _on_mouse_exited() -> void:
@@ -65,10 +70,11 @@ func _exit_tree() -> void:
 
 
 func _set_pointer_hidden(h: bool) -> void:
+	# build 020: MouseAim owns the PC pointer (lock / confine / prompt)
 	if h == _hidden_pointer:
 		return
 	_hidden_pointer = h
-	Input.mouse_mode = Input.MOUSE_MODE_HIDDEN if h else Input.MOUSE_MODE_VISIBLE
+	MouseAim.set_want(h)
 
 
 ## True while a round is actually being played (not before setup, not after
@@ -93,12 +99,14 @@ func _process(delta: float) -> void:
 	_t += delta
 	active = gameplay_active()
 	var touch: bool = TouchInput.active
-	_set_pointer_hidden(active and not touch and _mouse_inside)
-	if not active or (not touch and not _mouse_inside):
+	# build 020: the aim never "leaves" any more (MouseAim locks / clamps it)
+	_hidden_pointer = active and not touch
+	MouseAim.set_want(_hidden_pointer)
+	if not active:
 		info = {}
 		queue_redraw()
 		return
-	var mouse_world := player.get_global_mouse_position()
+	var mouse_world := MouseAim.world_pos(player)
 	info = evaluate(touch, mouse_world)
 	_update_feedback(delta, touch)
 	queue_redraw()
@@ -288,7 +296,7 @@ func _blocked(sp: Vector2, pad: float) -> bool:
 ## is on screen and clear of the wedges (never closer than half the range).
 func touch_screen_pos() -> Dictionary:
 	var sp := to_screen(info["pos"])
-	var pad := LevelConfig.RETICLE_RADIUS + LevelConfig.RETICLE_ARM + 2.0
+	var pad := 20.0   # 019 crosshair size (touch unchanged)
 	if info["weapon"] == "cam" and _blocked(sp, pad):
 		var o := to_screen(info["origin"])
 		var reach: float = info["reach"]
@@ -305,6 +313,8 @@ func _draw() -> void:
 	var touch: bool = TouchInput.active
 	var green: bool = info["green"]
 	var col: Color = LevelConfig.RETICLE_GREEN if green else LevelConfig.RETICLE_RED
+	if touch:   # 019 colours on touch
+		col = Color(0.46, 1.0, 0.40) if green else Color(0.72, 0.33, 0.31)
 	var alpha := LevelConfig.RETICLE_ALPHA
 	var sp: Vector2
 	if touch:
@@ -316,7 +326,7 @@ func _draw() -> void:
 		if tp["under"]:
 			alpha *= 0.4
 	else:
-		sp = get_viewport().get_mouse_position()
+		sp = MouseAim.screen_pos()
 	if info["reach_pos"] != null:
 		_draw_reach_dot(to_screen(info["reach_pos"]), col, alpha)
 	var tgt: Variant = info["target"]
@@ -325,16 +335,44 @@ func _draw() -> void:
 		var ts := to_screen((tgt as Node2D).global_position + lock_off)
 		_draw_lock(ts, col, alpha)
 	var c2 := col.lerp(Color(1, 1, 1), 0.35 * _pulse)
-	_draw_reticle(sp.round(), 1.0 + LevelConfig.RETICLE_PULSE * _pulse, c2, alpha)
+	if touch:
+		_draw_reticle_touch(sp.round(), 1.0 + LevelConfig.RETICLE_PULSE * _pulse, c2, alpha)
+	else:
+		_draw_reticle(sp.round(), 1.0 + LevelConfig.RETICLE_PULSE * _pulse, c2, alpha)
 
 
 func _draw_reticle(c: Vector2, scale_k: float, col: Color, alpha: float) -> void:
+	# build 020: three passes (dark border, bright halo, colour) + idle pulse
+	scale_k *= 1.0 + LevelConfig.RETICLE_IDLE_PULSE * (0.5 + 0.5 * sin(_t * 6.0))
 	var r := roundf(LevelConfig.RETICLE_RADIUS * scale_k)
 	var arm := roundf(LevelConfig.RETICLE_ARM * scale_k)
 	var gap := LevelConfig.RETICLE_GAP
 	var th := LevelConfig.RETICLE_THICK
-	var out := Color(LevelConfig.RETICLE_OUTLINE, alpha * 0.9)
+	var out := Color(LevelConfig.RETICLE_OUTLINE, alpha * 0.95)
+	var halo := Color(LevelConfig.RETICLE_HALO, alpha * 0.9)
 	var fill := Color(col, alpha)
+	var seg := 24
+	var arms := [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN]
+	for pass_i in 3:
+		var w: float = [th + 5.0, th + 2.0, th][pass_i]
+		var cc: Color = [out, halo, fill][pass_i]
+		var inset: float = [0.0, 0.5, 1.0][pass_i]
+		draw_arc(c, r, 0.0, TAU, seg, cc, w, false)
+		for a in arms:
+			_arm_rect(c, a, r - gap + inset, r + arm - inset, w, cc)
+	draw_rect(Rect2(c - Vector2(3, 3), Vector2(6, 6)), out)
+	draw_rect(Rect2(c - Vector2(2, 2), Vector2(4, 4)), halo)
+	draw_rect(Rect2(c - Vector2(1, 1), Vector2(2, 2)), fill)
+
+
+## Touch keeps the 019 crosshair exactly (mobile is unchanged in 020).
+func _draw_reticle_touch(c: Vector2, scale_k: float, col: Color, alpha: float) -> void:
+	var r := roundf(11.0 * scale_k)
+	var arm := roundf(7.0 * scale_k)
+	var gap := LevelConfig.RETICLE_GAP
+	var th := 2.0
+	var out := Color(LevelConfig.RETICLE_OUTLINE, alpha * 0.9 * 0.92)
+	var fill := Color(col, alpha * 0.92)
 	var seg := 16
 	# Dark outline pass, then colour pass (pixel look: no antialiasing).
 	draw_arc(c, r, 0.0, TAU, seg, out, th + 2.0, false)
@@ -362,15 +400,16 @@ func _arm_rect(c: Vector2, dir: Vector2, from: float, to: float, th: float, col:
 ## Four corner brackets around the target the shot would land on.
 func _draw_lock(c: Vector2, col: Color, alpha: float) -> void:
 	var r := LevelConfig.RETICLE_SNAP_RADIUS * 0.5 + 2.0 + 2.0 * sin(_t * 8.0)
-	var l := 5.0
+	var l := 5.0 if TouchInput.active else 7.0
 	var out := Color(LevelConfig.RETICLE_OUTLINE, alpha * 0.85)
 	var fill := Color(col, alpha * 0.95)
 	for sx in [-1.0, 1.0]:
 		for sy in [-1.0, 1.0]:
 			var p := c + Vector2(sx * r, sy * r)
-			for pass_i in 2:
-				var w := 4.0 if pass_i == 0 else 2.0
-				var cc := out if pass_i == 0 else fill
+			var touch_old: bool = TouchInput.active   # 019 brackets on touch
+			for pass_i in (2 if touch_old else 3):
+				var w: float = ([4.0, 2.0] if touch_old else [6.0, 4.0, 2.0])[pass_i]
+				var cc: Color = ([out, fill] if touch_old else [out, Color(LevelConfig.RETICLE_HALO, alpha * 0.8), fill])[pass_i]
 				draw_line(p, p - Vector2(sx * l, 0), cc, w)
 				draw_line(p, p - Vector2(0, sy * l), cc, w)
 

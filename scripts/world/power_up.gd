@@ -8,7 +8,7 @@ extends Node2D
 
 signal collected(kind: String, pickup: Node2D)
 
-const TYPES := ["health", "long_whip", "strong_throw", "shockwave", "fire_whip", "whip_shot", "msm_cam", "battery"]
+const TYPES := ["health", "long_whip", "strong_throw", "shockwave", "fire_whip", "whip_shot", "msm_cam", "battery", "invincible"]
 const NAMES := {
 	"health": "HEALTH",
 	"long_whip": "LONG WHIP",
@@ -18,6 +18,7 @@ const NAMES := {
 	"whip_shot": "WHIP SHOT",
 	"msm_cam": "MSM CAM",
 	"battery": "BATTERY",
+	"invincible": "INVINCIBLE",
 	"whip": "WHIP",
 }
 const PLATE := {
@@ -29,10 +30,22 @@ const PLATE := {
 	"whip_shot": Color(0.1, 0.6, 0.45),
 	"msm_cam": Color(0.2, 0.2, 0.24),
 	"battery": Color(0.18, 0.6, 0.22),
+	"invincible": Color(0.95, 0.62, 0.05),
 	"whip": Color(0.6, 0.38, 0.16),
 }
 ## 9x9 icons: '#' = light colour, 'o' = accent, '.' = empty.
 const ICONS := {
+	"invincible": [
+		"....#....",
+		"....#....",
+		"...###...",
+		"#########",
+		".#######.",
+		"..#####..",
+		"..##.##..",
+		".##...##.",
+		".#.....#.",
+	],
 	"health": [
 		".........",
 		".##...##.",
@@ -177,7 +190,7 @@ static func draw_icon(ci: CanvasItem, k: String, c: Vector2, px: float, alpha :=
 func _ready() -> void:
 	add_to_group("powerups")
 	z_index = 3
-	if kind == "msm_cam" or kind == "battery":
+	if kind == "msm_cam" or kind == "battery" or kind == "invincible":
 		lifetime = LevelConfig.PICKUP_LIFETIME_RARE
 
 
@@ -220,5 +233,8 @@ func _draw() -> void:
 	draw_colored_polygon(pts, Color(0, 0, 0, 0.3))
 	# glow pulse
 	var glow := 0.25 + 0.15 * sin(age * 6.0)
-	draw_circle(Vector2(0, -10 + bob), 20.0, Color(1, 1, 0.8, glow * 0.5))
+	var gcol := Color(1, 1, 0.8, glow * 0.5)
+	if kind == "invincible":
+		gcol = Color.from_hsv(fmod(age * 0.8, 1.0), 0.8, 1.0, 0.55)
+	draw_circle(Vector2(0, -10 + bob), 20.0, gcol)
 	draw_icon(self, kind, Vector2(0, -10 + bob), 2.0)

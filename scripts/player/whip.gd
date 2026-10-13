@@ -121,7 +121,13 @@ func fire_whip() -> void:
 
 	if target != null:
 		whip_end = target.global_position
-		if target.has_method("receive_whip"):
+		# Build 020 INVINCIBLE: the lash SAVES instead of hurting.
+		var lvl := get_tree().get_first_node_in_group("level_controller")
+		var pu := power_ups()
+		if pu != null and pu.has_method("is_invincible") and pu.is_invincible() \
+				and lvl != null and lvl.has_method("star_save") and lvl.star_save(target, owner_position):
+			target = null
+		elif target.has_method("receive_whip"):
 			target.receive_whip(owner_position, whip_force)
 
 	_crack_age = 0.0

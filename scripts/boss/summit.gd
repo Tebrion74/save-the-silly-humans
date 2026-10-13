@@ -238,6 +238,8 @@ static func _ring(ci: CanvasItem, c: Vector2, r: Vector2, col: Color, w: float) 
 
 ## INVITATION envelope: flies straight, 1 heart on the rancher (shared mercy window).
 class Envelope extends Node2D:
+	## Build 020: "" envelope, "floppy" (Gill Bates), "icecream" (Nancy Pelotto)
+	var skin := ""
 	var velocity := Vector2.ZERO
 	var level: Node = null
 	var bounds := Rect2(-100000, -100000, 200000, 200000)
@@ -277,6 +279,27 @@ class Envelope extends Node2D:
 		Summit._ellipse(self, Vector2(0, 2), Vector2(11, 4), Color(0, 0, 0, 0.3))
 		var wob := sin(_t * 16.0) * 0.3
 		draw_set_transform(Vector2(0, -24), wob, Vector2.ONE)
+		if skin == "floppy":
+			draw_rect(Rect2(-12, -12, 24, 24), Color(0.06, 0.03, 0.08))
+			draw_rect(Rect2(-10, -10, 20, 20), Color(0.16, 0.18, 0.3))
+			draw_rect(Rect2(-6, -10, 12, 7), Color(0.75, 0.78, 0.82))
+			draw_rect(Rect2(2, -9, 3, 5), Color(0.16, 0.18, 0.3))
+			draw_rect(Rect2(-7, 1, 14, 9), Color(0.96, 0.96, 0.92))
+			draw_line(Vector2(-5, 4), Vector2(5, 4), Color(0.3, 0.5, 0.9), 1.0)
+			draw_line(Vector2(-5, 7), Vector2(3, 7), Color(0.3, 0.5, 0.9), 1.0)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			return
+		if skin == "icecream":
+			draw_colored_polygon(PackedVector2Array([Vector2(-9, -2), Vector2(9, -2), Vector2(0, 16)]), Color(0.06, 0.03, 0.08))
+			draw_colored_polygon(PackedVector2Array([Vector2(-7, -1), Vector2(7, -1), Vector2(0, 13)]), Color(0.85, 0.6, 0.3))
+			draw_line(Vector2(-4, 2), Vector2(2, 10), Color(0.65, 0.42, 0.18), 1.0)
+			draw_line(Vector2(4, 2), Vector2(-2, 10), Color(0.65, 0.42, 0.18), 1.0)
+			draw_circle(Vector2(0, -5), 9.0, Color(0.06, 0.03, 0.08))
+			draw_circle(Vector2(0, -5), 7.5, Color(1.0, 0.78, 0.82))
+			draw_circle(Vector2(-2, -8), 2.5, Color(1, 1, 1, 0.8))
+			draw_circle(Vector2(1, -12), 2.0, Color(0.85, 0.1, 0.15))
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			return
 		draw_rect(Rect2(-13, -9, 26, 18), Color(0.06, 0.03, 0.08))
 		draw_rect(Rect2(-11, -7, 22, 14), Color(0.98, 0.96, 0.88))
 		draw_line(Vector2(-11, -7), Vector2(0, 1), Color(0.6, 0.55, 0.45), 2.0)
@@ -289,6 +312,9 @@ class Envelope extends Node2D:
 ## expands at BOSS4_RESET_SPEED. The rancher is hit when the ring's edge
 ## passes them outside a gap.
 class ResetRing extends Node2D:
+	## Build 020: "" GREAT RESET (red), "bluescreen" (Gill), "gavel" (Nancy)
+	var skin := ""
+	var speed: float = LevelConfig.BOSS4_RESET_SPEED
 	var level: Node = null
 	var tell := 0.9
 	var gaps: Array = []        ## gap centre angles (radians); each BOSS4_RESET_GAP_DEG wide
@@ -329,7 +355,7 @@ class ResetRing extends Node2D:
 		if _prev == radius and _t - delta < tell:
 			Sfx.play(self, "reset", -6.0)
 		_prev = radius
-		radius += LevelConfig.BOSS4_RESET_SPEED * delta
+		radius += speed * delta
 		var p := get_tree().get_first_node_in_group("player") as Node2D
 		if p != null and not _hit_done:
 			var d := ring_dist(p.global_position)
@@ -342,6 +368,14 @@ class ResetRing extends Node2D:
 			queue_free()
 			return
 		queue_redraw()
+
+	func _main() -> Color:
+		match skin:
+			"bluescreen":
+				return Color(0.25, 0.5, 1.0)
+			"gavel":
+				return Color(1.0, 0.3, 0.75)
+		return Color(1.0, 0.25, 0.3)
 
 	func _arcs(r: float, col: Color, w: float) -> void:
 		var half := deg_to_rad(LevelConfig.BOSS4_RESET_GAP_DEG) * 0.5
@@ -360,7 +394,7 @@ class ResetRing extends Node2D:
 			var pulse := 0.5 + 0.5 * sin(_t * 22.0)
 			for rr in [120.0, 240.0, 380.0]:
 				_arcs(rr, Color(0.06, 0.03, 0.08, 0.5 * k), 6.0)
-				_arcs(rr, Color(1.0, 0.25, 0.3, 0.35 + 0.45 * k * pulse), 3.0)
+				_arcs(rr, Color(_main().r, _main().g, _main().b, 0.35 + 0.45 * k * pulse), 3.0)
 			# gap lanes: green safe wedges
 			var half := deg_to_rad(LevelConfig.BOSS4_RESET_GAP_DEG) * 0.5
 			for g in gaps:
@@ -373,5 +407,5 @@ class ResetRing extends Node2D:
 		var fade := clampf(1.0 - radius / LevelConfig.BOSS4_RESET_MAX_RADIUS, 0.2, 1.0)
 		var th := LevelConfig.BOSS4_RESET_THICK
 		_arcs(radius, Color(0.06, 0.03, 0.08, 0.7 * fade), th * 2.0 + 4.0)
-		_arcs(radius, Color(1.0, 0.25, 0.3, 0.85 * fade), th * 1.6)
+		_arcs(radius, Color(_main().r, _main().g, _main().b, 0.85 * fade), th * 1.6)
 		_arcs(radius, Color(1.0, 0.9, 0.9, fade), th * 0.5)

@@ -42,6 +42,10 @@ const LAYER_BITS_CREATURES := (1 << 2) | (1 << 3)
 
 
 func _ready() -> void:
+	# Build 020: +1 max heart every LevelConfig.HEART_EVERY_LEVELS levels cleared.
+	var gp := get_node_or_null("/root/GameProgress")
+	if gp != null and gp.has_method("levels_completed"):
+		maximum_health = maxi(maximum_health, LevelConfig.max_hearts_for(gp.levels_completed()))
 	health = maximum_health
 	add_to_group("player")
 	health_changed.emit(health, maximum_health)
@@ -171,6 +175,10 @@ func take_damage(amount: int, source_position := Vector2.ZERO) -> void:
 	# Sheep/possessed bites are distance-based, not collision-based: during the
 	# grab window the rancher has no body, so contact bites are ignored too.
 	if _ghost_active:
+		return
+	# Build 020: INVINCIBLE (star power) - nothing hurts.
+	var pu := get_node_or_null("PowerUps")
+	if pu != null and "invincible_time" in pu and pu.invincible_time > 0.0:
 		return
 
 	health -= amount

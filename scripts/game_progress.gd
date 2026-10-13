@@ -76,6 +76,12 @@ func _read_debug_args() -> void:
 		print("[debug] scenario=", debug_scenario, " level=", current_level)
 
 
+## Build 020: levels cleared so far this run (a bonus/boss stage is played
+## after its level was cleared, so current_level counts there).
+func levels_completed() -> int:
+	return current_level if current_stage != "" else current_level - 1
+
+
 func advance_level() -> void:
 	current_level += 1
 
@@ -130,6 +136,10 @@ func start_at_stage(stage: String, bonus_n: int = 1) -> String:
 			level = LevelConfig.BOSS3_AFTER_LEVEL
 		"boss4":
 			level = LevelConfig.BOSS4_AFTER_LEVEL
+		"boss5":
+			level = LevelConfig.BOSS5_AFTER_LEVEL
+		"boss6":
+			level = LevelConfig.BOSS6_AFTER_LEVEL
 	current_level = level
 	stage_queue = GameProgressCheck.stages_after(level)
 	stage_return_level = level + 1

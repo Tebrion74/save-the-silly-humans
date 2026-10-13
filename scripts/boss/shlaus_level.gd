@@ -46,12 +46,9 @@ func _place_boss_arena() -> void:
 	var a := ground.to_global(ground.tile_center(ARENA_CELL_MIN))
 	var b := ground.to_global(ground.tile_center(ARENA_CELL_MAX))
 	arena_rect = Rect2(a, Vector2.ZERO).expand(b)
-	var snow := SnowDecal.new()
-	snow.name = "Snow"
-	snow.z_index = -4
-	snow.rect = arena_rect
-	snow.cover = arena_rect.grow(700.0)   # blanket the whole map: no hard edge
-	add_child(snow)
+	var decal := _make_floor_decal()
+	if decal != null:
+		add_child(decal)
 	var base_y := ground.to_global(ground.tile_center(Vector2i(21, 9))).y - 16.0
 	var centre_x := ground.to_global(ground.tile_center(Vector2i(21, 7))).x - 16.0
 	var bld := Node2D.new()
@@ -59,22 +56,22 @@ func _place_boss_arena() -> void:
 	ents.add_child(bld)
 	bld.global_position = Vector2(centre_x, base_y)
 	var spr := Sprite2D.new()
-	spr.texture = SUMMIT_TEX
+	var tex := _backdrop_tex()
+	spr.texture = tex
 	spr.centered = false
-	spr.position = Vector2(-SUMMIT_TEX.get_width() * 0.5, -SUMMIT_TEX.get_height())
+	spr.position = Vector2(-tex.get_width() * 0.5, -tex.get_height())
 	bld.add_child(spr)
 	var body := StaticBody2D.new()
 	body.collision_layer = 1
 	body.collision_mask = 0
 	var cs := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	rect.size = Vector2(SUMMIT_TEX.get_width(), 110.0)
+	rect.size = Vector2(tex.get_width(), 110.0)
 	cs.shape = rect
 	cs.position = Vector2(0, -55.0)
 	body.add_child(cs)
 	bld.add_child(body)
-	boss = ShlausKwobb.new()
-	boss.name = "ShlausKwobb"
+	boss = _make_boss()
 	boss.level = self
 	boss.arena = arena_rect
 	ents.add_child(boss)
@@ -85,16 +82,42 @@ func _place_boss_arena() -> void:
 	boss.delegate_spawned.connect(_on_delegate_spawned)
 
 
+## Build 020 hooks (Gill Bates / Nancy Pelotto levels override these).
+func _debug_prefix() -> String:
+	return "shlaus"
+
+
+func _make_boss() -> Node:
+	var b := ShlausKwobb.new()
+	b.name = "ShlausKwobb"
+	return b
+
+
+func _backdrop_tex() -> Texture2D:
+	return SUMMIT_TEX
+
+
+func _make_floor_decal() -> Node2D:
+	var snow := SnowDecal.new()
+	snow.name = "Snow"
+	snow.z_index = -4
+	snow.rect = arena_rect
+	snow.cover = arena_rect.grow(700.0)   # blanket the whole map: no hard edge
+	return snow
+
+
 func _unlock_rescues_after_physics() -> void:
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	rescues_unlocked = true
 	if hud and hud.has_method("show_boss_title_card"):
 		hud.show_boss_title_card()
-	print("[boss4] arena ready; hearts=", boss.hearts)
+	print("[boss%d] arena ready; hearts=" % boss.boss_no, boss.hearts)
 	var prog := _progress()
-	if OS.is_debug_build() and prog != null and "debug_scenario" in prog and String(prog.debug_scenario).begins_with("shlaus"):
-		DebugScenarios.run_shlaus(self, String(prog.debug_scenario))
+	var pre := _debug_prefix()
+	if OS.is_debug_build() and prog != null and "debug_scenario" in prog and String(prog.debug_scenario).begins_with(pre + "_"):
+		# build 020: gill_* / nancy_* reuse the shlaus_* scenarios
+		DebugScenarios.run_shlaus(self, "shlaus_" + String(prog.debug_scenario).substr(pre.length() + 1))
 
 
 func _on_delegate_spawned(d: Node) -> void:

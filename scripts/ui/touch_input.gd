@@ -193,4 +193,4 @@ func get_aim_world(node: CanvasItem) -> Vector2:
 					facing = Vector2.RIGHT
 				origin = player.global_position
 		return origin + facing.normalized() * 240.0
-	return node.get_global_mouse_position()
+	return MouseAim.world_pos(node)

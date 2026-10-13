@@ -346,3 +346,8 @@ func request_next_level() -> void:
 	elif progress != null and progress.has_method("finish_boss"):
 		progress.finish_boss()
 	get_tree().change_scene_to_file(next)
+
+
+## Build 020: no timed map power-ups in this stage.
+func timed_powerups_enabled() -> bool:
+	return false

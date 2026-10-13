@@ -34,7 +34,8 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [016](#build-016) | 2026-10-08 ~13:05 MT | Live | Galaga-style bonus stage, boss 2 Huval Yarheyhey |
 | [017](#build-017) | 2026-10-08 ~16:34 MT | Replaced by 018 | Cantifa: posted gunmen, from level 4 |
 | [018](#build-018) | 2026-10-09 ~00:27 MT (final export 2026-10-11 ~10:42 MT) | Replaced by 019 | bosses 3 and 4: Beorge Kush Jr., Klaus Schwab |
-| [019](#build-019) | 2026-10-11 ~21:18 MT | Live | WASD stuck-key fix, boss 4 renamed Shlaus Kwobb |
+| [019](#build-019) | 2026-10-11 ~21:18 MT | Replaced by 020 | WASD stuck-key fix, boss 4 renamed Shlaus Kwobb |
+| [020](#build-020) | 2026-10-11 ~23:39 MT | Live | +hearts, INVINCIBLE star, timed power-ups, reticle, mouse lock, bosses Gill Bates and Nancy Pelotto |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -1443,7 +1444,7 @@ If a bonus and a boss ever share a slot, the order is level > bonus > boss > nex
 <a id="build-019"></a>
 
 **Date:** 2026-10-11 ~21:18 MT  
-**Status:** **LIVE** 2026-10-11 ~21:27 MT (deployed manually by Robert). Current build.
+**Status:** Replaced by build 020 at ~20:20 MT on 2026-10-12.
 
 ### WASD bug (PC)
 **Symptom (as reported):** some directions get locked out until the opposite key is pressed.
@@ -1470,6 +1471,39 @@ Logic suite (renamed 018 suite): **106/106**. Smoke of all 14 scenes: OK. Boss 4
 ### Web build
 `/workspace/web-beta-019/`, `?v=019`. `index.pck` 4,375,936 bytes, sha256 `7cf9267f2bb9ba3cc9b5c30ff4dddd3c01029eec553b479cab342ca4e5d123a4`. Only `index.pck` and `index.html` differ from 018. **LIVE** 2026-10-11 ~21:27 MT on https://savethesillyhumans.org/game.php, deployed manually by Robert (only `index.pck` and `index.html` changed in `/beta/`, plus `game.php` / `game.html`). Live `index.pck` sha256 `7cf9267f2bb9ba3cc9b5c30ff4dddd3c01029eec553b479cab342ca4e5d123a4`. Rollback copy of the 018 site: `~/rollback-018` on the server.
 
+
+## Build 020: hearts, invincible star, timed power-ups, reticle, mouse lock, GILL BATES and NANCY PELOTTO
+<a id="build-020"></a>
+
+**Date:** 2026-10-11 ~23:39 MT  
+**Status:** **LIVE** 2026-10-12 ~20:20 MT (deployed manually by Robert). Current build.
+
+Based on live 019. The in-game label reads `BUILD 020`.
+
+- **Hearts:** start at 5, +1 max heart every 2 levels completed, cap 8 (`LevelConfig.HEARTS_*`, `max_hearts_for`). The HUD flashes "+1" when you earn one.
+- **Full-heart long whip:** at full hearts the whip has long reach until you take a hit; it comes back whenever you return to full hearts.
+- **Power-ups:** higher drop chances (sheep 0.28, possessed 0.50, Karen 0.85) plus timed map spawns (first at 12 s, then every 20 s, max 2 on the map, 220–650 px from the rancher). There are no timed spawns on boss or bonus stages.
+- **INVINCIBLE (rare, 30 s):** nothing hurts you. Every saveable target (human, possessed, Cantifa, converted, sheep) flashes green. Whip one and it is saved: it flees the rancher, then runs to the safe zone. Combo scoring 200, 400, 800… (4 s window, capped at 102,400), with a counter, rainbow star aura and stings. There's a warning 3 s before it ends.
+- **Save target:** 5 up to the first boss, then 6 after Trustin and +1 per level (cap 15). From L10, rounds get +1 human per level (cap 24 per round) so the targets stay reachable (tuned with bots).
+- **Reticle:** larger and much more visible (green = in reach, magenta = nothing in reach).
+- **PC mouse lock:**
+  - Web: Pointer Lock with a virtual cursor; ESC frees it and shows PAUSED / CLICK TO RESUME.
+  - Desktop: confined mouse mode.
+  - The 019 focus fix is kept; mobile is unchanged.
+  - Can't be tested headless: a real ESC key press, OS alt-tab and desktop CONFINED mode. Chrome Pointer Lock was verified with Playwright.
+- **New bosses (cartoon parodies):**
+  - **GILL BATES** after L14: server-farm gala arena, 20 hearts, floppy-disk patches and blue-screen rings.
+  - **NANCY PELOTTO** after L17: Capitol arena, 22 hearts, ice-cream cones and "ORDER!" gavel rings.
+  - Each has a new music track (Blue Screen Boogie / Order in the House). Both run on the refactored Shlaus engine (`LevelConfig.boss_cfg(n)`).
+  - Bot ladder, avg skill wins out of 24: Shlaus 17, Gill 7, Nancy 4.
+- How to Play is rewritten for all of the above.
+- Tests: `_test_020` 80/80; `_wasd_019` 76/76; `_test_019` 104/106 (the 2 failures are the expected 019 label and How to Play text checks).
+
+### Screenshots
+`stsh-build020-01-mouse-{edge,prompt,resumed}.png`, `-02..04` and `-17` reticle (boss, bonus, busy, Shlaus), `-05-invincible-combo`, `-06-extra-heart`, `-07/-08` How to Play (PC/mobile), `-09..12` Gill (title, attack, win, mobile), `-13..16` Nancy (title, attack, win, mobile).
+
+### Web build
+`/workspace/web-beta-020/`, `?v=020`. `index.pck` 6,511,880 bytes, sha256 `6704f06bc131f17a4d50b8db4ce01925c283321f4a4e8e49ba046646796509cb`. `index.js` and `index.wasm` are identical to 019. **LIVE** 2026-10-12 ~20:20 MT on https://savethesillyhumans.org/game.php, deployed manually by Robert (only `index.pck` and `index.html` changed in `/beta/`, plus `game.php` / `game.html`). Live `index.pck` sha256 `6704f06bc131f17a4d50b8db4ce01925c283321f4a4e8e49ba046646796509cb`. Rollback copy of the 019 site: `~/rollback-019` on the server.
 
 ## Appendix: project reference notes
 

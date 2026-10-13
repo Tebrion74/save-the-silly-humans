@@ -43,6 +43,19 @@ static func run(lvl: Node, scenario: String) -> void:
 	_park_sheep(lvl, p)
 	var pu: PowerUps = lvl.power_ups
 	var cam: MsmCam = lvl.cam
+	# build 020 scenarios (no cam)
+	if scenario == "star_combo":
+		await _run_star_combo(lvl, p)
+		return
+	if scenario == "extra_heart":
+		p.end_grab_ghost()
+		return
+	if scenario == "reticle_busy":
+		lvl.weapons.select_id("whip")
+		_freeze_sheep_at(lvl, p, [Vector2(150, -40), Vector2(-200, 120), Vector2(260, 140), Vector2(-120, -160), Vector2(330, -120)])
+		_stage_bystanders(lvl, p)
+		lvl.spawn_map_powerup("fire_whip")
+		return
 	pu.grant("msm_cam")
 	match scenario:
 		"cantifa_post", "cantifa_shoot", "cantifa_film":
@@ -178,6 +191,33 @@ static func _stage_cantifa(lvl: Node, p: Node2D, scenario: String) -> void:
 				(kh as Node2D).global_position = p.global_position + o
 				kh._become_possessed()
 				kh.become_karen()
+
+
+## Build 020: INVINCIBLE with a running combo (humans, possessed, sheep saved).
+static func _run_star_combo(lvl: Node, p: Node2D) -> void:
+	p.end_grab_ghost()
+	lvl.weapons.select_id("whip")
+	lvl.power_ups.grant("invincible")
+	var offs := [Vector2(140, -30), Vector2(200, 60), Vector2(-160, 40), Vector2(90, 150), Vector2(-120, -110), Vector2(250, -90)]
+	var targets: Array = []
+	var humans := lvl.get_tree().get_nodes_in_group("humans")
+	for i in mini(humans.size(), 4):
+		var h: Node2D = humans[i]
+		h.global_position = p.global_position + offs[i]
+		targets.append(h)
+	if targets.size() >= 2 and targets[1].has_method("_become_possessed"):
+		targets[1]._become_possessed()
+	var flock := lvl.get_tree().get_nodes_in_group("sheep")
+	for i in mini(flock.size(), 2):
+		var sh: Node2D = flock[i]
+		sh.global_position = p.global_position + offs[4 + i]
+		sh.set_physics_process(false)
+		targets.append(sh)
+	await lvl.get_tree().create_timer(0.3).timeout
+	for i in mini(targets.size(), 4):
+		if is_instance_valid(targets[i]):
+			lvl.star_save(targets[i], p.global_position)
+		await lvl.get_tree().create_timer(0.22).timeout
 
 
 static func _park_sheep(lvl: Node, p: Node2D) -> void:

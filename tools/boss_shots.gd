@@ -32,6 +32,12 @@ func _run() -> void:
 			scene = gp.start_at_stage("boss3")
 		elif sc.begins_with("shlaus"):
 			scene = gp.start_at_stage("boss4")
+		elif sc.begins_with("gill"):
+			scene = gp.start_at_stage("boss5")
+		elif sc.begins_with("nancy"):
+			scene = gp.start_at_stage("boss6")
+		elif sc in ["star_combo", "reticle_busy", "extra_heart", "reticle_pc", "level"]:
+			scene = "res://scenes/Main.tscn"
 		elif sc.begins_with("bonus"):
 			var n := 1
 			if sc.length() > 5 and sc.substr(5, 1).is_valid_int():
@@ -40,7 +46,38 @@ func _run() -> void:
 		else:
 			scene = gp.start_at_stage("boss1")
 		change_scene_to_file(scene)
-	await create_timer(delay).timeout
+	await create_timer(maxf(delay - 0.4, 0.05)).timeout
+	_aim_cursor(sc_name())
+	await create_timer(0.4).timeout
 	root.get_texture().get_image().save_png(out)
 	print("saved ", out)
 	quit()
+
+
+func sc_name() -> String:
+	return String(root.get_node("GameProgress").debug_scenario)
+
+
+## Build 020: put the PC virtual cursor on something worth aiming at, so the
+## reticle shows its in-range (green) state in boss / bonus / busy shots.
+func _aim_cursor(sc: String) -> void:
+	var ma = root.get_node_or_null("MouseAim")
+	var lvl = current_scene
+	if ma == null or lvl == null or root.get_node("TouchInput").active:
+		return
+	var p := lvl.get_node_or_null("Entities/Player") as Node2D
+	if p == null:
+		return
+	var tgt: Node2D = null
+	if "boss" in lvl and lvl.boss != null and is_instance_valid(lvl.boss) and not sc.ends_with("_title"):
+		tgt = lvl.boss
+	if tgt == null:
+		var best := INF
+		for n in get_nodes_in_group("whippable"):
+			if n is Node2D and n != p:
+				var d: float = (n as Node2D).global_position.distance_to(p.global_position)
+				if d > 60.0 and d < best:
+					best = d
+					tgt = n
+	if tgt != null:
+		ma.cursor = tgt.get_global_transform_with_canvas().origin + Vector2(0, -12)

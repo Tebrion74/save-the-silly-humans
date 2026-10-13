@@ -8,7 +8,7 @@ extends Control
 ## Mouse emulation from touch is off, so touches are hit-tested by hand.
 
 const GAME_SCENE := "res://scenes/Main.tscn"
-const BUILD_LABEL := "BUILD 019"
+const BUILD_LABEL := "BUILD 020"
 const COPYRIGHT := "© 2026 ECHELON PUBLISHERS GROUP"
 const HORIZON := 440.0
 const TITLE_SHADER := preload("res://assets/shaders/title_text.gdshader")
@@ -120,6 +120,14 @@ func _input(event: InputEvent) -> void:
 		elif OS.is_debug_build() and (k == KEY_J or kc == KEY_J):
 			# Build 018 (debug builds only): straight to boss 4, Shlaus Kwobb
 			start_stage("boss4")
+			get_viewport().set_input_as_handled()
+		elif OS.is_debug_build() and (k == KEY_Y or kc == KEY_Y):
+			# Build 020 (debug builds only): straight to boss 5, Gill Bates
+			start_stage("boss5")
+			get_viewport().set_input_as_handled()
+		elif OS.is_debug_build() and (k == KEY_P or kc == KEY_P):
+			# Build 020 (debug builds only): straight to boss 6, Nancy Pelotto
+			start_stage("boss6")
 			get_viewport().set_input_as_handled()
 		elif k in [KEY_ESCAPE, KEY_BACKSPACE] or kc in [KEY_ESCAPE, KEY_BACKSPACE]:
 			close_howto()
@@ -253,6 +261,10 @@ func _debug_stage_scene(scenario: String) -> String:
 		return progress.start_at_stage("boss3")
 	if scenario.begins_with("shlaus"):
 		return progress.start_at_stage("boss4")
+	if scenario.begins_with("gill"):
+		return progress.start_at_stage("boss5")
+	if scenario.begins_with("nancy"):
+		return progress.start_at_stage("boss6")
 	if scenario.begins_with("bonus"):
 		var n := 1
 		if scenario.length() > 5 and scenario.substr(5, 1).is_valid_int():
@@ -423,16 +435,16 @@ func _menu_button(node_name: String, text: String, font_size: int, bg: Color, bg
 const HOWTO_PC := "WASD / ARROWS  —  move   ·   MOUSE  —  aim\nLEFT CLICK  —  WHIP   ·   cam: hold REC\nRIGHT CLICK  —  GRAB & throw   ·   cam: SWING\nQ / WHEEL / 1-2  —  swap weapon   ·   M  —  sound\nR  —  restart   ·   N / ENTER  —  next level"
 const HOWTO_TOUCH := "JOYSTICK (bottom left)  —  move\nBOTTOM-RIGHT  —  WHIP   ·   cam: hold REC\nTOP-RIGHT  —  GRAB   ·   cam: SWING\nTOP-LEFT  —  swap weapon   ·   SPEAKER  —  sound\nWHIP auto-aims  ·  crosshair = weapon reach"
 const HOWTO_RULES := "• Herd silly humans into the green SAFE ZONE. Throw POSSESSED humans in to save them too.
-• The CAMP sends humans, the SHEEP DEN breeds sheep. Hit the SAVE TARGET; lose if the rancher falls.
+• CAMP sends humans, SHEEP DEN breeds sheep. SAVE TARGET: 5, then 6 after TRUSTIN, +1 per level.
+• HEARTS: +1 max every 2 levels (up to 8). FULL HEARTS = LONG WHIP until you take a hit.
 • LEVEL 3+: 4 possessed together become KARENS: they mob you, convert humans, shut the camp.
-• POWER-UPS never time out. Whip mods stay till you grab another. FIRE: 10 lashes. SHOCKWAVE: 3.
-• MSM CAM (rare): hold REC to film a 39° cone. Filmed humans walk to safety; filmed Karens go VIRAL!
-• Filming drains the BATTERY (spares auto-load, carry 3), breeds sheep, and Karens LOVE it.
-• Two moves per weapon: WHIP / GRAB, or MSM CAM REC / SWING (shove + stun, no damage, no battery).
+• POWER-UPS drop and pop up on the map. Whip mods stay till you grab another. FIRE 10 · SHOCK 3.
+• INVINCIBLE (rare, 30 s): nothing hurts you. Whip anything flashing GREEN to SAVE it: 200, 400, 800... COMBO!
+• MSM CAM (rare): hold REC to film a cone: humans walk to safety, Karens go VIRAL. Drains BATTERY.
 • SCORE: 200 per human · 50 per sheep or possessed · 100 per Karen. Sheep speed up each level!
-• RETICLE turns GREEN when a target's in range (whip reach or cam cone); RED = nothing to hit.
-• BOSSES after LEVEL 2 (TRUSTIN), 5 (HUVAL), 8 (BEORGE KUSH JR.), 11 (SHLAUS KWOBB). Don't touch them. Die = retry boss.
-• KUSH: leave the red marks and strafing lanes, lure him onto his own marks. SHLAUS: film his delegates, use the green RESET gaps.
+• RETICLE: GREEN = target in reach, MAGENTA = nothing. PC: the mouse is locked to the game, ESC frees it.
+• BOSSES after 2 TRUSTIN, 5 HUVAL, 8 KUSH JR., 11 SHLAUS, 14 GILL BATES, 17 NANCY PELOTTO. Don't touch them!
+• KUSH: leave the red marks. SHLAUS / GILL / NANCY: film the delegates, run through the ring GAPS.
 • BONUS STAGE after LEVEL 1, then every 3 levels: pop flying sheep for 45 s. You can't get hurt there!
 • LEVEL 4+: CANTIFA post outside the zones and shoot. Film: humans run, Karens ENRAGE."
 
@@ -479,6 +491,7 @@ func _build_howto() -> void:
 	howto_panel.add_child(line)
 	howto_panel.add_child(_howto_heading("OBJECTIVE", Vector2(110, 312), Color(1.0, 0.55, 0.12)))
 	var rules := _howto_body(HOWTO_RULES, Vector2(110, 342), Vector2(1060, 258), 14)
+	rules.label_settings.line_spacing = -2   # build 020: 13 lines clear of BACK
 	rules.add_theme_constant_override("line_spacing", -5)
 	rules.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	howto_panel.add_child(rules)

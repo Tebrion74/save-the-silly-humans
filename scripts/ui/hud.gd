@@ -540,6 +540,12 @@ func set_health(health: int, maximum: int) -> void:
 
 ## Build 016: micro-sheep half-heart damage. chips > 0 draws the last full
 ## heart half-empty (one more micro touch costs it).
+## Build 020: a new max heart this level: glow the last heart for 4 s.
+func flash_extra_heart() -> void:
+	hearts.flash = 4.0
+	hearts.queue_redraw()
+
+
 func set_heart_chip(chips: int) -> void:
 	hearts.chip = chips
 	hearts.queue_redraw()
@@ -775,6 +781,10 @@ func set_boss_mode(boss_name: String, boss_title: String, hearts_left: int, max_
 			boss_bar.rage_hearts = LevelConfig.BOSS3_RAGE_HEARTS
 		LevelConfig.BOSS4_NAME:
 			boss_bar.rage_hearts = LevelConfig.BOSS4_RAGE_HEARTS
+		LevelConfig.BOSS5_NAME:
+			boss_bar.rage_hearts = LevelConfig.BOSS5_RAGE_HEARTS
+		LevelConfig.BOSS6_NAME:
+			boss_bar.rage_hearts = LevelConfig.BOSS6_RAGE_HEARTS
 	boss_bar.set_hearts(hearts_left, max_hearts, false)
 	$Root.add_child(boss_bar)
 	_build_title_card(boss_name, boss_title)
@@ -993,10 +1003,20 @@ class InventoryPanel extends Control:
 			width += 118.0
 		if pu.whip_mod != "":
 			width += 40.0
+		var heart_long: bool = "full_heart_long" in pu and pu.full_heart_long and pu.whip_mod != "long_whip"
+		if heart_long:
+			width += 40.0
 		if pu.fire_charges > 0:
 			width += 34.0 + PixelFont.text_width("x%d" % pu.fire_charges, 2) + 8.0
 		if pu.shock_charges > 0:
 			width += 34.0 + PixelFont.text_width("x%d" % pu.shock_charges, 2) + 8.0
+		var star_on: bool = "invincible_time" in pu and pu.invincible_time > 0.0
+		var star_t := ""
+		var combo_t := ""
+		if star_on:
+			star_t = "%d" % int(ceil(pu.invincible_time))
+			combo_t = ("COMBO x%d" % pu.star_combo) if pu.star_combo >= 1 else "COMBO -"
+			width += 40.0 + maxf(PixelFont.text_width(star_t, 2), PixelFont.text_width(combo_t, 2)) + 10.0
 		var h := 56.0
 		draw_rect(Rect2(5, 5, width, h), Color(0, 0, 0.05, 0.45))
 		draw_rect(Rect2(0, 0, width, h), Color(0.04, 0.05, 0.16, 0.8))
@@ -1051,6 +1071,23 @@ class InventoryPanel extends Control:
 		if pu.whip_mod != "":
 			PowerUp.draw_icon(self, pu.whip_mod, Vector2(x + 16, 27), 2.0)
 			x += 40.0
+		# build 020: full hearts = long whip (small red heart badge)
+		if heart_long:
+			PowerUp.draw_icon(self, "long_whip", Vector2(x + 16, 27), 2.0)
+			draw_rect(Rect2(x + 22, 34, 12, 12), OUT)
+			draw_rect(Rect2(x + 24, 36, 3, 3), Color(0.95, 0.15, 0.2))
+			draw_rect(Rect2(x + 29, 36, 3, 3), Color(0.95, 0.15, 0.2))
+			draw_rect(Rect2(x + 24, 39, 8, 3), Color(0.95, 0.15, 0.2))
+			draw_rect(Rect2(x + 26, 42, 4, 2), Color(0.95, 0.15, 0.2))
+			x += 40.0
+		# build 020: INVINCIBLE seconds + star combo counter
+		if star_on:
+			var blink: bool = pu.invincible_time < LevelConfig.INVINCIBLE_WARN_SECONDS and fmod(_t, 0.25) < 0.12
+			PowerUp.draw_icon(self, "invincible", Vector2(x + 16, 27), 2.0, 0.4 if blink else 1.0)
+			var rc := Color.from_hsv(fmod(_t * 0.9, 1.0), 0.5, 1.0)
+			_txt(Vector2(x + 36, 24), star_t + "s", Color(1, 1, 1))
+			_txt(Vector2(x + 36, 46), combo_t, rc)
+			x += 40.0 + maxf(PixelFont.text_width(star_t, 2), PixelFont.text_width(combo_t, 2)) + 10.0
 		for pair in [["fire_whip", pu.fire_charges], ["shockwave", pu.shock_charges]]:
 			var n: int = pair[1]
 			if n <= 0:
@@ -1172,9 +1209,18 @@ class HeartBar extends Control:
 	var max_hp: int = 5
 	## Build 016: pending micro-sheep half heart (0 or 1).
 	var chip: int = 0
+	## Build 020: seconds left of the "new max heart" glow on the last heart.
+	var flash: float = 0.0
+	var _ft: float = 0.0
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _process(delta: float) -> void:
+		if flash > 0.0:
+			flash = maxf(flash - delta, 0.0)
+			_ft += delta
+			queue_redraw()
 
 	func set_hp(h: int, m: int) -> void:
 		hp = h
@@ -1204,6 +1250,11 @@ class HeartBar extends Control:
 						var f2 := Color(0.25, 0.2, 0.3) if half and x >= 3 else fill
 						draw_rect(Rect2(o + Vector2((x + 1) * PX, (y + 1) * PX), Vector2(PX, PX)), f2)
 			draw_rect(Rect2(o + Vector2(2 * PX, 2 * PX), Vector2(PX, PX)), shine)
+		if flash > 0.0 and max_hp > 0:
+			var lo := Vector2((max_hp - 1) * 30, 2)
+			var a := 0.45 + 0.45 * absf(sin(_ft * 9.0))
+			draw_rect(Rect2(lo - Vector2(4, 4), Vector2(PX * 9 + 8, PX * 8 + 8)), Color(1.0, 0.95, 0.4, a), false, 3.0)
+			draw_string(ThemeDB.fallback_font, lo + Vector2(PX * 9 + 8, 18), "+1", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1.0, 0.95, 0.4, a))
 
 
 ## Build 015: boss heart bar (Genesis style): name + 10 hearts in a bordered

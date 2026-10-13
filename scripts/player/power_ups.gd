@@ -25,6 +25,17 @@ var spare_batteries: int = 0
 ## effect is available (no timers any more).
 var active := {}
 var _whip: Node = null
+## Build 020: while the rancher has full hearts the whip is the LONG WHIP
+## (same reach as the pickup). The first hit ends it; getting back to full
+## hearts (health pickup) brings it back. A picked-up LONG WHIP mod is
+## separate and is kept as before.
+var full_heart_long: bool = false
+## Build 020 INVINCIBLE: seconds of star power left, and the save combo.
+var invincible_time: float = 0.0
+var star_combo: int = 0
+var star_combo_timer: float = 0.0
+var star_best_combo: int = 0
+var _star_fx: Node2D = null
 var _base_range := 0.0
 var _base_throw := 0.0
 
@@ -35,7 +46,116 @@ func _ready() -> void:
 	if _whip:
 		_base_range = _whip.whip_range
 		_base_throw = _whip.throw_force
+	var p := get_parent()
+	if p != null and p.has_signal("health_changed"):
+		p.health_changed.connect(_on_health_changed)
+	if p != null and "health" in p and "maximum_health" in p:
+		full_heart_long = p.health >= p.maximum_health
 	_apply()
+
+
+func _on_health_changed(health: int, maximum: int) -> void:
+	var f := health >= maximum and health > 0
+	if f != full_heart_long:
+		full_heart_long = f
+		_apply()
+		changed.emit()
+
+
+## Build 020: star power on (or refreshed to the full time).
+func start_invincible(seconds: float = LevelConfig.INVINCIBLE_SECONDS) -> void:
+	var was := invincible_time > 0.0
+	invincible_time = seconds
+	if not was:
+		star_combo = 0
+		star_combo_timer = 0.0
+	_ensure_star_fx()
+	if is_inside_tree():
+		Sfx.play(self, "star", -3.0)
+	changed.emit()
+
+
+func is_invincible() -> bool:
+	return invincible_time > 0.0
+
+
+## A star save landed: returns the points for it (200, 400, 800 ...).
+func star_save_points() -> int:
+	star_combo += 1
+	star_best_combo = maxi(star_best_combo, star_combo)
+	star_combo_timer = LevelConfig.STAR_COMBO_WINDOW
+	changed.emit()
+	return LevelConfig.star_combo_points(star_combo)
+
+
+func _process(delta: float) -> void:
+	if invincible_time <= 0.0:
+		return
+	var before := invincible_time
+	invincible_time = maxf(invincible_time - delta, 0.0)
+	if star_combo_timer > 0.0:
+		star_combo_timer -= delta
+		if star_combo_timer <= 0.0:
+			star_combo = 0
+	var warn := LevelConfig.INVINCIBLE_WARN_SECONDS
+	if before > warn and invincible_time <= warn and is_inside_tree():
+		Sfx.play(self, "star_end", -6.0)
+	if invincible_time <= 0.0:
+		star_combo = 0
+		star_combo_timer = 0.0
+		changed.emit()
+
+
+func _ensure_star_fx() -> void:
+	if _star_fx != null and is_instance_valid(_star_fx):
+		return
+	var p := get_parent()
+	if p == null:
+		return
+	_star_fx = StarAura.new()
+	_star_fx.name = "StarAura"
+	_star_fx.pu = self
+	p.add_child(_star_fx)
+
+
+## Rainbow tint + sparkles on the rancher while star power lasts.
+class StarAura extends Node2D:
+	var pu: Node = null
+	var _t := 0.0
+
+	func _ready() -> void:
+		z_index = 5
+
+	func _process(delta: float) -> void:
+		_t += delta
+		var host := get_parent()
+		var spr = host.get_node_or_null("Sprite") if host != null else null
+		var on: bool = pu != null and is_instance_valid(pu) and pu.invincible_time > 0.0
+		if spr is CanvasItem:
+			if on:
+				var blink: bool = pu.invincible_time < LevelConfig.INVINCIBLE_WARN_SECONDS and fmod(_t, 0.2) < 0.1
+				var c := Color.from_hsv(fmod(_t * 1.6, 1.0), 0.55, 1.0)
+				(spr as CanvasItem).modulate = Color(1, 1, 1) if blink else Color(c.r * 1.4, c.g * 1.4, c.b * 1.4)
+			else:
+				(spr as CanvasItem).modulate = Color(1, 1, 1)
+		if not on:
+			queue_free()
+			return
+		queue_redraw()
+
+	func _draw() -> void:
+		for i in 6:
+			var a := _t * 3.5 + TAU * i / 6.0
+			var p := Vector2(cos(a) * 30.0, -24.0 + sin(a) * 12.0)
+			var c := Color.from_hsv(fmod(_t * 0.7 + i / 6.0, 1.0), 0.7, 1.0)
+			var s := 2.0 + 1.5 * absf(sin(_t * 8.0 + i))
+			draw_rect(Rect2(p - Vector2(s * 2, s * 0.5), Vector2(s * 4, s)), c)
+			draw_rect(Rect2(p - Vector2(s * 0.5, s * 2), Vector2(s, s * 4)), c)
+
+
+## True when the whip has the long reach (pickup mod or full hearts).
+func long_reach() -> bool:
+	return whip_mod == "long_whip" or full_heart_long
 
 
 func weapons() -> Node:
@@ -67,6 +187,9 @@ func grant(kind: String) -> String:
 			note = _grant_cam()
 		"battery":
 			note = _grant_battery()
+		"invincible":
+			start_invincible()
+			note = "%ds" % int(LevelConfig.INVINCIBLE_SECONDS)
 	_apply()
 	changed.emit()
 	return note
@@ -123,7 +246,9 @@ func is_active(kind: String) -> bool:
 			return fire_charges > 0
 		"shockwave":
 			return shock_charges > 0
-		"long_whip", "strong_throw", "whip_shot":
+		"long_whip":
+			return long_reach()
+		"strong_throw", "whip_shot":
 			return whip_mod == kind
 	return false
 
@@ -163,8 +288,8 @@ func _apply() -> void:
 			active[k] = 1.0
 	if _whip == null:
 		return
-	_whip.whip_range = _base_range * (LevelConfig.LONG_WHIP_MULT if whip_mod == "long_whip" else 1.0)
-	_whip.assist_range_mult = LevelConfig.LONG_WHIP_MULT if whip_mod == "long_whip" else 1.0
+	_whip.whip_range = _base_range * (LevelConfig.LONG_WHIP_MULT if long_reach() else 1.0)
+	_whip.assist_range_mult = LevelConfig.LONG_WHIP_MULT if long_reach() else 1.0
 	_whip.throw_force = _base_throw * (LevelConfig.STRONG_THROW_MULT if whip_mod == "strong_throw" else 1.0)
 
 

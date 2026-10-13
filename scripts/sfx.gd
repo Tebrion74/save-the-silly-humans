@@ -227,6 +227,15 @@ static func get_sound(sound_name: String) -> AudioStreamWAV:
 				s.append((sin(ph) * 0.5 + lp * 0.5) * pow(1.0 - u, 2.2))
 		"perfect":   # a whole wave popped: quick rising sparkle
 			s = _notes([[784.0, 0.04], [988.0, 0.04], [1175.0, 0.04], [1568.0, 0.04], [1976.0, 0.12]], 0.18, 0.25)
+		"star":      # build 020 INVINCIBLE sting: fast rising major arpeggios + trill
+			s = _notes([[523.0, 0.06], [659.0, 0.06], [784.0, 0.06], [1047.0, 0.06],
+					[587.0, 0.06], [740.0, 0.06], [880.0, 0.06], [1175.0, 0.06],
+					[659.0, 0.06], [831.0, 0.06], [988.0, 0.06], [1319.0, 0.06],
+					[1568.0, 0.07], [1319.0, 0.07], [1568.0, 0.07], [2093.0, 0.3]], 0.2, 0.25)
+		"star_save": # build 020 star save: bright up-chirp (pitch rises with the combo)
+			s = _notes([[1047.0, 0.04], [1568.0, 0.04], [2093.0, 0.1]], 0.18, 0.25)
+		"star_end":  # build 020 star power running out: falling blips
+			s = _notes([[1568.0, 0.08], [0.0, 0.05], [1175.0, 0.08], [0.0, 0.05], [880.0, 0.14]], 0.16, 0.5)
 		"tally":     # tally count tick
 			s = _notes([[1760.0, 0.02]], 0.1, 0.5)
 		"clicker":   # presentation clicker: tiny double click

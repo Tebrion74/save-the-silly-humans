@@ -444,6 +444,8 @@ func pick_new_direction() -> void:
 
 
 func take_damage(amount: int, source_position := Vector2.ZERO) -> void:
+	if has_meta("star_saved"):
+		return
 	if rescued or _dead or possessed or exploding:
 		return
 

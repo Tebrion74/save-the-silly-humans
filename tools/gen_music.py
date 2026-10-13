@@ -392,10 +392,98 @@ def boss4_theme():
     s.write(os.path.join(OUT, 'music_boss4.wav'))
 
 
+# ---------------------------------------------------------------- build 020 boss 5
+def boss5_theme():
+    """'Blue Screen Boogie': a bouncy E minor chiptune shuffle, 150 BPM, 16
+    bars: fast 16th arpeggios like a modem handshake, a walking triangle bass,
+    'error beep' stabs every 4 bars, for the Gill Bates fight. Original."""
+    s = Song(150, 16)
+    s.rng = np.random.default_rng(2014)
+    prog = [('E2', 'min'), ('C2', 'maj'), ('G2', 'maj'), ('D2', 'maj')] * 2 + \
+           [('A2', 'min'), ('E2', 'min'), ('C2', 'maj'), ('B1', 'maj')] * 2
+    L = {
+        0: [(0, 2, 'E5'), (2, 2, 'G5'), (4, 2, 'B5'), (6, 2, 'E6'), (8, 4, 'D6'), (12, 4, 'B5')],
+        1: [(0, 3, 'C6'), (3, 1, 'B5'), (4, 2, 'G5'), (6, 2, 'E5'), (8, 6, 'G5'), (14, 2, 'A5')],
+        2: [(0, 2, 'B5'), (2, 2, 'D6'), (4, 4, 'G6'), (8, 2, 'F#6'), (10, 2, 'D6'), (12, 4, 'B5')],
+        3: [(0, 2, 'A5'), (2, 2, 'F#5'), (4, 2, 'D5'), (6, 2, 'F#5'), (8, 8, 'A5')],
+        4: [(0, 4, 'A5'), (4, 2, 'C6'), (6, 2, 'E6'), (8, 4, 'D6'), (12, 4, 'C6')],
+        5: [(0, 2, 'D#6'), (2, 2, 'B5'), (4, 2, 'F#5'), (6, 2, 'D#5'), (8, 8, 'B5')],
+    }
+    order = [0, 1, 2, 3, 0, 1, 2, 3, 4, 0, 1, 5, 4, 0, 1, 5]
+    for bar, ((rn, kind), li) in enumerate(zip(prog, order)):
+        root = midi(rn)
+        base = bar * 16
+        tones = chord_tones(root, kind)
+        for st, ln, nm in L[li]:
+            s.tone(base + st, ln, midi(nm), 0.15, duty=0.25, vib=0.008 if ln >= 4 else 0.0)
+        # modem-handshake arpeggio (quiet, fast)
+        for i in range(16):
+            t = tones[i % 3] + 24 + (12 if i % 6 >= 3 else 0)
+            s.tone(base + i, 1, t, 0.04, duty=0.125, decay=18)
+        # walking bass
+        for i, iv in enumerate((0, 7, 12, 7)):
+            s.tone(base + i * 4, 3, root + 12 + iv, 0.34, wave_='tri')
+        for i in range(16):
+            if i in (0, 6, 10):
+                s.kick(base + i, 0.55)
+            if i in (4, 12):
+                s.snare(base + i, 0.33)
+            if i % 2 == 0:
+                s.hat(base + i, 0.09)
+        if bar % 4 == 3:
+            for k, i in enumerate((12, 13, 14)):   # error beeps
+                s.tone(base + i, 1, midi('A6') - k * 5, 0.08, duty=0.5)
+    s.write(os.path.join(OUT, 'music_boss5.wav'))
+
+
+# ---------------------------------------------------------------- build 020 boss 6
+def boss6_theme():
+    """'Order in the House': a stately, slightly pompous Bb major march,
+    132 BPM, 16 bars: a brass-band lead in thirds, gavel-knock woodblocks,
+    a tuba triangle bass, for the Nancy Pelotto fight. Original."""
+    s = Song(132, 16)
+    s.rng = np.random.default_rng(2017)
+    prog = [('Bb1', 'maj'), ('Eb2', 'maj'), ('F2', 'maj'), ('Bb1', 'maj')] * 2 + \
+           [('G2', 'min'), ('C2', 'min'), ('F2', 'maj'), ('F2', 'sus')] * 2
+    L = {
+        0: [(0, 4, 'D5'), (4, 2, 'F5'), (6, 2, 'Bb5'), (8, 6, 'D6'), (14, 2, 'C6')],
+        1: [(0, 4, 'Bb5'), (4, 4, 'G5'), (8, 4, 'Eb5'), (12, 4, 'G5')],
+        2: [(0, 2, 'A5'), (2, 2, 'C6'), (4, 4, 'F6'), (8, 4, 'Eb6'), (12, 4, 'C6')],
+        3: [(0, 8, 'Bb5'), (8, 2, 'F5'), (10, 2, 'D5'), (12, 4, 'F5')],
+        4: [(0, 4, 'G5'), (4, 2, 'Bb5'), (6, 2, 'D6'), (8, 4, 'C6'), (12, 4, 'Bb5')],
+        5: [(0, 2, 'C6'), (2, 2, 'Eb6'), (4, 4, 'G6'), (8, 8, 'F6')],
+    }
+    order = [0, 1, 2, 3, 0, 1, 2, 3, 4, 1, 5, 2, 4, 1, 5, 3]
+    for bar, ((rn, kind), li) in enumerate(zip(prog, order)):
+        root = midi(rn)
+        base = bar * 16
+        tones = chord_tones(root, kind)
+        for st, ln, nm in L[li]:
+            m = midi(nm)
+            s.tone(base + st, ln, m, 0.15, duty=0.25, vib=0.006 if ln >= 4 else 0.0)
+            s.tone(base + st, ln, m - 4 if kind != 'min' else m - 3, 0.06, duty=0.5)   # band thirds
+        for i in (2, 6, 10, 14):
+            for t in tones:
+                s.tone(base + i, 1, t + 24, 0.04, duty=0.125, decay=12)
+        for i in range(4):
+            s.tone(base + i * 4, 2, root + 12 + (0 if i % 2 == 0 else 7), 0.38, wave_='tri')
+        for i in range(16):
+            if i in (0, 8):
+                s.kick(base + i, 0.6)
+            if i in (4, 12):
+                s.snare(base + i, 0.3)
+            if i % 4 == 2:
+                s.hat(base + i, 0.08)
+        if bar % 4 == 3:
+            for i in (8, 10, 12):           # gavel knocks
+                s.tone(base + i, 1, midi('E5'), 0.12, duty=0.5, decay=40)
+    s.write(os.path.join(OUT, 'music_boss6.wav'))
+
+
 if __name__ == '__main__':
     import sys
     os.makedirs(OUT, exist_ok=True)
     tracks = {'level': level_theme, 'boss': boss_theme, 'bonus': bonus_theme, 'boss2': boss2_theme,
-              'boss3': boss3_theme, 'boss4': boss4_theme}
+              'boss3': boss3_theme, 'boss4': boss4_theme, 'boss5': boss5_theme, 'boss6': boss6_theme}
     for name in (sys.argv[1:] or list(tracks)):
         tracks[name]()

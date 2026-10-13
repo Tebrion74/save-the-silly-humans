@@ -11,6 +11,8 @@ var _ended: bool = false
 ## Build 010: current level (from GameProgress autoload) and round target.
 var level_number: int = 1
 var target_rescued: int = LevelConfig.TARGET_LEVEL1
+## Build 020: true once this level announced a new max heart.
+var extra_heart_shown: bool = false
 var _transitioning: bool = false
 ## Gate for SafeZone rescues — false until after physics frames post-place.
 var rescues_unlocked: bool = false
@@ -48,6 +50,9 @@ var cantifa_cap_override := -1
 var _cantifa_posts: Array = []
 ## Tests can force drops: -1 = use the configured chance, 0/1 = never/always.
 var drop_override: float = -1.0
+## Build 020: timed map power-ups.
+var map_powerup_timer: float = LevelConfig.POWERUP_MAP_FIRST
+var map_powerups_spawned: int = 0
 ## Build 014: MSM Cam + weapon slots (Player children, added in _ready).
 var weapons: Weapons
 var cam: MsmCam
@@ -130,6 +135,12 @@ func _ready() -> void:
 		reticle.player = rancher as Node2D
 		reticle.level = self
 		rl.add_child(reticle)
+		call_deferred("_announce_extra_heart", rancher)
+		if fx_layer != null:
+			_star_cue = StarCue.new()
+			_star_cue.name = "StarCue"
+			_star_cue.level = self
+			fx_layer.add_child(_star_cue)
 
 	_set_safe_zone_monitoring(false)
 	_set_human_collisions_enabled(false)
@@ -143,7 +154,7 @@ func _ready() -> void:
 	if humans.size() != LevelConfig.INITIAL_HUMANS:
 		push_warning("Level setup: %d initial humans (config says %d)" % [humans.size(), LevelConfig.INITIAL_HUMANS])
 	# Build 010 round: total 20 = initial humans now + camp arrivals later.
-	state.begin_round(LevelConfig.ROUND_TOTAL_HUMANS, humans.size(), target_rescued, level_number)
+	state.begin_round(LevelConfig.round_total_for(level_number), humans.size(), target_rescued, level_number)
 	for human in humans:
 		_connect_human(human)
 	_roll_initial_cantifa(humans)
@@ -196,6 +207,11 @@ func _process(delta: float) -> void:
 		round_time += delta
 		if hud and hud.has_method("set_time"):
 			hud.set_time(round_time)
+		if timed_powerups_enabled():
+			map_powerup_timer -= delta
+			if map_powerup_timer <= 0.0:
+				map_powerup_timer = LevelConfig.POWERUP_MAP_INTERVAL
+				spawn_map_powerup()
 		if karens_enabled:
 			_cluster_timer -= delta
 			if _cluster_timer <= 0.0:
@@ -572,6 +588,103 @@ func _on_became_karen(human: Node = null) -> void:
 	_refresh_live_counts()
 
 
+# ------------------------------------------------------------------ INVINCIBLE (020)
+
+## Stats for tests / the bot.
+var star_saves: int = 0
+var star_points: int = 0
+var star_best_combo: int = 0
+var _star_cue: Node2D = null
+
+
+## A whip crack hit `target` during star power. True if it was saved.
+func star_save(target: Node2D, from_pos: Vector2) -> bool:
+	if _ended or power_ups == null or not power_ups.is_invincible():
+		return false
+	var k := StarSave.save(target, from_pos)
+	if k == "":
+		return false
+	var pts: int = power_ups.star_save_points()
+	var combo: int = power_ups.star_combo
+	star_saves += 1
+	star_points += pts
+	star_best_combo = maxi(star_best_combo, combo)
+	Sfx.play(self, "star_save", -5.0, minf(1.0 + 0.06 * (combo - 1), 1.6))
+	if _scoring_open():
+		level_points += pts
+		var progress := _progress()
+		if progress != null and progress.has_method("add_score"):
+			progress.add_score(pts)
+		_push_score_hud()
+	var col := Color.from_hsv(fmod(0.12 * combo, 1.0), 0.55, 1.0)
+	spawn_score_popup("+%d" % pts, target.global_position, col, 3)
+	if combo >= 2:
+		spawn_score_popup("COMBO x%d" % combo, target.global_position + Vector2(0, -26), Color(1.0, 0.95, 0.4), 2)
+	return true
+
+
+## A star-saved runner reached a safe zone.
+func star_arrived(body: Node2D, kind: String) -> void:
+	if body == null or not is_instance_valid(body):
+		return
+	match kind:
+		"human":
+			if body.has_method("rescue"):
+				body.rescue()   # was_rescued -> normal rescue credit
+				return
+		"possessed":
+			if body.has_method("rescue_from_possession"):
+				body.rescue_from_possession()   # possession save (counts as a rescue)
+				return
+		"cantifa":
+			Sfx.play(self, "flee", -8.0)
+		"sheep":
+			Sfx.play(self, "save", -9.0, 1.3)
+	body.queue_free()
+	_refresh_live_counts()
+
+
+## Green flashing ring under everything a star whip would save.
+class StarCue extends Node2D:
+	var level: Node = null
+	var _t := 0.0
+
+	func _process(delta: float) -> void:
+		_t += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		if level == null or level.power_ups == null or not level.power_ups.is_invincible():
+			return
+		if fmod(_t, 0.5) > 0.32:
+			return
+		for g in ["humans", "possessed", "sheep", "cantifa"]:
+			for n in get_tree().get_nodes_in_group(g):
+				if n is Node2D and StarSave.kind_of(n) != "":
+					var p: Vector2 = (n as Node2D).global_position
+					draw_arc(p + Vector2(0, 4), 20.0, 0, TAU, 20, Color(0.06, 0.12, 0.06, 0.8), 6.0)
+					draw_arc(p + Vector2(0, 4), 20.0, 0, TAU, 20, Color(0.35, 1.0, 0.4, 0.95), 3.0)
+
+
+# ------------------------------------------------------------------ extra hearts (020)
+
+## Build 020: the level that starts with one more max heart shows it.
+func _announce_extra_heart(rancher: Node) -> void:
+	var gp := _progress()
+	if gp == null or not gp.has_method("levels_completed") or String(gp.current_stage) != "":
+		return
+	var done: int = gp.levels_completed()
+	if done <= 0 or LevelConfig.max_hearts_for(done) <= LevelConfig.max_hearts_for(done - 1):
+		return
+	extra_heart_shown = true
+	Sfx.play(self, "pickup", -4.0, 0.8)
+	if rancher is Node2D and is_instance_valid(rancher):
+		spawn_score_popup("+1 HEART!  MAX %d" % LevelConfig.max_hearts_for(done),
+				(rancher as Node2D).global_position + Vector2(0, -40), Color(1.0, 0.4, 0.45), 3)
+	if hud and hud.has_method("flash_extra_heart"):
+		hud.flash_extra_heart()
+
+
 # ------------------------------------------------------------------ power-ups (013)
 
 func _maybe_drop(chance: float, pos: Vector2, source: String = "") -> void:
@@ -593,6 +706,9 @@ func drop_weights(source: String = "") -> Dictionary:
 		cam_w *= LevelConfig.CAM_OWNED_WEIGHT_MULT
 		w["battery"] = LevelConfig.BATTERY_WEIGHT_OWNED
 	w["msm_cam"] = int(round(cam_w))
+	# Build 020: INVINCIBLE only drops in normal levels.
+	if not timed_powerups_enabled():
+		w.erase("invincible")
 	return w
 
 
@@ -607,6 +723,54 @@ func roll_powerup_type(source: String = "") -> String:
 		if roll <= 0:
 			return k
 	return "health"
+
+
+## Build 020: boss and bonus stages override this (no timed spawns there).
+func timed_powerups_enabled() -> bool:
+	return true
+
+
+## Build 020: drop a random power-up on open ground near the rancher.
+func spawn_map_powerup(kind: String = "") -> Node2D:
+	if pickups_layer == null:
+		return null
+	var on_map := 0
+	for p in pickups_layer.get_children():
+		if p.is_in_group("map_powerup") and not p.is_queued_for_deletion():
+			on_map += 1
+	if on_map >= LevelConfig.POWERUP_MAP_MAX_ON_MAP:
+		return null
+	var at := _map_powerup_point()
+	if at == Vector2.INF:
+		return null
+	var pk := spawn_pickup(kind if kind != "" else roll_powerup_type("map"), at)
+	if pk != null:
+		pk.add_to_group("map_powerup")
+		map_powerups_spawned += 1
+	return pk
+
+
+func _map_powerup_point() -> Vector2:
+	var layer = get_node_or_null("Ground")
+	var rancher := get_node_or_null("Entities/Player") as Node2D
+	if layer == null or rancher == null or not layer.has_method("tile_center"):
+		return Vector2.INF
+	var space := get_world_2d().direct_space_state
+	for attempt in 40:
+		var ang := drop_rng.randf() * TAU
+		var dist := drop_rng.randf_range(LevelConfig.POWERUP_MAP_MIN_DIST, LevelConfig.POWERUP_MAP_MAX_DIST)
+		var p: Vector2 = rancher.global_position + Vector2.from_angle(ang) * dist
+		var cell: Vector2i = layer.local_pos_to_local_cell(layer.to_local(p))
+		if not layer.is_interior_local(cell, 3):
+			continue
+		var q := PhysicsPointQueryParameters2D.new()
+		q.position = p
+		q.collide_with_areas = false
+		q.collide_with_bodies = true
+		if not space.intersect_point(q, 1).is_empty():
+			continue
+		return p
+	return Vector2.INF
 
 
 func spawn_pickup(kind: String, pos: Vector2) -> Node2D:
