@@ -1578,7 +1578,7 @@ The difficulty ladder is still in order (Shlaus < Gill < Nancy), but the late bo
 - Regular levels and bosses keep the normal cooldown and a single target.
 
 ### Other
-- Internal beta tools added.
+- Internal beta tools added (beta dev cheat codes, documented in [`CHEATS.md`](../CHEATS.md) since Oct 14 2026).
 
 ### Tests
 `_test_022` 38/38, `_maps_021` 432/432, `_wasd_019` 76/76, smoke 16/0. `_test_020` 78/80 (its two 8-heart-cap checks are expected to fail now). `_test_019` 104/106 (expected).
@@ -1634,7 +1634,7 @@ From L18 the music follows the biome cycle. Bonus stages and bosses keep their t
 - **Bot check** (`_lvlbot_020`, L4-18, 112 runs, 022 vs 023): 0 rancher deaths in either build, and average end HP is within 0.5 of 022. Wins 43/56 → 38/56, all at L10+. Every loss was the bot's existing possessed-human weakness making the target unreachable, not a death.
 
 ### Other
-- Internal beta tools updated.
+- Internal beta tools updated (adds the noclip code; see [`CHEATS.md`](../CHEATS.md), documented Oct 14 2026).
 
 ### Tests
 `_test_023` 44/44, `_spin_023` PASS (3 seeds), `_test_022` 38/38, `_maps_021` 432/432.
@@ -1669,6 +1669,9 @@ Based on 023. The in-game label reads `BUILD 024`. Web export cache-busted with 
 
 ### Web build
 `/workspace/web-beta-024/`, `?v=024`. `index.pck` is 10,445,792 bytes, sha256 `1360edd068792f6280234f4447d032f952e7ca14d8846b02cb4c5252c172412c`. Only `index.pck` and `index.html` in `/beta/`, plus `game.php`, change. **LIVE** 2026-10-14 ~18:35 MT on https://savethesillyhumans.org/game.php, deployed manually by Robert over 022. Live `index.pck` sha256 verified `1360edd068792f6280234f4447d032f952e7ca14d8846b02cb4c5252c172412c`; `game.php` shows `v=024` and build 024; the live pack boots headless without errors. Rollback copy of the 022 site: `~/rollback-022` on the server.
+
+### Documentation (2026-10-14)
+The beta dev cheat codes were documented publicly on Oct 14 2026 in [`CHEATS.md`](../CHEATS.md), with Robert's approval. No game build change. They are beta-only and will be removed at alpha (v1.0); the game goes closed source beyond the Steam release.
 
 ### Tests
 - `tools/_test_024.gd`: placement on L1-24 (count, reachable door, sealed pocket, marked/unmarked mix, varied rewards, unique ids, props intact), no chambers in boss/bonus scenes, touch-whip break, reveal and claim, once-per-run, run reset, power lash one-crack break.
