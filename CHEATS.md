@@ -6,7 +6,7 @@
 |---|---|
 | `7474` | God mode |
 | `1974` | Skip the current stage |
-| `2012` | Level select (opens a keypad to pick the level) |
+| `2012` | Level select (opens a keypad to pick the level; from build 025, 91-98 jump to bosses 1-8) |
 | `6969` | Noclip on / off (walk through walls and props) |
 | `0000` | All off (god mode and noclip off) |
 

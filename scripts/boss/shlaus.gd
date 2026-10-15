@@ -555,6 +555,11 @@ func _start_windup(p: Node2D, forced: String = "") -> void:
 	_set_state(S.WINDUP)
 
 
+## Build 025: subclasses handle their own attack kinds here.
+func _fire_custom(_kind: String, _p: Node2D) -> void:
+	pass
+
+
 ## Tests / screenshots / bots.
 func force_attack(kind: String) -> void:
 	var p := _player()
@@ -579,6 +584,8 @@ func _fire(p: Node2D) -> void:
 			_throw_envelopes()
 		"reset":
 			_spawn_reset(p)
+		_:
+			_fire_custom(attack, p)   # build 025: boss-specific attacks (Rogan, Violentsky)
 	if attack != "envelopes" and rng.randf() < float(cfg.COMBO_CHANCE[i]):
 		_combo_next = "envelopes"
 	attack = ""

@@ -6,7 +6,7 @@
 
 ▶ **Play it in your browser:** https://savethesillyhumans.org/game.php
 
-Current build: **024** (live since 2026-10-14 ~18:35 MT: hidden chambers behind breakable tiles with one-time rewards; includes 023's biome music, spinning-humans fix and grouped Cantifa, which was built but never deployed on its own) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
+Current build: **025** (live since 2026-10-15 ~00:00 MT: bosses 7 and 8, Reanald Rogan and Zelodymer Violentsky; Corn Belt and Wheat Steppe biomes; body armour; a redesigned HUD) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
 
 Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://www.youtube.com/@SaveTheSillyHumans)
 
@@ -24,17 +24,19 @@ Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://
 - **Rounds, levels and scoring.** Hit the save target to win, with a Genesis-style HUD and a high score.
 - **Hearts (020, 022).** Start with 5 hearts and earn +1 max heart every 2 levels completed, up to **12** (the cap was 8 before build 022). At full hearts your whip has extra reach until you take a hit.
 - **INVINCIBLE star (020).** A rare 30-second pickup: nothing hurts you, every saveable target flashes green and one crack saves it, with combo scoring (200, 400, 800 … up to 102,400) and a warning 3 s before it ends.
-- **Regional biomes (021).** Each stretch of regular levels looks like the home region of the boss at its end: Prairie Ranch (L1–2), Olive Hills (L3–5), Lone Star Scrub (L6–8), Alpine Forest (L9–11), Rainforest (L12–14), Golden Coast (L15–17). From L18 the six biomes cycle, one level each. Bonus stages and boss arenas keep their own looks.
+- **Regional biomes (021).** Each stretch of regular levels looks like the home region of the boss at its end: Prairie Ranch (L1–2), Olive Hills (L3–5), Lone Star Scrub (L6–8), Alpine Forest (L9–11), Rainforest (L12–14), Golden Coast (L15–17), Corn Belt (L18–20, Midwest farmland with corn rows, hay bales and a farm pond; 025) and Wheat Steppe (L21–23, Ukrainian wheat fields, birch groves and sunflowers; 025). From L24 all eight biomes cycle, one level each. Bonus stages and boss arenas keep their own looks.
 - **Hidden chambers (024).** Every regular level hides 1 or 2 small chambers behind a breakable rock or bush. Some are faintly cracked and discoloured, others look like any other tile. Whip one (2 cracks, or 1 with Fire Whip or Shockwave) to reveal a reward: treasure (+750), a full heal or a power-up. Each chamber pays out once per run. Works the same on touch.
-- **Six boss battles.** A boss waits after levels 2, 5, 8, 11, 14 and 17: Trustin Judeau, Huval Yarheyhey, Beorge Kush Jr., Shlaus Kwobb, Gill Bates and Nancy Pelotto. Each has telegraphed attacks, three phases and a rage mode. Don't touch a boss; dying retries the fight. See [Bosses](#bosses).
+- **Eight boss battles.** A boss waits after levels 2, 5, 8, 11, 14, 17, 20 and 23: Trustin Judeau, Huval Yarheyhey, Beorge Kush Jr., Shlaus Kwobb, Gill Bates, Nancy Pelotto, Reanald Rogan and Zelodymer Violentsky. Each has telegraphed attacks, three phases and a rage mode. Don't touch a boss; dying retries the fight. See [Bosses](#bosses).
 - **Bonus stage (016).** After level 1 and then every 3 levels (4, 7, 10, …): a Galaga-style 45-second challenge stage. Eight waves of flying sheep swoop across the field. Pop them before they leave. 100 per hit, +500 for a whole wave, and PERFECT! SPECIAL BONUS 10000 for all of them. You can't get hurt, and power-ups work without being used up. Each repeat brings more and faster sheep. Since 022 the whip cools down twice as fast here and one crack pops every sheep it overlaps.
-- **Progression.** L1 → bonus → L2 → Trustin → L3 → L4 → bonus → L5 → Huval → L6 → L7 → bonus → L8 → Kush → L9 → L10 → bonus → L11 → Shlaus → L12 → L13 → bonus → L14 → Gill → L15 → L16 → bonus → L17 → Nancy → L18 → … After Nancy the levels carry on, with a bonus stage every 3 levels and no further bosses. When a bonus and a boss share a slot, the bonus comes first.
-- **Sound and music (015b, 016, 023).** Generated sound effects for everything (whip, grabs, saves, explosions, cam, bosses, hidden chambers, UI) and original chiptune loops: one per regional biome (prairie fiddle hoedown, Mediterranean hijaz, Texas twang, Bavarian oompah accordion, moody Pacific Northwest, NorCal surf-folk; build 023), the bonus stage and each of the six bosses. M (or the speaker icon on touch) cycles sound ON / LOW / OFF.
+- **Progression.** L1 → bonus → L2 → Trustin → L3 → L4 → bonus → L5 → Huval → L6 → L7 → bonus → L8 → Kush → L9 → L10 → bonus → L11 → Shlaus → L12 → L13 → bonus → L14 → Gill → L15 → L16 → bonus → L17 → Nancy → L18 → L19 → bonus → L20 → Rogan → L21 → L22 → bonus → L23 → Violentsky → L24 → … After Violentsky the levels carry on, with a bonus stage every 3 levels and no further bosses. When a bonus and a boss share a slot, the bonus comes first.
+- **Sound and music (015b, 016, 023).** Generated sound effects for everything (whip, grabs, saves, explosions, cam, bosses, hidden chambers, UI) and original chiptune loops: one per regional biome (prairie fiddle hoedown, Mediterranean hijaz, Texas twang, Bavarian oompah accordion, moody Pacific Northwest, NorCal surf-folk; build 023), Corn Belt and Wheat Steppe (025), the bonus stage and each of the eight bosses. M (or the speaker icon on touch) cycles sound ON / LOW / OFF.
+- **Body armour (025).** From level 12 (after Shlaus Kwobb) a BODY ARMOUR pickup can drop in regular levels. It gives 3 plates; each soaks one hit before you lose a heart. The rancher wears a steel-blue vest while it lasts, and blue shields sit next to your hearts. Armour carries into the next level.
+- **HUD (025).** Two compact cards: hearts and armour with your score, level and time on the left; SAVED and the crowd counters on the right. Power-up icons with timers sit underneath. "SECRET FOUND!" shows clear of the score on PC and mobile.
 - **PC and touch controls.** Mouse and keyboard with an aim reticle, or a touch joystick with corner wedges and aim assist.
 
 ## Bosses
 
-All six are good-natured cartoon parodies drawn from code (no photos or likenesses). Each fight sits between two levels: beat the boss to move on, die and you retry the fight.
+All eight are good-natured cartoon parodies drawn from code (no photos or likenesses). Each fight sits between two levels: beat the boss to move on, die and you retry the fight.
 
 | # | Boss | When | Lead-in biome | One-liner |
 |---|---|---|---|---|
@@ -44,6 +46,8 @@ All six are good-natured cartoon parodies drawn from code (no photos or likeness
 | 4 | **Shlaus Kwobb**, Chairman of the Great Reset (018; renamed from Klaus Schwab in 019) | after L11, before L12 | Alpine Forest | 18 hearts; the puppet master: hologram delegates of the earlier bosses (film them to dispel them), envelope fans and THE GREAT RESET ring. |
 | 5 | **Gill Bates**, Patron of the Server Farm (020) | after L14, before L15 | Rainforest | 20 hearts; a server-farm gala with floppy-disk patches, blue-screen rings and a SYSTEM UPDATE shield. |
 | 6 | **Nancy Pelotto**, Speaker of the House (020) | after L17, before L18 | Golden Coast | 22 hearts; a Capitol hall with ice-cream cones, "ORDER!" gavel rings and an IN RECESS shield. |
+| 7 | **Reanald Rogan**, The Gipper of the Galaxy (025) | after L20, before L21 | Corn Belt | 24 hearts; "Star Wars" missile defence: orbital-laser target rings, a sweeping satellite beam (step to the side it sweeps away from) and UFOs with tractor beams that two whips shoot down. |
+| 8 | **Zelodymer Violentsky**, The Comedian Commander (025) | after L23, before L24 | Wheat Steppe | 26 hearts; a broadcast tent in a sunflower field with explosive drone swarms: each drone hovers over a marked spot, then dives and blasts. Step out of the ring or whip it first. |
 
 ## Controls
 
@@ -102,7 +106,7 @@ export_presets.cfg    Web export preset
 scenes/               Title, Main, levels, player, humans, sheep, world, UI
 scripts/              Game logic
   player/             rancher, whip, MSM Cam, weapons, power-up inventory
-  boss/               boss arenas, Trustin Judeau (015), Huval Yarheyhey + programmed sheep (016), Beorge Kush Jr. and Shlaus Kwobb (018), Gill Bates and Nancy Pelotto (020)
+  boss/               boss arenas, Trustin Judeau (015), Huval Yarheyhey + programmed sheep (016), Beorge Kush Jr. and Shlaus Kwobb (018), Gill Bates and Nancy Pelotto (020), Reanald Rogan + Star Wars tech and Zelodymer Violentsky + drones (025)
   bonus/              Galaga-style bonus stage: waves, flying sheep, tally (016)
   audio/              sound buses, music and the sound setting (build 015b)
   humans/ sheep/      AI for silly humans, possessed humans, Karens, Cantifa (017) and sheep

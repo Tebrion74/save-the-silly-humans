@@ -551,6 +551,13 @@ const BOSS5_AFTER_LEVEL := 14
 const BOSS5_SCENE := "res://scenes/levels/Boss5Arena.tscn"
 const BOSS6_AFTER_LEVEL := 17
 const BOSS6_SCENE := "res://scenes/levels/Boss6Arena.tscn"
+## Build 025: boss 7 (Reanald Rogan) between levels 20 and 21, boss 8
+## (Zelodymer Violentsky) between levels 23 and 24. Neither is a bonus slot
+## (20 and 23 are 2 mod 3).
+const BOSS7_AFTER_LEVEL := 20
+const BOSS7_SCENE := "res://scenes/levels/Boss7Arena.tscn"
+const BOSS8_AFTER_LEVEL := 23
+const BOSS8_SCENE := "res://scenes/levels/Boss8Arena.tscn"
 
 
 # ---------------------------------------------------------------- build 016 bonus stage
@@ -928,6 +935,113 @@ const BOSS6_HEALTH_BONUS := 400
 const BOSS6_TIME_PAR := 220.0
 
 
+# ------------------------------------------------------------------ Build 025 bosses
+## Boss 7: REANALD ROGAN, THE GIPPER OF THE GALAXY (cartoon parody). Shlaus
+## engine + "Star Wars" missile-defence tech (scripts/boss/starwars.gd):
+##   orbital  - ORBITAL LASER: telegraphed target circles, then a beam from orbit
+##   satbeam  - SATELLITE BEAM: a sweeping line beam with a telegraph
+##   ufo      - UFOs that drift over the arena dropping tractor beams
+const BOSS7_NAME := "REANALD ROGAN"
+const BOSS7_TITLE := "THE GIPPER OF THE GALAXY"
+const BOSS7_HEARTS := 24
+const BOSS7_PHASE2_HEARTS := 18
+const BOSS7_PHASE3_HEARTS := 12
+const BOSS7_RAGE_HEARTS := 6
+const BOSS7_PANEL_HEARTS := [18, 12, 6]   ## "STAR WARS SHIELD"
+const BOSS7_SPEED := 114.0
+const BOSS7_SPEED_RAGE := 152.0
+const BOSS7_ATTACK_GAP := [1.35, 1.15, 0.98, 0.86]
+const BOSS7_CONDUCT_TELL := [0.42, 0.38, 0.34, 0.3]
+const BOSS7_DELEGATE_TELL := [0.78, 0.72, 0.65, 0.55]
+const BOSS7_SHEEP_COUNT := [1, 2, 2, 3]
+const BOSS7_SHEEP_CAP := [3, 4, 4, 5]
+const BOSS7_ENVELOPES := [5, 6, 7, 7]       ## jelly-bean fan
+const BOSS7_ENVELOPE_SPEED := 315.0
+const BOSS7_ENVELOPE_TELL := [0.58, 0.54, 0.49, 0.45]
+const BOSS7_RESET_TELL := [0.9, 0.85, 0.75, 0.68]
+const BOSS7_RESET_SPEED := 310.0
+const BOSS7_ATTACKS := [
+	{"envelopes": 30, "orbital": 40, "satbeam": 30},
+	{"envelopes": 20, "sheep": 15, "orbital": 26, "satbeam": 22, "ufo": 17},
+	{"poutine": 10, "sheep": 13, "envelopes": 15, "orbital": 22, "satbeam": 18, "ufo": 12, "double": 15},
+	{"poutine": 8, "sheep": 12, "envelopes": 13, "orbital": 22, "satbeam": 18, "ufo": 12, "double": 20},
+]
+const BOSS7_COMBO_CHANCE := [0.1, 0.2, 0.3, 0.45]
+const BOSS7_POINTS_PER_HEART := 150
+const BOSS7_DEFEAT_BONUS := 12000
+const BOSS7_HEALTH_BONUS := 420
+const BOSS7_TIME_PAR := 240.0
+## ORBITAL LASER: targets around the rancher (one always on you).
+const BOSS7_ORBITAL_COUNT := [4, 5, 6, 7]
+const BOSS7_ORBITAL_TELL := [1.0, 0.92, 0.84, 0.76]
+const BOSS7_ORBITAL_RADIUS := 50.0
+## SATELLITE BEAM: telegraph line through the rancher, then it sweeps.
+const BOSS7_BEAM_TELL := [1.0, 0.9, 0.8, 0.72]
+const BOSS7_BEAM_SWEEP_DEG := [50.0, 60.0, 70.0, 80.0]
+const BOSS7_BEAM_TIME := 1.2
+const BOSS7_BEAM_WIDTH := 26.0
+## UFOs: drift across, drop a tractor beam on you every few seconds; whip one twice to pop it.
+const BOSS7_UFO_COUNT := [1, 1, 2, 2]
+const BOSS7_UFO_CAP := 3
+const BOSS7_UFO_LIFE := 11.0
+const BOSS7_UFO_BEAM_EVERY := 2.8
+const BOSS7_UFO_BEAM_TELL := 0.85
+const BOSS7_UFO_BEAM_RADIUS := 34.0
+const BOSS7_UFO_POINTS := 300
+
+## Boss 8: ZELODYMER VIOLENTSKY, THE COMEDIAN COMMANDER (cartoon parody). Shlaus
+## engine + explosive drone swarms (scripts/boss/drones.gd):
+##   drones - a swarm launches, hovers (telegraphed target), then dives and pops
+##   swarm  - a bigger ring of drones from all sides (phase 3+)
+const BOSS8_NAME := "ZELODYMER VIOLENTSKY"
+const BOSS8_TITLE := "THE COMEDIAN COMMANDER"
+const BOSS8_HEARTS := 26
+const BOSS8_PHASE2_HEARTS := 20
+const BOSS8_PHASE3_HEARTS := 13
+const BOSS8_RAGE_HEARTS := 6
+const BOSS8_PANEL_HEARTS := [20, 13, 6]   ## "ON A CALL" shield
+const BOSS8_SPEED := 118.0
+const BOSS8_SPEED_RAGE := 156.0
+const BOSS8_ATTACK_GAP := [1.4, 1.2, 1.0, 0.9]
+const BOSS8_CONDUCT_TELL := [0.4, 0.36, 0.33, 0.28]
+const BOSS8_DELEGATE_TELL := [0.78, 0.72, 0.65, 0.55]
+const BOSS8_SHEEP_COUNT := [1, 2, 2, 3]
+const BOSS8_SHEEP_CAP := [3, 4, 5, 5]
+const BOSS8_ENVELOPES := [4, 5, 6, 7]       ## sunflower-seed fan
+const BOSS8_ENVELOPE_SPEED := 320.0
+const BOSS8_ENVELOPE_TELL := [0.6, 0.56, 0.5, 0.46]
+const BOSS8_RESET_TELL := [0.9, 0.85, 0.75, 0.68]
+const BOSS8_RESET_SPEED := 315.0
+const BOSS8_ATTACKS := [
+	{"envelopes": 30, "drones": 45, "reset": 25},
+	{"envelopes": 22, "drones": 40, "reset": 23, "poutine": 15},
+	{"envelopes": 18, "drones": 32, "swarm": 20, "reset": 18, "poutine": 12},
+	{"envelopes": 15, "drones": 30, "swarm": 27, "reset": 18, "poutine": 10},
+]
+const BOSS8_COMBO_CHANCE := [0.1, 0.2, 0.32, 0.45]
+const BOSS8_POINTS_PER_HEART := 160
+const BOSS8_DEFEAT_BONUS := 13500
+const BOSS8_HEALTH_BONUS := 450
+const BOSS8_TIME_PAR := 250.0
+## Drones: launch, hover over a telegraphed target, dive, explode in a radius.
+const BOSS8_DRONES := [3, 4, 5, 6]
+const BOSS8_SWARM := [0, 0, 7, 9]
+const BOSS8_DRONE_CAP := 12
+const BOSS8_DRONE_HOVER := [1.1, 1.0, 0.9, 0.8]   ## telegraph time over the target
+const BOSS8_DRONE_SPEED := 260.0
+const BOSS8_DRONE_BLAST := 44.0
+const BOSS8_DRONE_POINTS := 100                   ## whip a drone out of the air
+
+# ------------------------------------------------------------------ Build 025 body armour
+## ARMOUR power-up: drops only from level ARMOR_FROM_LEVEL (after Shlaus Kwobb).
+## It absorbs ARMOR_HITS hits before any heart is lost (one plate per hit,
+## ARMOR_IFRAMES of grace after each absorbed hit). Picking one up again tops
+## the plates back up. It carries over between levels like the inventory.
+const ARMOR_FROM_LEVEL := 12
+const ARMOR_HITS := 3
+const ARMOR_IFRAMES := 0.6
+const ARMOR_WEIGHT := 7
+
 ## Shlaus-engine tuning table for boss `n` (4, 5, 6): every BOSS4_* constant
 ## (prefix stripped), overlaid with the BOSSn_* ones.
 static func boss_cfg(n: int) -> Dictionary:
@@ -948,13 +1062,16 @@ static func boss_cfg(n: int) -> Dictionary:
 ##   L1-2 prairie (Canadian ranch, before Trustin)   L3-5 med (Israel, before Huval)
 ##   L6-8 texas (before Kush)                        L9-11 bavaria (before Shlaus)
 ##   L12-14 pnw (Seattle, before Gill)               L15-17 norcal (before Nancy)
-##   L18+ cycles all six, one level each, in that order.
-const THEME_ORDER: Array[String] = ["prairie", "med", "texas", "bavaria", "pnw", "norcal"]
+##   L18-20 midwest (Illinois corn and farmland, before Rogan)   (build 025)
+##   L21-23 ukraine (wheat fields and birch groves, before Violentsky)
+##   L24+ cycles all eight, one level each, in that order.
+const THEME_ORDER: Array[String] = ["prairie", "med", "texas", "bavaria", "pnw", "norcal", "midwest", "ukraine"]
 const THEME_NAMES := {
 	"prairie": "PRAIRIE RANCH", "med": "OLIVE HILLS", "texas": "LONE STAR SCRUB",
 	"bavaria": "ALPINE FOREST", "pnw": "RAINFOREST", "norcal": "GOLDEN COAST",
+	"midwest": "CORN BELT", "ukraine": "WHEAT STEPPE",
 }
-const THEME_CYCLE_FROM := 18
+const THEME_CYCLE_FROM := 24
 
 
 static func theme_for(level: int) -> String:
@@ -970,7 +1087,11 @@ static func theme_for(level: int) -> String:
 		return "bavaria"
 	if level <= BOSS5_AFTER_LEVEL:
 		return "pnw"
-	return "norcal"
+	if level <= BOSS6_AFTER_LEVEL:
+		return "norcal"
+	if level <= BOSS7_AFTER_LEVEL:
+		return "midwest"
+	return "ukraine"
 
 
 # ------------------------------------------------------------------ Build 022

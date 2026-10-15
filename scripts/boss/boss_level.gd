@@ -229,6 +229,11 @@ func poutine_hit_player(from_pos: Vector2, damage: int = LevelConfig.POUTINE_DAM
 		return false
 	var before: int = p.health
 	p.take_damage(damage, from_pos)
+	if p.health >= before and int(p.get("absorbed_frame")) == Engine.get_physics_frames():
+		# build 025: a body-armour plate soaked it - same mercy window, own popup
+		_player_hit_cool = LevelConfig.BOSS_PLAYER_HIT_COOLDOWN
+		spawn_score_popup("ARMOUR!", (p as Node2D).global_position + Vector2(0, -20), Color(0.55, 0.85, 1.0), 2)
+		return true
 	if p.health < before:
 		_player_hit_cool = LevelConfig.BOSS_PLAYER_HIT_COOLDOWN
 		if popup == "GRAVY'D!":

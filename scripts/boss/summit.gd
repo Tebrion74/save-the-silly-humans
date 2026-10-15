@@ -289,6 +289,22 @@ class Envelope extends Node2D:
 			draw_line(Vector2(-5, 7), Vector2(3, 7), Color(0.3, 0.5, 0.9), 1.0)
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			return
+		if skin == "jellybean":   # build 025 Reanald Rogan
+			var cols := [Color(0.9, 0.2, 0.25), Color(0.3, 0.8, 0.3), Color(0.95, 0.8, 0.2), Color(0.6, 0.3, 0.9)]
+			var bc: Color = cols[int(abs(get_instance_id())) % 4]
+			draw_set_transform(Vector2(0, -24), wob + 0.6, Vector2.ONE)
+			Summit._ellipse(self, Vector2.ZERO, Vector2(11, 7), Color(0.06, 0.03, 0.08))
+			Summit._ellipse(self, Vector2.ZERO, Vector2(9, 5.5), bc)
+			Summit._ellipse(self, Vector2(-3, -2), Vector2(3, 1.5), Color(1, 1, 1, 0.6))
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			return
+		if skin == "seed":   # build 025 Zelodymer Violentsky: a sunflower seed
+			draw_colored_polygon(PackedVector2Array([Vector2(0, -12), Vector2(8, 0), Vector2(0, 12), Vector2(-8, 0)]), Color(0.06, 0.03, 0.08))
+			draw_colored_polygon(PackedVector2Array([Vector2(0, -10), Vector2(6, 0), Vector2(0, 10), Vector2(-6, 0)]), Color(0.22, 0.2, 0.18))
+			draw_line(Vector2(-2, -7), Vector2(-2, 7), Color(0.92, 0.9, 0.82), 1.5)
+			draw_line(Vector2(2, -7), Vector2(2, 7), Color(0.92, 0.9, 0.82), 1.5)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			return
 		if skin == "icecream":
 			draw_colored_polygon(PackedVector2Array([Vector2(-9, -2), Vector2(9, -2), Vector2(0, 16)]), Color(0.06, 0.03, 0.08))
 			draw_colored_polygon(PackedVector2Array([Vector2(-7, -1), Vector2(7, -1), Vector2(0, 13)]), Color(0.85, 0.6, 0.3))
@@ -375,6 +391,8 @@ class ResetRing extends Node2D:
 				return Color(0.25, 0.5, 1.0)
 			"gavel":
 				return Color(1.0, 0.3, 0.75)
+			"applause":   # build 025 Violentsky: a gold standing-ovation ring
+				return Color(1.0, 0.82, 0.2)
 		return Color(1.0, 0.25, 0.3)
 
 	func _arcs(r: float, col: Color, w: float) -> void:

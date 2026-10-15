@@ -32,6 +32,10 @@ var _whip: Node = null
 var full_heart_long: bool = false
 ## Build 020 INVINCIBLE: seconds of star power left, and the save combo.
 var invincible_time: float = 0.0
+## Build 025: BODY ARMOUR plates left (each absorbs one hit before hearts).
+var armor: int = 0
+var armor_grace: float = 0.0
+var _armor_fx: Node2D = null
 var star_combo: int = 0
 var star_combo_timer: float = 0.0
 var star_best_combo: int = 0
@@ -89,6 +93,7 @@ func star_save_points() -> int:
 
 
 func _process(delta: float) -> void:
+	armor_grace = maxf(armor_grace - delta, 0.0)
 	if invincible_time <= 0.0:
 		return
 	var before := invincible_time
@@ -104,6 +109,71 @@ func _process(delta: float) -> void:
 		star_combo = 0
 		star_combo_timer = 0.0
 		changed.emit()
+
+
+## Build 025: BODY ARMOUR. Called by player.take_damage before hearts: true =
+## this hit was soaked by a plate (or by the short grace after one).
+func absorb_hit() -> bool:
+	if armor_grace > 0.0:
+		return true
+	if armor <= 0:
+		return false
+	armor -= 1
+	armor_grace = LevelConfig.ARMOR_IFRAMES
+	if _armor_fx != null and is_instance_valid(_armor_fx):
+		_armor_fx.flash = 0.35
+	changed.emit()
+	return true
+
+
+func _ensure_armor_fx() -> void:
+	if _armor_fx != null and is_instance_valid(_armor_fx):
+		return
+	var p := get_parent()
+	if p == null:
+		return
+	_armor_fx = ArmorVest.new()
+	_armor_fx.name = "ArmorVest"
+	_armor_fx.pu = self
+	p.add_child(_armor_fx)
+
+
+## Build 025: steel-blue plates over the rancher's chest + one pip per plate
+## left; flashes white when a plate soaks a hit, falls away at 0.
+class ArmorVest extends Node2D:
+	var pu: Node = null
+	var flash := 0.0
+	var _t := 0.0
+
+	func _ready() -> void:
+		z_index = 4
+
+	func _process(delta: float) -> void:
+		_t += delta
+		flash = maxf(flash - delta, 0.0)
+		if pu == null or not is_instance_valid(pu) or (pu.armor <= 0 and flash <= 0.0):
+			queue_free()
+			return
+		queue_redraw()
+
+	func _draw() -> void:
+		var n: int = pu.armor
+		var col := Color(1, 1, 1, 0.95) if flash > 0.0 and fmod(_t, 0.1) < 0.05 else Color(0.45, 0.6, 0.78, 0.92)
+		var dark := Color(0.06, 0.08, 0.14, 0.95)
+		# vest: two shoulder straps + a chest plate over the torso
+		var r := Rect2(-7, -13, 14, 10)
+		draw_rect(r.grow(1.0), dark)
+		draw_rect(r, col)
+		draw_rect(Rect2(-7, -16, 3, 3), dark)
+		draw_rect(Rect2(4, -16, 3, 3), dark)
+		draw_line(Vector2(0, -13), Vector2(0, -3), dark, 1.0)
+		for rv in [Vector2(-4, -11), Vector2(4, -11), Vector2(-4, -6), Vector2(4, -6)]:
+			draw_rect(Rect2(rv - Vector2(1, 1), Vector2(2, 2)), Color(0.9, 0.95, 1.0, 0.9))
+		# plate pips above the hat
+		for i in LevelConfig.ARMOR_HITS:
+			var px := Vector2(-7 + i * 7, -32)
+			draw_rect(Rect2(px - Vector2(3, 3), Vector2(6, 6)), dark)
+			draw_rect(Rect2(px - Vector2(2, 2), Vector2(4, 4)), Color(0.55, 0.85, 1.0) if i < n else Color(0.25, 0.25, 0.32))
 
 
 func _ensure_star_fx() -> void:
@@ -195,6 +265,12 @@ func grant(kind: String) -> String:
 		"invincible":
 			start_invincible()
 			note = "%ds" % int(LevelConfig.INVINCIBLE_SECONDS)
+		"armor":
+			armor = LevelConfig.ARMOR_HITS
+			note = "x%d" % armor
+			if is_inside_tree():
+				Sfx.play(self, "armor_on", -6.0)
+			_ensure_armor_fx()
 	_apply()
 	changed.emit()
 	return note
@@ -280,6 +356,7 @@ func on_whip_crack() -> void:
 
 
 func clear_all() -> void:
+	armor = 0
 	whip_mod = ""
 	fire_charges = 0
 	shock_charges = 0
@@ -311,6 +388,7 @@ func to_dict() -> Dictionary:
 		"fire": fire_charges,
 		"shock": shock_charges,
 		"spares": spare_batteries,
+		"armor": armor,
 		"has_cam": w != null and w.has_weapon("cam"),
 		"battery": c.battery if c != null else 0.0,
 		"weapon": w.current_id() if w != null else "whip",
@@ -324,6 +402,9 @@ func from_dict(d: Dictionary) -> void:
 	fire_charges = int(d.get("fire", 0))
 	shock_charges = int(d.get("shock", 0))
 	spare_batteries = int(d.get("spares", 0))
+	armor = int(d.get("armor", 0))
+	if armor > 0:
+		_ensure_armor_fx.call_deferred()
 	var w := weapons()
 	var c := cam()
 	if bool(d.get("has_cam", false)) and w != null:

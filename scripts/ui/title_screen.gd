@@ -8,7 +8,7 @@ extends Control
 ## Mouse emulation from touch is off, so touches are hit-tested by hand.
 
 const GAME_SCENE := "res://scenes/Main.tscn"
-const BUILD_LABEL := "BUILD 024"
+const BUILD_LABEL := "BUILD 025"
 const CREDIT_ASSIST := "CODE & DESIGN ASSIST: EWAN SHEPHERD, LLM"
 const COPYRIGHT := "© 2026 ECHELON PUBLISHERS GROUP"
 const HORIZON := 440.0
@@ -269,6 +269,10 @@ func _debug_stage_scene(scenario: String) -> String:
 		return progress.start_at_stage("boss5")
 	if scenario.begins_with("nancy"):
 		return progress.start_at_stage("boss6")
+	if scenario.begins_with("rogan"):
+		return progress.start_at_stage("boss7")
+	if scenario.begins_with("violent"):
+		return progress.start_at_stage("boss8")
 	if scenario.begins_with("bonus"):
 		var n := 1
 		if scenario.length() > 5 and scenario.substr(5, 1).is_valid_int():

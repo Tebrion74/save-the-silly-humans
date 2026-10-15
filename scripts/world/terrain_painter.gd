@@ -597,6 +597,12 @@ func _pick_tree(mix: String) -> Vector2i:
 			return PINE if r < 82 else OAKS[1 + r % 2]
 		"norcal":
 			return PINE if r < 34 else OAKS[r % 3]
+		"midwest":
+			# build 025: corn (pine cell) dominates the "woods", a few cottonwoods (oaks)
+			return PINE if r < 78 else OAKS[r % 3]
+		"ukraine":
+			# build 025: white birch groves with some oaks
+			return BIRCH if r < 62 else OAKS[r % 3]
 		"prairie":
 			if level_no > 1 and mix != "pine":
 				# boreal edge: more aspen (birch cell) and spruce (pine)
@@ -703,6 +709,10 @@ func _paint_tint(origin: Vector2i) -> void:
 				warm = Color(0.92, 0.98, 0.96); cool = Color(0.76, 0.84, 0.86)
 			"norcal":
 				warm = Color(1.06, 1.0, 0.88); cool = Color(0.94, 0.9, 0.82)
+			"midwest":
+				warm = Color(1.04, 1.03, 0.9); cool = Color(0.9, 0.95, 0.84)
+			"ukraine":
+				warm = Color(1.08, 1.02, 0.84); cool = Color(0.98, 0.95, 0.82)
 	for y in range(map_height):
 		for x in range(map_width):
 			var n := (_noise2.get_noise_2d(x * 0.9 - 30.0, y * 0.9 + 12.0) + 1.0) * 0.5
@@ -983,6 +993,20 @@ func _setup_theme() -> void:
 				w["r"] = (w["r"] as Vector2) * 1.12
 			_ponds_v.append({"c": Vector2(48.0, 24.0), "r": Vector2(2.4, 1.8)})
 			_ponds_v.append({"c": Vector2(17.0, 22.5), "r": Vector2(2.2, 1.7)})
+		"midwest":
+			# build 025: farmland - a small farm pond, long plowed-field patches,
+			# corn "woods" stretched into field strips
+			_ponds_v = [_ponds_v[1]]
+			_sand_blobs = [{"c": Vector2(14, 10), "r": Vector2(7.0, 2.2)}, {"c": Vector2(46, 42), "r": Vector2(8.0, 2.0)},
+				{"c": Vector2(52, 12), "r": Vector2(6.0, 1.8)}, {"c": Vector2(24, 44), "r": Vector2(6.5, 1.8)}]
+			for w in _woods_v:
+				var wr: Vector2 = w["r"]
+				w["r"] = Vector2(wr.x * 1.25, wr.y * 0.75)
+		"ukraine":
+			# build 025: open wheat steppe, smaller birch groves, two ponds
+			_ponds_v = [_ponds_v[0], _ponds_v[2]]
+			for w in _woods_v:
+				w["r"] = (w["r"] as Vector2) * 0.8
 		"norcal":
 			# coastal lagoon with a sandy beach, golden open hills
 			var lag: Dictionary = _ponds_v[2]

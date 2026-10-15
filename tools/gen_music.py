@@ -563,6 +563,86 @@ def biome_theme(name, cfg):
     s.write(os.path.join(OUT, 'music_level_%s.wav' % name), peak=min(0.92, 0.92 * 0.24 / max(rms, 1e-6)))
 
 
+def boss7_theme():
+    """'Star Shield Shuffle': a bright C-major space-pop march, 138 BPM,
+    16 bars: a square lead over fast arpeggios with little laser zaps, a
+    marching triangle bass, for the Reanald Rogan fight. Original."""
+    s = Song(138, 16)
+    s.rng = np.random.default_rng(2507)
+    prog = [('C2', 'maj'), ('A1', 'min'), ('F1', 'maj'), ('G1', 'maj')] * 2 + \
+           [('F1', 'maj'), ('G1', 'maj'), ('E1', 'min'), ('A1', 'min')] + [('F1', 'maj'), ('D2', 'min'), ('G1', 'sus'), ('G1', 'maj')]
+    L = {
+        0: [(0, 3, 'G5'), (3, 1, 'C6'), (4, 4, 'E6'), (8, 2, 'D6'), (10, 2, 'C6'), (12, 4, 'G5')],
+        1: [(0, 4, 'A5'), (4, 2, 'C6'), (6, 2, 'E6'), (8, 8, 'D6')],
+        2: [(0, 2, 'F5'), (2, 2, 'A5'), (4, 4, 'C6'), (8, 4, 'F6'), (12, 4, 'E6')],
+        3: [(0, 4, 'D6'), (4, 2, 'B5'), (6, 2, 'G5'), (8, 6, 'D6'), (14, 2, 'G6')],
+        4: [(0, 2, 'E6'), (2, 2, 'D6'), (4, 2, 'C6'), (6, 2, 'D6'), (8, 8, 'E6')],
+    }
+    order = [0, 1, 2, 3, 0, 1, 2, 3, 2, 3, 4, 1, 2, 4, 3, 3]
+    for bar, ((rn, kind), li) in enumerate(zip(prog, order)):
+        root = midi(rn)
+        base = bar * 16
+        tones = chord_tones(root, kind)
+        for st, ln, nm in L[li]:
+            s.tone(base + st, ln, midi(nm), 0.15, duty=0.5, vib=0.005 if ln >= 4 else 0.0)
+        for i in range(16):                      # sparkly 16th arpeggio
+            s.tone(base + i, 1, tones[i % 3] + 36, 0.035, duty=0.125, decay=16)
+        for i in range(8):
+            s.tone(base + i * 2, 2, root + 12 + (0 if i % 2 == 0 else 12), 0.34, wave_='tri')
+        for i in range(16):
+            if i in (0, 8):
+                s.kick(base + i, 0.6)
+            if i in (4, 12):
+                s.snare(base + i, 0.3)
+            if i % 2 == 1:
+                s.hat(base + i, 0.07)
+        if bar % 4 == 3:
+            for k, i in enumerate((12, 13, 14, 15)):   # laser zaps
+                s.tone(base + i, 1, midi('C7') - k * 5, 0.06, duty=0.25, decay=24)
+    s.write(os.path.join(OUT, 'music_boss7.wav'))
+
+
+def boss8_theme():
+    """'Drone Hopak': a fast, cheeky D-minor folk dance, 164 BPM, 16 bars:
+    a bandura-ish plucked lead, oom-pa bass, quick buzzing trills, for the
+    Zelodymer Violentsky fight. Original."""
+    s = Song(164, 16)
+    s.rng = np.random.default_rng(2508)
+    prog = [('D2', 'min'), ('D2', 'min'), ('A1', 'maj'), ('D2', 'min'),
+            ('G1', 'min'), ('D2', 'min'), ('A1', 'maj'), ('D2', 'min')] * 2
+    L = {
+        0: [(0, 2, 'D6'), (2, 2, 'E6'), (4, 2, 'F6'), (6, 2, 'D6'), (8, 4, 'A5'), (12, 4, 'A5')],
+        1: [(0, 2, 'F6'), (2, 2, 'E6'), (4, 2, 'D6'), (6, 2, 'C#6'), (8, 8, 'D6')],
+        2: [(0, 2, 'E6'), (2, 2, 'C#6'), (4, 2, 'A5'), (6, 2, 'C#6'), (8, 4, 'E6'), (12, 4, 'A6')],
+        3: [(0, 2, 'G6'), (2, 2, 'F6'), (4, 2, 'E6'), (6, 2, 'F6'), (8, 2, 'G6'), (10, 2, 'A6'), (12, 4, 'D6')],
+    }
+    order = [0, 1, 2, 1, 3, 1, 2, 1, 0, 3, 2, 1, 3, 3, 2, 1]
+    for bar, ((rn, kind), li) in enumerate(zip(prog, order)):
+        root = midi(rn)
+        base = bar * 16
+        tones = chord_tones(root, kind)
+        for st, ln, nm in L[li]:
+            m = midi(nm)
+            s.tone(base + st, ln, m, 0.15, duty=0.25, decay=3.0 if ln <= 2 else 0.0)
+            s.tone(base + st, 0.5, m + 12, 0.045, duty=0.125, decay=30)
+        for i in (2, 6, 10, 14):                    # off-beat chord chops
+            for t in tones:
+                s.tone(base + i, 1, t + 24, 0.04, duty=0.5, decay=14)
+        for i in range(4):
+            s.tone(base + i * 4, 2, root + 12 + (0 if i % 2 == 0 else 7), 0.38, wave_='tri')
+        for i in range(16):
+            if i % 4 == 0:
+                s.kick(base + i, 0.55)
+            if i in (4, 12):
+                s.snare(base + i, 0.3)
+            if i % 2 == 1:
+                s.hat(base + i, 0.08)
+        if bar % 4 == 3:
+            for i in range(12, 16):                  # buzzing trill
+                s.tone(base + i, 0.5, midi('A6') + (i % 2), 0.05, duty=0.25)
+    s.write(os.path.join(OUT, 'music_boss8.wav'))
+
+
 def _drums_basic(kick, snare, hats, vol=1.0):
     def f(s, base, bar):
         for i in range(16):
@@ -642,6 +722,26 @@ BIOMES = {
         bass=lambda s, b, r, k: [s.tone(b + i * 2, 2, r - 12 + [0, 0, 7, 0, 10, 0, 7, 12][i], 0.30, wave_='tri') for i in range(8)],
         drums=_drums_basic((0, 3, 8, 11), (4, 12), tuple(range(0, 16, 2))),
         echo=(1.5, 0.3, 1)),
+    # build 025 Midwest: a heartland harvest tune, banjo-roll arpeggios, G major
+    'midwest': dict(bpm=124, bars=16, seed=2307, tonic='G4', scale=MAJ,
+        prog=[(0, 'maj'), (3, 'maj'), (0, 'maj'), (4, 'maj'), (0, 'maj'), (3, 'maj'), (4, 'maj'), (0, 'maj')],
+        rhythms=[[(0, 2), (2, 2), (4, 3), (7, 1), (8, 2), (10, 2), (12, 4)],
+                 [(0, 1), (1, 1), (2, 2), (4, 2), (6, 2), (8, 6), (14, 2)]],
+        lead=lambda s, st, ln, m: _tone_x(s, st, ln, m, 0.16, duty=0.25, bend=-0.8, vib=0.006),
+        comp=lambda s, b, t, k: [s.tone(b + i, 1, t[[0, 1, 2, 1][i % 4]] + 24, 0.045, duty=0.125, decay=22) for i in range(16)],
+        bass=lambda s, b, r, k: [s.tone(b + i * 4, 2, r - 12 + (0 if i % 2 == 0 else 7), 0.34, wave_='tri') for i in range(4)],
+        drums=_drums_basic((0, 8), (4, 12), (2, 6, 10, 14), 0.85)),
+    # build 025 Ukraine: a plucked bandura-like folk melody, A "Ukrainian dorian"
+    'ukraine': dict(bpm=108, bars=16, seed=2308, tonic='A4', scale=[0, 2, 3, 6, 7, 9, 10],
+        prog=[(0, 'min'), (3, 'maj'), (0, 'min'), (4, 'maj'), (5, 'maj'), (3, 'maj'), (4, 'maj'), (0, 'min')],
+        rhythms=[[(0, 2), (2, 1), (3, 1), (4, 2), (6, 2), (8, 4), (12, 2), (14, 2)],
+                 [(0, 3), (3, 1), (4, 4), (8, 2), (10, 2), (12, 4)]],
+        lead=lambda s, st, ln, m: (_tone_x(s, st, ln, m, 0.16, duty=0.35, decay=4.0, vib=0.004),
+                                   _tone_x(s, st, 0.5, m + 12, 0.045, duty=0.125, decay=28)),
+        comp=lambda s, b, t, k: [s.tone(b + i, 2, t[(i // 2) % 3] + 12, 0.05, duty=0.25, decay=8) for i in range(0, 16, 2)],
+        bass=lambda s, b, r, k: [s.tone(b + i * 8, 4, r - 12 + (0 if i == 0 else 7), 0.32, wave_='tri') for i in range(2)],
+        drums=_drums_basic((0, 8), (4, 12), (2, 6, 10, 14), 0.7),
+        echo=(2, 0.25, 1)),
 }
 
 
@@ -649,7 +749,8 @@ if __name__ == '__main__':
     import sys
     os.makedirs(OUT, exist_ok=True)
     tracks = {'level': level_theme, 'boss': boss_theme, 'bonus': bonus_theme, 'boss2': boss2_theme,
-              'boss3': boss3_theme, 'boss4': boss4_theme, 'boss5': boss5_theme, 'boss6': boss6_theme}
+              'boss3': boss3_theme, 'boss4': boss4_theme, 'boss5': boss5_theme, 'boss6': boss6_theme,
+              'boss7': boss7_theme, 'boss8': boss8_theme}
     for _b in BIOMES:   # build 023: 'level_prairie' ... 'level_norcal'
         tracks['level_' + _b] = (lambda b=_b: biome_theme(b, BIOMES[b]))
     for name in (sys.argv[1:] or list(tracks)):

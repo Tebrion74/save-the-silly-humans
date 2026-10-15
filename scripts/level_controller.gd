@@ -710,7 +710,14 @@ func drop_weights(source: String = "") -> Dictionary:
 	# Build 020: INVINCIBLE only drops in normal levels.
 	if not timed_powerups_enabled():
 		w.erase("invincible")
+	# Build 025: BODY ARMOUR only after Shlaus Kwobb (L12+), regular levels.
+	if timed_powerups_enabled() and armor_unlocked():
+		w["armor"] = LevelConfig.ARMOR_WEIGHT
 	return w
+
+
+func armor_unlocked() -> bool:
+	return int(level_number) >= LevelConfig.ARMOR_FROM_LEVEL
 
 
 func roll_powerup_type(source: String = "") -> String:

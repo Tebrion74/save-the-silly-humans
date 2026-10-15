@@ -66,6 +66,10 @@ var _time: float = 0.0
 var _help_t: float = 0.0
 var _left: VBoxContainer
 var _right: VBoxContainer
+var _left_card: PanelContainer   ## build 025
+var _right_card: PanelContainer
+var toast_label: Label           ## build 025: "SECRET FOUND!" etc. (clear of the cards)
+var _toast_t := 0.0
 ## Build 015 boss fight: heart bar (top centre) and the title card.
 var boss_bar: BossBar
 ## Build 015b: speaker icon (touch layouts) + "SOUND OFF (M)" toast.
@@ -80,34 +84,45 @@ var boss_mode := false
 
 func _ready() -> void:
 	var root := $Root as Control
+	# Build 025 HUD: two compact cards. Left = hearts + armour pips, score,
+	# level/time on one line. Right = SAVED + the crowd counters.
+	_left_card = _card("LeftCard")
+	_left_card.position = Vector2(14, 10)
+	root.add_child(_left_card)
 	_left = VBoxContainer.new()
 	_left.name = "LeftStats"
-	_left.position = Vector2(22, 14)
-	_left.add_theme_constant_override("separation", 6)
+	_left.add_theme_constant_override("separation", 4)
 	_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_left)
-	score_label = _stat_row(_left, "SCORE", "00000000", 3, 150)
-	time_label = _stat_row(_left, "TIME", "0:00", 3, 150)
-	level_value_label = _stat_row(_left, "LEVEL", "1", 3, 150)
+	_left_card.add_child(_left)
 	hearts = HeartBar.new()
 	hearts.name = "Hearts"
 	hearts.custom_minimum_size = Vector2(5 * 30, 26)
 	_left.add_child(hearts)
+	score_label = _stat_row(_left, "SCORE", "00000000", 3, 0)
+	var lt := HBoxContainer.new()
+	lt.name = "LevelTimeRow"
+	lt.add_theme_constant_override("separation", 10)
+	lt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_left.add_child(lt)
+	level_value_label = _stat_row(lt, "LV", "1", 2, 0)
+	time_label = _stat_row(lt, "TIME", "0:00", 2, 0, false, LABEL_COL_ALT)
 	health_label = Label.new()
 	health_label.name = "HealthLabel"
 	health_label.visible = false
 	root.add_child(health_label)
 
+	_right_card = _card("RightCard")
+	_right_card.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_right_card.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_right_card.offset_right = -14
+	_right_card.offset_left = -14
+	_right_card.offset_top = 10
+	root.add_child(_right_card)
 	_right = VBoxContainer.new()
 	_right.name = "RightStats"
-	_right.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_right.offset_left = -420
-	_right.offset_right = -20
-	_right.offset_top = 14
-	_right.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_right.add_theme_constant_override("separation", 6)
+	_right.add_theme_constant_override("separation", 3)
 	_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_right)
+	_right_card.add_child(_right)
 	rescued_label = _stat_row(_right, "SAVED", "0/5", 3, 0, true)
 	arrivals_label = _stat_row(_right, "ARRIVING", "15", 2, 0, true, LABEL_COL_ALT)
 	living_humans_label = _stat_row(_right, "HUMANS", "5", 2, 0, true, LABEL_COL_ALT)
@@ -119,6 +134,14 @@ func _ready() -> void:
 	cantifa_label = _stat_row(_right, "CANTIFA", "0", 2, 0, true, Color(1.0, 0.55, 0.28))
 	cantifa_row = cantifa_label.get_parent()
 	cantifa_row.visible = false
+
+	toast_label = Label.new()
+	toast_label.name = "Toast"
+	toast_label.label_settings = PixelFont.settings(3, Color(1.0, 0.9, 0.4))
+	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	toast_label.visible = false
+	root.add_child(toast_label)
 
 	inventory_panel = InventoryPanel.new()
 	inventory_panel.name = "InventoryPanel"
@@ -169,6 +192,52 @@ func _ready() -> void:
 		"next_level_button")
 	next_level_button.pressed.connect(_on_next_level)
 	_build_sound_ui(root)
+
+
+## Build 025: dark rounded backing card for a HUD group.
+func _card(n: String) -> PanelContainer:
+	var c := PanelContainer.new()
+	c.name = n
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.03, 0.03, 0.1, 0.62)
+	sb.border_color = Color(1.0, 0.82, 0.12, 0.55)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(6)
+	sb.content_margin_left = 10
+	sb.content_margin_right = 10
+	sb.content_margin_top = 6
+	sb.content_margin_bottom = 6
+	c.add_theme_stylebox_override("panel", sb)
+	return c
+
+
+## Build 025: short status line under the top cards (never over the score).
+func show_toast(text: String, col: Color = Color(1.0, 0.9, 0.4), seconds: float = 2.0) -> void:
+	toast_label.text = text
+	toast_label.label_settings.font_color = col
+	toast_label.visible = true
+	toast_label.modulate.a = 1.0
+	_toast_t = seconds
+	_place_toast()
+
+
+func _place_toast() -> void:
+	if toast_label == null:
+		return
+	var vs := _layout_size if _layout_size != Vector2.ZERO else Vector2(1280, 720)
+	var l := _left_card.position.x + _left_card.size.x + 12.0
+	var r := _right_card.position.x - 12.0 if _right_card.visible else vs.x - 12.0
+	var w := maxf(r - l, 200.0)
+	var tw := PixelFont.text_width(toast_label.text, 3) + 8.0
+	var y := 22.0
+	if tw > w or boss_mode:
+		# no room between the cards: drop below the taller one
+		l = 12.0
+		w = vs.x - 24.0
+		y = maxf(_left_card.position.y + _left_card.size.y, _right_card.size.y + 10.0) + 64.0 + (80.0 if boss_mode else 0.0)
+	toast_label.position = Vector2(l, y)
+	toast_label.size = Vector2(w, 30)
 
 
 ## Build 015b: speaker icon (touch) and a short toast when the sound setting
@@ -353,6 +422,17 @@ func get_next_level_rect() -> Rect2:
 
 
 func _process(delta: float) -> void:
+	if _toast_t > 0.0:
+		_toast_t -= delta
+		toast_label.modulate.a = clampf(_toast_t / 0.4, 0.0, 1.0)
+		if _toast_t <= 0.0:
+			toast_label.visible = false
+	_right_card.visible = _right.visible
+	var pl0: Node = inventory_panel.player if inventory_panel != null else null
+	var pu0: Node = pl0.get_node_or_null("PowerUps") if pl0 != null and is_instance_valid(pl0) else null
+	var arm: int = int(pu0.get("armor")) if pu0 != null and "armor" in pu0 else 0
+	if arm != hearts.armor:
+		hearts.set_armor(arm)
 	var vs := get_viewport().get_visible_rect().size
 	if TouchInput.active != _touch_layout or vs != _layout_size:
 		apply_layout(TouchInput.active, vs)
@@ -381,20 +461,21 @@ func apply_layout(touch: bool, vs: Vector2) -> void:
 	_touch_layout = touch
 	_layout_size = vs
 	if touch:
-		_left.position = Vector2(22, TouchLayout.hud_left_top(vs))
-		_right.offset_right = -TouchLayout.hud_right_margin(vs)
-		_right.offset_left = _right.offset_right - 400.0
+		_left_card.position = Vector2(14, TouchLayout.hud_left_top(vs))
+		_right_card.offset_right = -TouchLayout.hud_right_margin(vs)
+		_right_card.offset_left = _right_card.offset_right
 		# help line between the joystick and the PRIMARY wedge
 		var pw := TouchLayout.wedge_dims(vs).z
 		objective_label.offset_left = 290.0 - vs.x * 0.5
 		objective_label.offset_right = vs.x * 0.5 - pw - 10.0
 	else:
-		_left.position = Vector2(22, 14)
-		_right.offset_left = -420
-		_right.offset_right = -20
+		_left_card.position = Vector2(14, 10)
+		_right_card.offset_left = -14
+		_right_card.offset_right = -14
 		objective_label.offset_left = -400
 		objective_label.offset_right = 400
-	inventory_panel.position = Vector2(22, _left.position.y + 154.0)
+	inventory_panel.position = Vector2(14, _left_card.position.y + _left_card.get_combined_minimum_size().y + 8.0)
+	_place_toast.call_deferred()
 	if sound_icon != null:
 		sound_icon.visible = touch
 		sound_icon.position = Vector2(roundf(TouchLayout.swap_dims(vs).z + 12.0), 10.0)
@@ -785,6 +866,10 @@ func set_boss_mode(boss_name: String, boss_title: String, hearts_left: int, max_
 			boss_bar.rage_hearts = LevelConfig.BOSS5_RAGE_HEARTS
 		LevelConfig.BOSS6_NAME:
 			boss_bar.rage_hearts = LevelConfig.BOSS6_RAGE_HEARTS
+		LevelConfig.BOSS7_NAME:
+			boss_bar.rage_hearts = LevelConfig.BOSS7_RAGE_HEARTS
+		LevelConfig.BOSS8_NAME:
+			boss_bar.rage_hearts = LevelConfig.BOSS8_RAGE_HEARTS
 	boss_bar.set_hearts(hearts_left, max_hearts, false)
 	$Root.add_child(boss_bar)
 	_build_title_card(boss_name, boss_title)
@@ -1212,9 +1297,15 @@ class HeartBar extends Control:
 	## Build 020: seconds left of the "new max heart" glow on the last heart.
 	var flash: float = 0.0
 	var _ft: float = 0.0
+	## Build 025: body-armour plates, drawn as shields right after the hearts.
+	var armor: int = 0
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func set_armor(n: int) -> void:
+		armor = n
+		set_hp(hp, max_hp)
 
 	func _process(delta: float) -> void:
 		if flash > 0.0:
@@ -1225,7 +1316,7 @@ class HeartBar extends Control:
 	func set_hp(h: int, m: int) -> void:
 		hp = h
 		max_hp = maxi(m, 1)
-		custom_minimum_size = Vector2(per_row() * 30, 26 * rows())
+		custom_minimum_size = Vector2(per_row() * 30 + (8 + armor * 22 if armor > 0 else 0), 26 * rows())
 		queue_redraw()
 
 	## Build 022: up to 8 hearts in one row; more wrap into two even rows.
@@ -1266,6 +1357,13 @@ class HeartBar extends Control:
 			var a := 0.45 + 0.45 * absf(sin(_ft * 9.0))
 			draw_rect(Rect2(lo - Vector2(4, 4), Vector2(PX * 9 + 8, PX * 8 + 8)), Color(1.0, 0.95, 0.4, a), false, 3.0)
 			draw_string(ThemeDB.fallback_font, lo + Vector2(PX * 9 + 8, 18), "+1", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1.0, 0.95, 0.4, a))
+		for i in armor:
+			var ox := per_row() * 30.0 + 8.0 + i * 22.0
+			var pts := PackedVector2Array([Vector2(ox, 3), Vector2(ox + 18, 3), Vector2(ox + 18, 12), Vector2(ox + 9, 22), Vector2(ox, 12)])
+			draw_colored_polygon(pts, Color(0.06, 0.03, 0.08))
+			var inner := PackedVector2Array([Vector2(ox + 3, 6), Vector2(ox + 15, 6), Vector2(ox + 15, 11), Vector2(ox + 9, 18), Vector2(ox + 3, 11)])
+			draw_colored_polygon(inner, Color(0.5, 0.78, 1.0))
+			draw_rect(Rect2(ox + 5, 7, 3, 3), Color(0.9, 0.97, 1.0))
 
 
 ## Build 015: boss heart bar (Genesis style): name + 10 hearts in a bordered

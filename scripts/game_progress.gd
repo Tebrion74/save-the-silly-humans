@@ -142,6 +142,10 @@ func start_at_stage(stage: String, bonus_n: int = 1) -> String:
 			level = LevelConfig.BOSS5_AFTER_LEVEL
 		"boss6":
 			level = LevelConfig.BOSS6_AFTER_LEVEL
+		"boss7":
+			level = LevelConfig.BOSS7_AFTER_LEVEL
+		"boss8":
+			level = LevelConfig.BOSS8_AFTER_LEVEL
 	current_level = level
 	stage_queue = GameProgressCheck.stages_after(level)
 	stage_return_level = level + 1

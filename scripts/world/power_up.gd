@@ -8,7 +8,7 @@ extends Node2D
 
 signal collected(kind: String, pickup: Node2D)
 
-const TYPES := ["health", "long_whip", "strong_throw", "shockwave", "fire_whip", "whip_shot", "msm_cam", "battery", "invincible"]
+const TYPES := ["health", "long_whip", "strong_throw", "shockwave", "fire_whip", "whip_shot", "msm_cam", "battery", "invincible", "armor"]
 const NAMES := {
 	"health": "HEALTH",
 	"long_whip": "LONG WHIP",
@@ -19,6 +19,7 @@ const NAMES := {
 	"msm_cam": "MSM CAM",
 	"battery": "BATTERY",
 	"invincible": "INVINCIBLE",
+	"armor": "BODY ARMOUR",
 	"whip": "WHIP",
 }
 const PLATE := {
@@ -31,10 +32,22 @@ const PLATE := {
 	"msm_cam": Color(0.2, 0.2, 0.24),
 	"battery": Color(0.18, 0.6, 0.22),
 	"invincible": Color(0.95, 0.62, 0.05),
+	"armor": Color(0.32, 0.42, 0.55),   ## build 025
 	"whip": Color(0.6, 0.38, 0.16),
 }
 ## 9x9 icons: '#' = light colour, 'o' = accent, '.' = empty.
 const ICONS := {
+	"armor": [   ## build 025: a riveted vest
+		".##...##.",
+		"####.####",
+		"#o#####o#",
+		"#########",
+		"##o###o##",
+		"#########",
+		".#######.",
+		".##o#o##.",
+		"..#####..",
+	],
 	"invincible": [
 		"....#....",
 		"....#....",
@@ -153,6 +166,7 @@ const ACCENT := {
 	"msm_cam": Color(1.0, 0.2, 0.15),
 	"battery": Color(0.95, 1.0, 0.45),
 	"whip": Color(0.95, 0.8, 0.45),
+	"armor": Color(0.55, 0.85, 1.0),
 }
 
 @export var kind: String = "health"
@@ -190,7 +204,7 @@ static func draw_icon(ci: CanvasItem, k: String, c: Vector2, px: float, alpha :=
 func _ready() -> void:
 	add_to_group("powerups")
 	z_index = 3
-	if kind == "msm_cam" or kind == "battery" or kind == "invincible":
+	if kind == "msm_cam" or kind == "battery" or kind == "invincible" or kind == "armor":
 		lifetime = LevelConfig.PICKUP_LIFETIME_RARE
 
 

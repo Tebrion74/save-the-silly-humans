@@ -9,6 +9,8 @@ signal died
 @export var maximum_health: int = 5
 
 var health: int
+## Build 025: physics frame of the last hit soaked by body armour.
+var absorbed_frame: int = -1
 var knockback_velocity := Vector2.ZERO
 var _dead: bool = false
 var facing: Vector2 = Vector2.RIGHT
@@ -184,6 +186,13 @@ func take_damage(amount: int, source_position := Vector2.ZERO) -> void:
 	# Build 020: INVINCIBLE (star power) - nothing hurts.
 	var pu := get_node_or_null("PowerUps")
 	if pu != null and "invincible_time" in pu and pu.invincible_time > 0.0:
+		return
+	# Build 025: BODY ARMOUR soaks the hit (one plate) before any heart.
+	if pu != null and pu.has_method("absorb_hit") and pu.absorb_hit():
+		absorbed_frame = Engine.get_physics_frames()
+		Sfx.play(self, "armor_hit", -6.0)
+		if source_position != Vector2.ZERO:
+			knockback_velocity = source_position.direction_to(global_position) * 220.0
 		return
 
 	health -= amount

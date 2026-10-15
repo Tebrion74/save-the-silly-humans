@@ -371,6 +371,39 @@ static func get_sound(sound_name: String) -> AudioStreamWAV:
 				var u := float(i) / n
 				ph += lerpf(160.0, 50.0, u) / rate
 				s.append((sin(ph * TAU) * 0.5 + rng.randf_range(-0.12, 0.12)) * (1.0 - u))
+		# ---- build 025: Reanald Rogan (Star Wars tech) / Zelodymer Violentsky (drones) ----
+		"laser":     # orbital laser: bright falling zap with a fizzy tail
+			var n := int(rate * 0.38)
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += lerpf(2600.0, 380.0, sqrt(u)) / rate
+				s.append(((1.0 if fmod(ph, 1.0) < 0.5 else -1.0) * 0.16 + rng.randf_range(-0.08, 0.08) * u) * (1.0 - u))
+		"beam_hum":  # satellite beam: wavering electric hum
+			var n := int(rate * 0.5)
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += (220.0 + 30.0 * sin(u * 60.0)) / rate
+				s.append((fmod(ph, 1.0) * 2.0 - 1.0) * 0.14 * minf(1.0, minf(u * 8.0, (1.0 - u) * 4.0)))
+		"ufo":       # flying saucer: classic wobbling theremin swoop
+			var n := int(rate * 0.6)
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += (700.0 + 260.0 * sin(u * 26.0) + 300.0 * u) / rate
+				s.append(sin(ph * TAU) * 0.16 * minf(1.0, (1.0 - u) * 3.0))
+		"drone_buzz":   # toy-drone launch: buzzy rising whine
+			var n := int(rate * 0.35)
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += (lerpf(320.0, 620.0, u) + 40.0 * sin(u * 140.0)) / rate
+				s.append((1.0 if fmod(ph, 1.0) < 0.35 else -1.0) * 0.1 * minf(1.0, (1.0 - u) * 3.0))
+		"armor_hit":    # build 025 body armour absorbs a hit: metallic clank
+			s = _notes([[1320.0, 0.03], [990.0, 0.05], [660.0, 0.06]], 0.2, 0.25)
+		"armor_on":     # armour plates strapped on: two clunks + a chime
+			s = _notes([[300.0, 0.05], [0.0, 0.03], [300.0, 0.05], [1175.0, 0.08], [1568.0, 0.12]], 0.18, 0.4)
 		_:
 			s = _notes([[880.0, 0.05]])
 	var w := _wav(s, rate)

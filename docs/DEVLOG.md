@@ -39,7 +39,8 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [021](#build-021) | 2026-10-12 ~20:59 MT | Replaced by 022 | regional biomes for the regular levels |
 | [022](#build-022) | 2026-10-12 ~22:12 MT | Replaced by 024 | up to 12 hearts, faster multi-pop whip in bonus stages |
 | [023](#build-023) | 2026-10-14 ~11:25 MT | Built, never deployed live (superseded by 024) | biome music, spinning-humans fix, Cantifa shoot first and congregate |
-| [024](#build-024) | 2026-10-14 ~18:00 MT (live ~18:35 MT) | Live | hidden chambers behind breakable tiles |
+| [024](#build-024) | 2026-10-14 ~18:00 MT (live ~18:35 MT) | Replaced by 025 | hidden chambers behind breakable tiles |
+| [025](#build-025) | 2026-10-14 ~20:45 MT (live ~00:00 MT Oct 15) | Live | bosses 7 and 8 (Reanald Rogan, Zelodymer Violentsky), Corn Belt and Wheat Steppe biomes, body armour, HUD redesign |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -1651,7 +1652,7 @@ From L18 the music follows the biome cycle. Bonus stages and bosses keep their t
 <a id="build-024"></a>
 
 **Date:** 2026-10-14 ~18:00 MT  
-**Status:** **LIVE** 2026-10-14 ~18:35 MT (deployed manually by Robert directly over 022). Current build.
+**Status:** Was live from 2026-10-14 ~18:35 MT (deployed manually by Robert directly over 022). Replaced by build 025 at ~12:00 AM MT on Oct 15 2026.
 
 Based on 023. The in-game label reads `BUILD 024`. Web export cache-busted with `v=024`.
 
@@ -1678,6 +1679,83 @@ The beta dev cheat codes were documented publicly on Oct 14 2026 in [`CHEATS.md`
 ### Tests
 - `tools/_test_024.gd`: placement on L1-24 (count, reachable door, sealed pocket, marked/unmarked mix, varied rewards, unique ids, props intact), no chambers in boss/bonus scenes, touch-whip break, reveal and claim, once-per-run, run reset, power lash one-crack break.
 - Regression: `_test_023`, `_test_022`, `_maps_021`, spin/stuck bot on 3 seeds (no new flags vs 023), level bots L1-L8 vs 023 (all won).
+
+## Build 025: bosses Reanald Rogan and Zelodymer Violentsky, two new biomes, body armour, HUD redesign
+<a id="build-025"></a>
+
+**Date:** 2026-10-14 ~20:45 MT  
+**Status:** **LIVE** 2026-10-15 ~00:00 MT (deployed manually by Robert over 024). Current build.
+
+Based on 024. The in-game label reads `BUILD 025`. Web export cache-busted with `v=025`. All art and audio are original and generated. Both new bosses are good-natured cartoon parodies: no photos, no traced likenesses.
+
+### Boss 7: REANALD ROGAN, "THE GIPPER OF THE GALAXY" (after level 20)
+- 24 hearts. Phases at 18 / 12, rage at 6 ("STAR WARS SHIELD" panel).
+- Built on the Shlaus engine, plus a "Star Wars" missile-defence kit (`scripts/boss/starwars.gd`):
+  - **Orbital laser:** telegraphed target rings (4-7 per volley) that fire from orbit. Leave the ring.
+  - **Satellite beam:** a line beam from above that starts on the rancher and sweeps one way. Step to the side it sweeps away from.
+  - **UFOs:** drift over the arena and drop telegraphed tractor beams. Two whips shoot one down (+300).
+- He also uses jelly-bean envelope fans, sheep summons (from phase 2) and double attacks (phase 3+).
+- Arena: space-defence HQ backdrop. Original theme music.
+
+### Boss 8: ZELODYMER VIOLENTSKY, "THE COMEDIAN COMMANDER" (after level 23)
+- 26 hearts. Phases at 20 / 13, rage at 6.
+- **Explosive drone swarms** (`scripts/boss/drones.gd`): each drone launches, hovers over a marked spot, then dives and blasts. The blast ring is shown, so step out of it; a whip pops a drone first (+100). Swarms of 7-9 come from phase 3.
+- He also uses seed-packet envelope fans and a gold "applause" reset ring.
+- Arena: broadcast-tent backdrop in a sunflower field. Original theme music.
+
+### Boss access
+- Dying in either fight retries the boss.
+- Neither boss is on the title menu.
+- Both are reachable with the level-select pad: codes **91-98** jump to bosses 1-8, and the pad hint says so. Level numbers work as before.
+
+### New biomes
+- **L18-20 CORN BELT:** Midwest / Illinois farmland with corn rows, hay bales, a farm pond and plowed fields.
+- **L21-23 WHEAT STEPPE:** Ukrainian wheat fields with birch groves, sunflowers and two ponds.
+- No landmarks. Each biome has its own new music track.
+- From L24 the regular levels cycle through all 8 biomes.
+
+### Body armour (from L12, after boss 4)
+- A new drop, BODY ARMOUR. It never drops before L12 or in bonus and boss stages.
+- Gives 3 plates. Each plate soaks one hit before any heart is lost, with a 0.6 s grace after each soaked hit. In boss fights a soaked hit also triggers the normal mercy window and shows "ARMOUR!".
+- Visible on the rancher as a steel-blue riveted vest, with one pip per plate above the hat. The vest flashes when a plate is used and falls away at 0.
+- Shown on the HUD as blue shields next to the hearts. Kept between levels.
+
+### HUD redesign (PC and mobile)
+- Left card: hearts and armour shields together, a compact score line, and level and time on one line.
+- Right card: SAVED, plus the crowd counters.
+- Both cards have dark rounded backings. The inventory row with power-up icons and timers sits under the left card.
+- "SECRET FOUND!" / "ALREADY LOOTED" is now a HUD toast that is placed clear of the score and SAVED cards. It used to be a world popup that could cover the score on mobile.
+
+### Other
+- `scripts/beta_tools.gd` header comment updated: the beta tools are documented in `CHEATS.md`, beta-only, removed at alpha. All cheats still work.
+- Title credit "CODE & DESIGN ASSIST: EWAN SHEPHERD, LLM" kept.
+
+### Web build
+`/workspace/web-beta-025/`, `?v=025`. `index.pck` is 13,314,700 bytes, sha256 `899fa8e5f9afa65d334facb6ec81b9fd9d6639fdc8fa4c7942dcf642fbb2fd56`. Only `index.pck` and `index.html` in `/beta/`, plus `game.php`, change: the engine files are byte-identical to 024. Deploy and rollback scripts are in `/workspace/deploy025/` (rollback copy `~/rollback-024`), dry-run on a mock home. **LIVE** ~00:00 MT Oct 15 2026 on https://savethesillyhumans.org/game.php, deployed manually by Robert over 024. Live `index.pck` sha256 verified `899fa8e5f9afa65d334facb6ec81b9fd9d6639fdc8fa4c7942dcf642fbb2fd56`; `game.php` shows `v=025` and build 025; the live game boots headless to the BUILD 025 title. Rollback copy of the 024 site: `~/rollback-024` on the server.
+
+### Tests
+- `tools/_test_025.gd` (44 checks):
+  - progression, boss configs and names
+  - biome ranges and cycle; tilesets and music
+  - armour gating, soaking, persistence, HUD shields
+  - secret toast clear of the cards on PC and mobile
+  - orbital / drone hit and dodge, armour against boss hazards
+  - UFO and drone whips
+  - level-select codes 91-98, cheats, build label and credit
+- Boss bot (`tools/_bot_025.gd`), 12 runs per skill, seed 23, wins:
+
+  | Boss | good | avg | weak |
+  |---|---|---|---|
+  | Nancy Pelotto (boss 6) | - | 8 | 0 |
+  | Reanald Rogan (boss 7) | 12 | 10 | 2 |
+  | Zelodymer Violentsky (boss 8) | 12 | 6 | 0 |
+
+  Rogan was retuned twice to get there (attack gaps, orbital volleys, UFOs from phase 1, envelope fans, sheep and double attacks).
+- Regression:
+  - `_test_024`, `_test_022` and `_maps_021` pass.
+  - `_test_019`, `_test_020` and `_test_023` fail only on the same stale asserts as on the 024 baseline, plus the expected "7 biome tracks" now that there are more biomes.
+  - Spin/stuck bot passes (1 event).
+  - Level bots on L1/6/12/15/18/21 vs 024 show no regression. L12 is noisy on both builds.
 
 ## Appendix: project reference notes
 

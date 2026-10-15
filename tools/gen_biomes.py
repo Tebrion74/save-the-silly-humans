@@ -9,6 +9,10 @@ recoloured by hue class, plus a few new props drawn into existing cells:
   bavaria (L9-11): lush fields, dark pine + beech (birch cell), cool lake
   pnw     (L12-14): wet rainforest, mossy dark greens, FERNS (bushes), grey-blue water
   norcal  (L15-17): golden grass hills, oaks, REDWOOD (pine cell), sandy shore
+  midwest (L18-20, build 025): Illinois corn belt: summer-green fields, rich dark
+          tilled soil, CORN (pine cell), HAY BALES + corn shoots (bushes)
+  ukraine (L21-23, build 025): golden wheat steppe, white BIRCH groves,
+          SUNFLOWERS (bushes), blue ponds
 Then: godot --headless --path . -s res://tools/build_tileset.gd -- --theme=<t>
 """
 import colorsys, os, random
@@ -56,6 +60,22 @@ THEMES = {
         'blue':   (200, 0.85, 1.05, 1.0),
         'leaf':   (88, 0.7, 0.7, 0.85),
         'trunk':  (10, 0.6, 1.2, 0.85),
+    },
+    'midwest': {
+        'green':  (84, 0.55, 1.05, 1.06),
+        'brown':  (22, 0.5, 1.1, 0.72),
+        'blue':   (200, 0.7, 0.9, 0.95),
+        'leaf':   (92, 0.5, 1.0, 0.95),
+        'trunk':  (26, 0.4, 0.8, 0.9),
+        'path':   (38, 0.6, 0.45, 1.1),
+    },
+    'ukraine': {
+        'green':  (47, 0.88, 1.05, 1.22),
+        'brown':  (32, 0.6, 0.8, 1.05),
+        'blue':   (212, 0.8, 1.1, 1.05),
+        'leaf':   (96, 0.6, 0.9, 1.0),
+        'trunk':  (40, 0.5, 0.25, 1.35),
+        'path':   (36, 0.6, 0.5, 1.12),
     },
 }
 
@@ -243,6 +263,87 @@ def draw_fern(img, cell, seed):
                     img.putpixel((ox + int(lx), oy + int(ly)), cols[2] if s < 0 else cols[1])
 
 
+def draw_corn(img, cell=(12, 0)):
+    """build 025 midwest: a clump of tall corn stalks with leaves, ears, tassels."""
+    import math
+    ox, oy = cell[0] * TS, cell[1] * TS
+    _clear(img, cell[0], cell[1], 2, 4)
+    rnd = random.Random(25)
+    _shadow(img, ox, oy, 32, 118, 18, 5)
+    stalk = [(40, 92, 30, 255), (70, 132, 44, 255), (110, 170, 64, 255)]
+    for k, x0 in enumerate((18, 26, 33, 40, 46)):
+        top = 14 + (k * 7) % 12
+        _fill_shape(img, ox, oy, lambda x, y, x0=x0, top=top: abs(x - x0) <= 1 and top <= y <= 117, stalk, rnd)
+        for j in range(5):                       # arching leaves
+            y0 = top + 18 + j * 17
+            side = 1 if (j + k) % 2 else -1
+            for i in range(13):
+                xx = x0 + side * i
+                yy = y0 + int((i / 13.0) ** 2 * 9) - 2
+                for w in (0, 1):
+                    if 0 <= xx < 64 and 0 <= yy + w < 128:
+                        img.putpixel((ox + xx, oy + yy + w), stalk[1] if w == 0 else stalk[0])
+        for t in range(6):                       # tassel
+            img.putpixel((ox + x0 + rnd.randint(-2, 2), oy + top - t), (214, 186, 96, 255))
+        ey = top + 44
+        _fill_shape(img, ox, oy, lambda x, y, x0=x0, ey=ey: ((x - x0 - 3) / 2.5) ** 2 + ((y - ey) / 6.0) ** 2 <= 1,
+                    [(170, 140, 40, 255), (226, 196, 70, 255), (250, 230, 130, 255)], rnd)
+
+
+def draw_haybale(img, cell, seed):
+    ox, oy = cell[0] * TS, cell[1] * TS
+    _clear(img, cell[0], cell[1], 1, 1)
+    rnd = random.Random(seed)
+    _shadow(img, ox, oy, 16, 27, 12, 3)
+    _fill_shape(img, ox, oy, lambda x, y: ((x - 16) / 12.5) ** 2 + ((y - 18) / 9.5) ** 2 <= 1,
+                [(150, 112, 44, 255), (200, 160, 70, 255), (232, 200, 110, 255)], rnd)
+    for x in range(7, 26, 4):
+        for y in range(11, 26):
+            p = img.getpixel((ox + x, oy + y))
+            if p[3] and p != OUTLINE and rnd.random() < 0.6:
+                img.putpixel((ox + x, oy + y), (170, 128, 52, 255))
+
+
+def draw_shoot(img, cell, seed):
+    ox, oy = cell[0] * TS, cell[1] * TS
+    _clear(img, cell[0], cell[1], 1, 1)
+    rnd = random.Random(seed)
+    cols = [(40, 92, 30, 255), (70, 132, 44, 255), (110, 170, 64, 255)]
+    for x0 in (9, 16, 23):
+        for i in range(14):
+            img.putpixel((ox + x0, oy + 27 - i), cols[1])
+        for j, side in enumerate((-1, 1, -1)):
+            y0 = 24 - j * 4
+            for i in range(6):
+                img.putpixel((ox + x0 + side * i, oy + y0 - i // 2), cols[2] if side < 0 else cols[0])
+
+
+def draw_sunflower(img, cell, seed):
+    """build 025 ukraine: a sunflower (no collision bush cell)."""
+    import math
+    ox, oy = cell[0] * TS, cell[1] * TS
+    _clear(img, cell[0], cell[1], 1, 1)
+    rnd = random.Random(seed)
+    _shadow(img, ox, oy, 16, 29, 7, 2)
+    for y in range(12, 30):
+        img.putpixel((ox + 16, oy + y), (60, 118, 40, 255))
+        img.putpixel((ox + 17, oy + y), (44, 92, 30, 255))
+    for side in (-1, 1):
+        for i in range(5):
+            img.putpixel((ox + 16 + side * (i + 1), oy + 22 - i // 2), (84, 150, 56, 255))
+    cx, cy = 16, 10 + seed % 2
+    for a in range(16):
+        ang = a * math.pi / 8
+        for r in range(5, 9):
+            x, y = int(cx + math.cos(ang) * r), int(cy + math.sin(ang) * r * 0.9)
+            if 0 <= x < 32 and 0 <= y < 32:
+                img.putpixel((ox + x, oy + y), (250, 200, 30, 255) if r < 8 else (200, 140, 10, 255))
+    for y in range(-4, 5):
+        for x in range(-4, 5):
+            if x * x + y * y <= 17:
+                img.putpixel((ox + cx + x, oy + cy + y), (92, 52, 22, 255) if (x + y) % 2 else (64, 36, 14, 255))
+
+
 def main():
     srcs = {n: Image.open(os.path.join(BASE, 'stsh_%s_atlas.png' % n)).convert('RGBA') for n in NAMES}
     for theme, th in THEMES.items():
@@ -260,6 +361,15 @@ def main():
                 elif theme == 'pnw':
                     for i in range(4):
                         draw_fern(img, (i, 4), 30 + i)
+                elif theme == 'midwest':
+                    draw_corn(img)
+                    draw_haybale(img, (0, 4), 41)
+                    draw_haybale(img, (1, 4), 42)
+                    draw_shoot(img, (2, 4), 43)
+                    draw_shoot(img, (3, 4), 44)
+                elif theme == 'ukraine':
+                    for i in range(4):
+                        draw_sunflower(img, (i, 4), 50 + i)
             img.save(os.path.join(out, 'stsh_%s_atlas.png' % n))
         print('biome', theme, 'ok')
 

@@ -239,7 +239,11 @@ func _on_door_broken(level_node: Node, g, s: Dictionary) -> void:
 	center /= float(s["pocket"].size())
 	var gp := get_node_or_null("/root/GameProgress")
 	var already: bool = gp != null and gp.has_method("secret_claimed") and gp.secret_claimed(String(s["id"]))
-	if level_node.has_method("spawn_score_popup"):
+	# build 025: HUD toast (clear of the score/SAVED cards, mobile too)
+	var hud = level_node.get("hud")
+	if hud != null and hud.has_method("show_toast"):
+		hud.show_toast("SECRET FOUND!" if not already else "ALREADY LOOTED")
+	elif level_node.has_method("spawn_score_popup"):
 		level_node.spawn_score_popup("SECRET FOUND!" if not already else "ALREADY LOOTED", center + Vector2(0, -40), Color(1.0, 0.9, 0.4), 3)
 	Sfx.play(self, "secret_reveal", -4.0)
 	add_child(RevealFx.make(center))
