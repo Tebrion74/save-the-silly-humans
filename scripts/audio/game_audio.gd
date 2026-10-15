@@ -7,7 +7,8 @@ extends Node
 ##   buses at runtime: in the web export, buses added with AudioServer.add_bus()
 ##   after start-up are silent (sample playback never reaches the speakers).
 ##   ensure_buses() is only a desktop fallback if the layout file goes missing.
-## - Music: looping generated chiptune tracks (tools/gen_music.py):
+## - Music: looping generated tracks. Build 026: funk / groove level tracks and
+##   punched-up boss/bonus themes, all from tools/gen_funk.py (QOA-compressed WAV):
 ##   "level" for normal levels, "boss" for the Trustin Judeau fight; build 016
 ##   adds "bonus" (bonus stage) and "boss2" (Huval Yarheyhey).
 ## - M key (anywhere) or the speaker icon (HUD on touch, title screen) cycles

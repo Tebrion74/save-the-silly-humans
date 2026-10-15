@@ -40,7 +40,8 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [022](#build-022) | 2026-10-12 ~22:12 MT | Replaced by 024 | up to 12 hearts, faster multi-pop whip in bonus stages |
 | [023](#build-023) | 2026-10-14 ~11:25 MT | Built, never deployed live (superseded by 024) | biome music, spinning-humans fix, Cantifa shoot first and congregate |
 | [024](#build-024) | 2026-10-14 ~18:00 MT (live ~18:35 MT) | Replaced by 025 | hidden chambers behind breakable tiles |
-| [025](#build-025) | 2026-10-14 ~20:45 MT (live ~00:00 MT Oct 15) | Live | bosses 7 and 8 (Reanald Rogan, Zelodymer Violentsky), Corn Belt and Wheat Steppe biomes, body armour, HUD redesign |
+| [025](#build-025) | 2026-10-14 ~20:45 MT (live ~00:00 MT Oct 15) | Replaced by 026 | bosses 7 and 8 (Reanald Rogan, Zelodymer Violentsky), Corn Belt and Wheat Steppe biomes, body armour, HUD redesign |
+| [026](#build-026) | 2026-10-15 ~01:30 MT (live ~01:50 MT) | Live | funk / groove music for all 8 biomes, punchier and lower boss and bonus themes |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -1684,7 +1685,7 @@ The beta dev cheat codes were documented publicly on Oct 14 2026 in [`CHEATS.md`
 <a id="build-025"></a>
 
 **Date:** 2026-10-14 ~20:45 MT  
-**Status:** **LIVE** 2026-10-15 ~00:00 MT (deployed manually by Robert over 024). Current build.
+**Status:** Was live from 2026-10-15 ~00:00 MT (deployed manually by Robert over 024). Replaced by build 026 at ~1:50 AM MT on Oct 15 2026.
 
 Based on 024. The in-game label reads `BUILD 025`. Web export cache-busted with `v=025`. All art and audio are original and generated. Both new bosses are good-natured cartoon parodies: no photos, no traced likenesses.
 
@@ -1756,6 +1757,74 @@ Based on 024. The in-game label reads `BUILD 025`. Web export cache-busted with 
   - `_test_019`, `_test_020` and `_test_023` fail only on the same stale asserts as on the 024 baseline, plus the expected "7 biome tracks" now that there are more biomes.
   - Spin/stuck bot passes (1 event).
   - Level bots on L1/6/12/15/18/21 vs 024 show no regression. L12 is noisy on both builds.
+
+## Build 026: funk / groove level music, punchier boss and bonus themes
+<a id="build-026"></a>
+
+**Date:** 2026-10-15 ~01:30 MT  
+**Status:** **LIVE** 2026-10-15 ~01:50 MT (deployed manually by Robert over 025). Current build.
+
+Based on 025. The in-game label reads `BUILD 026`. Web export cache-busted with `v=026`. Music only: no gameplay changes. All music is original and generated in code (no samples).
+
+### Why
+Robert found the level music, especially the prairie (Trustin) levels, far too high-pitched. Measuring the 015b-025 tracks confirmed it:
+- They were 8-bit NES-style pulse waves with leads and arpeggios at 0.6-2 kHz.
+- 37-74% of the level tracks' energy sat in the 1-3 kHz "shrill" band. A-weighted, prairie had 54% at 1-3 kHz and 15% above 3 kHz.
+- They carried DC offsets, and loudness varied from -16 to -25 LUFS.
+
+### New level tracks (`tools/gen_funk.py`)
+Every biome loop is now a funk / groove track:
+- deep slap or synth bass
+- punchy kick and snare with ghost notes
+- syncopated hi-hats kept low in the mix
+- clav or wah rhythm parts
+- brass stabs (bigger in the second half, a breakdown at bars 13-14, and a snare and brass fill that leads back into the loop)
+- a warm low-mid focus, with the harsh highs rolled off
+
+Each biome has its own key, tempo and flavour, with a regional hint:
+
+| Biome (levels) | Track | Key / tempo | Flavour |
+|---|---|---|---|
+| Prairie Ranch (L1-2) | Prairie Strut | G mixolydian, 100 BPM | country-funk: slap bass, banjo-style plucks, fiddle hook |
+| Olive Hills (L3-5) | Olive Grove Groove | D hijaz, 94 BPM half-time | doumbek doum/tek, bouzouki tremolo arpeggios, brass on the b2 |
+| Lone Star Scrub (L6-8) | Lone Star Strut | E blues, 108 BPM shuffle | walking shuffle bass, pedal-steel slides, organ, horn hits |
+| Alpine Forest (L9-11) | Oompah Overdrive | Bb major, 116 BPM | tuba oompah with slap pops, accordion off-beats, big brass melody |
+| Rainforest (L12-14) | Rainforest Roll | F dorian, 90 BPM laid-back | synth bass, Rhodes chords with echo, rimshots, low brass swells |
+| Golden Coast (L15-17) | Golden Coast Cruise | A dorian, 102 BPM | surf tremolo guitar hook, wah chicken-scratch, horns |
+| Corn Belt (L18-20) | Cornfield Cookout | C blues, 98 BPM | harmonica hook, gospel organ, clav, slap bass |
+| Wheat Steppe (L21-23) | Steppe Stomp | B Ukrainian dorian, 112 BPM | stomping kick, bandura-style plucks, brass |
+| (fallback, theme-less levels) | Ranch Hand Hustle | Eb mixolydian, 104 BPM | wah funk, brass lead |
+
+All lead and hook parts sit around 130-500 Hz fundamentals (octaves 2-4).
+
+### Boss and bonus themes: punched up, same identity
+The boss and bonus themes had the same shrill sound: 8-bit, with 21-54% of their energy at 1-3 kHz for bosses 3, 5, 6 and 7. They keep their own melodies, tempos and loop lengths, so every fight still sounds like itself. The changes:
+- re-rendered in 16-bit with band-limited voices
+- nothing above C5, and no thin 12.5% pulse duties
+- a new punchy kick and snare
+- the same master chain as the level tracks
+
+They sit 1 dB hotter than the level music (-17 vs -18 LUFS) and keep a little more bite, so the fights stay intense.
+
+### Engine and format
+- **Synthesis:** band-limited additive oscillators with time-varying filters (slap / wah / brass envelopes). Everything is rendered circularly into one loop buffer, so note tails and echoes wrap round and every loop is seamless (the seam jump is below normal sample-to-sample motion on every track).
+- **Master chain:** FFT EQ (30 Hz high-pass, warm low-mid lift, 1-4 kHz dip, roll-off from ~6 kHz), then a circular look-ahead limiter, then EBU R128 loudness matching. Level tracks are -18.0 LUFS and boss/bonus -17.0 LUFS, all with peaks at or below -1 dBFS (no clipping) and zero DC.
+- **After the change**, A-weighted, the level tracks sit at 7-13% at 1-3 kHz and 2-4% above 3 kHz, with 50-70% in 250 Hz-1 kHz.
+- **Format:** music `.import` files now use QOA compression (`compress/mode=2`, forward loop). The imported music totals 4.9 MB (the old 8-bit set was ~11 MB), and `index.pck` shrank from 13.3 MB to 7.0 MB.
+- `tools/gen_music.py` now refuses to run without `--legacy`, so it can't overwrite the new tracks. `gen_funk.py` still imports it for the boss and bonus melodies.
+- The sound toggle (M / speaker icon: ON, LOW, OFF) is unchanged and tested.
+
+### Previews
+30-second MP3 previews of each level track and a 112-second sampler (level B-sections, then the boss and bonus themes) are in `/workspace/stsh-026-music-previews/` and on Drive.
+
+### Web build
+`/workspace/web-beta-026/`, `?v=026`. `index.pck` is 7,035,340 bytes, sha256 `bac6fb21100817bab3ec1f1a4fae29cf5e2c64708e8eff0a88714f8a47185e53`. Only `index.pck` and `index.html` in `/beta/`, plus `game.php`, change: the engine files are byte-identical to 025. Deploy and rollback scripts are in `/workspace/deploy026/` (rollback copy `~/rollback-025`), dry-run against a copy of the live `game.php`. **LIVE** ~01:50 MT Oct 15 2026 on https://savethesillyhumans.org/game.php, deployed manually by Robert over 025. Live `index.pck` sha256 verified `bac6fb21100817bab3ec1f1a4fae29cf5e2c64708e8eff0a88714f8a47185e53`; `game.php` shows `v=026` and build 026; the live game boots headless to the BUILD 026 title. Rollback copy of the 025 site: `~/rollback-025` on the server. Robert's verdict on the new music: acceptable and pretty good for the most part.
+
+### Tests
+- `tools/_music_026.gd` (36 checks): every track is QOA, loops forward and runs for its full length; each biome level, the L24+ cycle, the bonus stage and bosses 1, 7 and 8 start their own track; ON / LOW / OFF mutes and restores.
+- `_test_025` (44), `_test_024`, `_test_022` and `_maps_021` pass. `_test_019`, `_test_020` and `_test_023` fail only on the same stale asserts as on 025.
+- The spin/stuck bot passes when run alone (3 events). It is timing-sensitive under heavy parallel load.
+- The web build boots in Chrome and plays L1 with no console errors.
 
 ## Appendix: project reference notes
 

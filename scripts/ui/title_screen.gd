@@ -8,7 +8,7 @@ extends Control
 ## Mouse emulation from touch is off, so touches are hit-tested by hand.
 
 const GAME_SCENE := "res://scenes/Main.tscn"
-const BUILD_LABEL := "BUILD 025"
+const BUILD_LABEL := "BUILD 026"
 const CREDIT_ASSIST := "CODE & DESIGN ASSIST: EWAN SHEPHERD, LLM"
 const COPYRIGHT := "© 2026 ECHELON PUBLISHERS GROUP"
 const HORIZON := 440.0

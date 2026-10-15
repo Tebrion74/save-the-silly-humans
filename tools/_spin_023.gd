@@ -25,7 +25,7 @@ func _run() -> void:
 	var total_stuck := 0
 	var worst := 0
 	for lv in levels:
-		seed(lv * 1009 + 69)
+		seed(lv * 1009 + 7)
 		gp.reset_progress()
 		gp.current_level = lv
 		bt.god = true
