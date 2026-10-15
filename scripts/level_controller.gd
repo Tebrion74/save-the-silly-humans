@@ -108,6 +108,7 @@ func _ready() -> void:
 		pickups_layer = Node2D.new()
 		pickups_layer.name = "Pickups"
 		entities_node.add_child(pickups_layer)
+	_build_secrets.call_deferred()   # build 024 (regular levels only)
 	var rancher := get_node_or_null("Entities/Player")
 	if rancher != null:
 		weapons = Weapons.new()
@@ -1315,3 +1316,35 @@ func level_music_track() -> String:
 	var g = get_node_or_null("Ground")
 	var th := String(g.theme) if g != null and "theme" in g else LevelConfig.theme_for(level_number)
 	return "level_" + th if th != "" else "level"
+
+
+# ------------------------------------------------------------------ build 024 hidden chambers
+var secrets: SecretChambers = null
+
+
+func _build_secrets() -> void:
+	secrets = SecretChambers.build(self, get_node_or_null("Ground"))
+
+
+## Single entry point for chamber treasure (keeps SecretReward level-agnostic).
+func grant_secret_reward(kind: String, pos: Vector2) -> void:
+	match kind:
+		"score":
+			_award(LevelConfig.SECRET_SCORE, pos, Color(1.0, 0.85, 0.3))
+			spawn_score_popup("TREASURE!", pos + Vector2(0, -28), Color(1.0, 0.85, 0.3), 2)
+			Sfx.play(self, "pickup", -4.0)
+		"heart":
+			var p := get_node_or_null("Entities/Player")
+			if p != null and "health" in p and "maximum_health" in p and not p._dead:
+				p.health = p.maximum_health
+				p.health_changed.emit(p.health, p.maximum_health)
+			if hud and hud.has_method("flash_extra_heart"):
+				hud.flash_extra_heart()
+			spawn_score_popup("FULL HEALTH!", pos + Vector2(0, -28), Color(1.0, 0.45, 0.5), 2)
+			Sfx.play(self, "pickup", -4.0)
+		_:
+			var dummy := Node2D.new()
+			add_child(dummy)
+			dummy.global_position = pos
+			_on_pickup_collected(kind, dummy)
+			dummy.queue_free()

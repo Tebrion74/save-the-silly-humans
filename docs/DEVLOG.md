@@ -37,8 +37,9 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [019](#build-019) | 2026-10-11 ~21:18 MT | Replaced by 020 | WASD stuck-key fix, boss 4 renamed Shlaus Kwobb |
 | [020](#build-020) | 2026-10-11 ~23:39 MT | Replaced by 021 | +hearts, INVINCIBLE star, timed power-ups, reticle, mouse lock, bosses Gill Bates and Nancy Pelotto |
 | [021](#build-021) | 2026-10-12 ~20:59 MT | Replaced by 022 | regional biomes for the regular levels |
-| [022](#build-022) | 2026-10-12 ~22:12 MT | Live | up to 12 hearts, faster multi-pop whip in bonus stages |
+| [022](#build-022) | 2026-10-12 ~22:12 MT | Replaced by 024 | up to 12 hearts, faster multi-pop whip in bonus stages |
 | [023](#build-023) | 2026-10-14 ~11:25 MT | Built, never deployed live (superseded by 024) | biome music, spinning-humans fix, Cantifa shoot first and congregate |
+| [024](#build-024) | 2026-10-14 ~18:00 MT (live ~18:35 MT) | Live | hidden chambers behind breakable tiles |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -1554,7 +1555,7 @@ The levels **before** each boss look like the natural environment of that boss's
 <a id="build-022"></a>
 
 **Date:** 2026-10-12 ~22:12 MT  
-**Status:** **LIVE** 2026-10-12 ~22:20 MT (deployed manually by Robert). Current build.
+**Status:** Replaced by build 024 at ~6:35 PM MT on Oct 14 2026.
 
 Based on live 021. The in-game label reads `BUILD 022`.
 
@@ -1643,6 +1644,35 @@ From L18 the music follows the biome cycle. Bonus stages and bosses keep their t
 
 ### Web build
 `/workspace/web-beta-023/`, `?v=023`. `index.pck` is 10,418,176 bytes (+4.1 MB of music), sha256 `6bbe3b428f2eaf200581843eb24b3601aaae138bad98c0e17a1fa5b45761b283`. `index.js` and `index.wasm` are identical to 022. The deploy only touches `game.php` and `/beta/`; the rollback copy goes to `~/rollback-022`.
+
+## Build 024: hidden chambers
+<a id="build-024"></a>
+
+**Date:** 2026-10-14 ~18:00 MT  
+**Status:** **LIVE** 2026-10-14 ~18:35 MT (deployed manually by Robert directly over 022). Current build.
+
+Based on 023. The in-game label reads `BUILD 024`. Web export cache-busted with `v=024`.
+
+### Hidden chambers
+- Every regular level hides 1 or 2 small chambers (1 on odd levels, 2 on even), never in bonus stages or boss fights. Placement is deterministic per map seed and level, and sits in the woods / rocky parts of the biome, away from the safe zone, the camp, clearings and the map edge.
+- Each chamber is a 3x2 pocket walled with the biome's own rocks or bushes, with one breakable door tile facing open ground.
+- Two kinds, mixed across the run: **marked** doors (warm discolouration and faint cracks that deepen when hit) and **unmarked** doors that look like any other rock or bush and only open if you happen to whip them.
+- The whip breaks a door in 2 cracks; a fire whip or shockwave lash breaks it in 1. It works the same on PC and touch (the touch whip follows the player's facing), and doors are not aim-assist targets, so touch aiming and grabbing are unchanged.
+- Reveal: crack/break sounds, debris burst, a gold ring with rays and motes, and a "SECRET FOUND!" popup.
+- Rewards (weighted): treasure (+750), full heal, fire whip, shockwave, long whip, INVINCIBLE star, whip shot. Each chamber pays out once per run; reopening it on a replay shows "ALREADY LOOTED". A new game resets it.
+- The walls are real collision and are written into the terrain's blocked grid, so humans, sheep, Cantifa and the bots route around them. The pocket is sealed until the door breaks.
+
+### Code
+- New module `scripts/world/secrets/` (`secret_chambers.gd` planner/builder, `secret_door.gd`, `secret_reward.gd`), with `opened` / `claimed` signals as a hook for later spinoffs.
+- Hooks: `whip.gd` (`SecretDoor.on_crack` from the shared PC/touch crack path), `level_controller.gd` (`_build_secrets`, `grant_secret_reward`), `game_progress.gd` (per-run claims), `level_config.gd` (`SECRET_SCORE`), `sfx.gd` (three new procedural sounds).
+- Note: the terrain painter's `_layer()` clears a layer before returning it; the chamber builder uses its own non-clearing lookup.
+
+### Web build
+`/workspace/web-beta-024/`, `?v=024`. `index.pck` is 10,445,792 bytes, sha256 `1360edd068792f6280234f4447d032f952e7ca14d8846b02cb4c5252c172412c`. Only `index.pck` and `index.html` in `/beta/`, plus `game.php`, change. **LIVE** 2026-10-14 ~18:35 MT on https://savethesillyhumans.org/game.php, deployed manually by Robert over 022. Live `index.pck` sha256 verified `1360edd068792f6280234f4447d032f952e7ca14d8846b02cb4c5252c172412c`; `game.php` shows `v=024` and build 024; the live pack boots headless without errors. Rollback copy of the 022 site: `~/rollback-022` on the server.
+
+### Tests
+- `tools/_test_024.gd`: placement on L1-24 (count, reachable door, sealed pocket, marked/unmarked mix, varied rewards, unique ids, props intact), no chambers in boss/bonus scenes, touch-whip break, reveal and claim, once-per-run, run reset, power lash one-crack break.
+- Regression: `_test_023`, `_test_022`, `_maps_021`, spin/stuck bot on 3 seeds (no new flags vs 023), level bots L1-L8 vs 023 (all won).
 
 ## Appendix: project reference notes
 

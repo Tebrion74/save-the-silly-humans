@@ -6,7 +6,7 @@
 
 ▶ **Play it in your browser:** https://savethesillyhumans.org/game.php
 
-Current build: **023** (built, never deployed live, superseded by 024: music for every biome, humans no longer spin on the spot, Cantifa shoot first and move as a group; live build is 022) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
+Current build: **024** (live since 2026-10-14 ~18:35 MT: hidden chambers behind breakable tiles with one-time rewards; includes 023's biome music, spinning-humans fix and grouped Cantifa, which was built but never deployed on its own) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
 
 Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://www.youtube.com/@SaveTheSillyHumans)
 

@@ -986,3 +986,7 @@ const CANTIFA_SPAWN_EVERY_MIN := 3
 const CANTIFA_LOS_MASK := 1           ## environment layer: trees, rocks, walls block the shot
 const CANTIFA_SLOT_R := 36.0          ## formation ring spacing at the shared rally post
 const CANTIFA_REGROUP_EVERY := 20.0   ## the whole group moves to another post together
+
+
+# ------------------------------------------------------------------ Build 024 hidden chambers
+const SECRET_SCORE := 750

@@ -12,6 +12,8 @@ extends Node
 const SAVE_PATH := "user://stsh_save.cfg"
 
 var current_level: int = 1
+## Build 024: hidden-chamber rewards claimed this run (id -> true)
+var secrets_claimed: Dictionary = {}
 var score: int = 0
 ## Score when the current level began (retry restores this).
 var level_start_score: int = 0
@@ -169,6 +171,7 @@ func reset_progress() -> void:
 	if bt != null:
 		bt.on_new_run()
 	current_level = 1
+	secrets_claimed = {}
 	score = 0
 	level_start_score = 0
 	new_high_score = false
@@ -229,3 +232,15 @@ func load_high_score() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(SAVE_PATH) == OK:
 		high_score = maxi(int(cfg.get_value("scores", "high_score", 0)), 0)
+
+
+func secret_claimed(id: String) -> bool:
+	return secrets_claimed.has(id)
+
+
+## True the first time per run; false if this chamber was already looted.
+func claim_secret(id: String) -> bool:
+	if id == "" or secrets_claimed.has(id):
+		return id == ""
+	secrets_claimed[id] = true
+	return true

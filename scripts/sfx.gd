@@ -159,6 +159,28 @@ static func get_sound(sound_name: String) -> AudioStreamWAV:
 				lp = lerpf(lp, rng.randf_range(-1.0, 1.0), 0.35 - 0.25 * u)
 				var crush := floorf(lp * 6.0) / 6.0
 				s.append((crush * 0.8 + sin(ph) * 0.5) * pow(1.0 - u, 1.8))
+		"secret_hit":    # build 024: lash knocks a cracked tile: dull stony thunk
+			var n := int(rate * 0.16)
+			var lp := 0.0
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += TAU * lerpf(220.0, 90.0, u) / rate
+				lp = lerpf(lp, rng.randf_range(-1.0, 1.0), 0.5)
+				s.append((lp * 0.5 + sin(ph) * 0.6) * pow(1.0 - u, 2.2))
+		"secret_break":  # build 024: rock / brush collapses: crunchy rumble + gravel patter
+			var n := int(rate * 0.6)
+			var lp := 0.0
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += TAU * lerpf(110.0, 40.0, u) / rate
+				lp = lerpf(lp, rng.randf_range(-1.0, 1.0), 0.28)
+				var grit := rng.randf_range(-1.0, 1.0) * (0.35 if (i / 260) % 3 == 0 else 0.05)
+				s.append((floorf(lp * 5.0) / 5.0 * 0.7 + sin(ph) * 0.5 + grit) * pow(1.0 - u, 1.5))
+		"secret_reveal": # build 024: "secret found" jingle: rising arpeggio + sparkle trill
+			s = _notes([[523.0, 0.07], [659.0, 0.07], [784.0, 0.07], [1047.0, 0.07], [1319.0, 0.07],
+				[1568.0, 0.06], [2093.0, 0.06], [1568.0, 0.05], [2093.0, 0.05], [2637.0, 0.22]], 0.18, 0.25)
 		"save":      # human reaches the safe zone: bright two-note chime
 			s = _notes([[784.0, 0.07], [1047.0, 0.16]], 0.22, 0.25)
 		"save_possessed":   # possessed saved: little arpeggio

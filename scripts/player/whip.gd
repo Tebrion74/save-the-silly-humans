@@ -174,6 +174,8 @@ func has_power(kind: String) -> bool:
 ## so the 012 crack is unchanged.
 func _apply_crack_powerups(owner_position: Vector2, direction: Vector2, target: Node2D) -> void:
 	var tip := whip_end
+	# build 024: hidden-chamber doors along the lash (mouse and touch cracks alike)
+	SecretDoor.on_crack(get_tree(), owner_position, owner_position + direction.normalized() * whip_range if target == null else tip, has_power("fire_whip") or has_power("shockwave"))
 	if has_power("fire_whip"):
 		if target != null:
 			Burn.ignite(target)
