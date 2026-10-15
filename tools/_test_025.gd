@@ -143,6 +143,6 @@ func _run() -> void:
 	bt._apply_code("7474"); ok(bt.god, "7474 god mode still works")
 	bt._apply_code("0000"); ok(not bt.god, "0000 clears cheats")
 	var ts = load("res://scripts/ui/title_screen.gd")
-	ok(ts.BUILD_LABEL == "BUILD 025" and ts.CREDIT_ASSIST.find("EWAN SHEPHERD, LLM") >= 0, "build label + Ewan Shepherd, LLM credit")
+	ok(ts.BUILD_LABEL == "BUILD 026" and ts.CREDIT_ASSIST.find("EWAN SHEPHERD, LLM") >= 0, "build label + Ewan Shepherd, LLM credit")
 	print("FAILS ", fails)
 	quit(1 if fails > 0 else 0)

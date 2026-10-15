@@ -13,6 +13,11 @@ recoloured by hue class, plus a few new props drawn into existing cells:
           tilled soil, CORN (pine cell), HAY BALES + corn shoots (bushes)
   ukraine (L21-23, build 025): golden wheat steppe, white BIRCH groves,
           SUNFLOWERS (bushes), blue ponds
+  taiga   (L24-26, build 027): snowy Russian taiga: snow ground, icy ponds,
+          SNOW-LADEN SPRUCE (pine cell), birches, snowy shrubs + fir saplings (bushes)
+  florida (L27-29, build 027): Florida palms + golf greens: lush fairway green,
+          white-sand bunkers, turquoise water hazards, PALMS (pine cell),
+          PALMETTOS + a GOLF PIN FLAG (bushes)
 Then: godot --headless --path . -s res://tools/build_tileset.gd -- --theme=<t>
 """
 import colorsys, os, random
@@ -76,6 +81,22 @@ THEMES = {
         'leaf':   (96, 0.6, 0.9, 1.0),
         'trunk':  (40, 0.5, 0.25, 1.35),
         'path':   (36, 0.6, 0.5, 1.12),
+    },
+    'taiga': {
+        'green':  (212, 0.9, 0.12, 1.5),     # snow
+        'brown':  (215, 0.5, 0.35, 1.05),    # frozen grey earth
+        'blue':   (195, 0.8, 0.45, 1.3),     # ice
+        'leaf':   (152, 0.6, 0.75, 0.6),     # dark spruce green
+        'trunk':  (20, 0.4, 0.7, 0.8),
+        'path':   (210, 0.6, 0.18, 1.25),    # packed snow trail
+    },
+    'florida': {
+        'green':  (100, 0.6, 1.25, 1.12),    # fairway green
+        'brown':  (44, 0.8, 0.42, 1.5),      # bunker sand
+        'blue':   (178, 0.85, 1.05, 1.12),   # turquoise water hazard
+        'leaf':   (104, 0.6, 1.15, 1.0),
+        'trunk':  (32, 0.5, 0.75, 1.15),
+        'path':   (42, 0.7, 0.4, 1.4),       # sandy cart path
     },
 }
 
@@ -344,9 +365,148 @@ def draw_sunflower(img, cell, seed):
                 img.putpixel((ox + cx + x, oy + cy + y), (92, 52, 22, 255) if (x + y) % 2 else (64, 36, 14, 255))
 
 
+def draw_spruce(img, cell=(12, 0)):
+    """build 027 taiga: a tall snow-laden spruce (tiers with white snow caps)."""
+    ox, oy = cell[0] * TS, cell[1] * TS
+    _clear(img, cell[0], cell[1], 2, 4)
+    rnd = random.Random(27)
+    _shadow(img, ox, oy, 32, 118, 13, 4)
+    _fill_shape(img, ox, oy, lambda x, y: 29 <= x <= 34 and 100 <= y <= 118,
+                [(60, 40, 30, 255), (86, 60, 42, 255), (110, 80, 56, 255)], rnd)
+    tiers = [(10, 34, 7), (26, 54, 11), (44, 76, 15), (64, 102, 19)]
+    def tree(x, y):
+        for top, bot, w in tiers:
+            if top <= y <= bot:
+                t = (y - top) / float(bot - top)
+                if abs(x - 32) <= 2 + w * t:
+                    return True
+        return False
+    _fill_shape(img, ox, oy, tree, [(18, 46, 38, 255), (28, 66, 50, 255), (44, 90, 66, 255)], rnd)
+    for top, bot, w in tiers:                  # snow on each tier
+        for y in range(top, bot + 1):
+            t = (y - top) / float(bot - top)
+            half = 2 + w * t
+            for x in range(int(32 - half), int(32 + half) + 1):
+                p = img.getpixel((ox + x, oy + y))
+                if p[3] == 0 or p == OUTLINE:
+                    continue
+                if t < 0.35 or (y - top) % 9 < 2 and abs(x - 32) > half * 0.4:
+                    img.putpixel((ox + x, oy + y), (236, 242, 250, 255) if rnd.random() < 0.8 else (200, 214, 232, 255))
+    for i in range(14):                         # snowflakes on the needles
+        x, y = rnd.randint(20, 44), rnd.randint(14, 100)
+        if img.getpixel((ox + x, oy + y)) not in ((0, 0, 0, 0), OUTLINE):
+            img.putpixel((ox + x, oy + y), (250, 252, 255, 255))
+
+
+def draw_snowbush(img, cell, seed):
+    ox, oy = cell[0] * TS, cell[1] * TS
+    _clear(img, cell[0], cell[1], 1, 1)
+    rnd = random.Random(seed)
+    _shadow(img, ox, oy, 16, 27, 11, 3)
+    _fill_shape(img, ox, oy, lambda x, y: ((x - 16) / 11.5) ** 2 + ((y - 20) / 7.5) ** 2 <= 1,
+                [(30, 64, 50, 255), (44, 86, 62, 255), (62, 108, 78, 255)], rnd)
+    _fill_shape(img, ox, oy, lambda x, y: ((x - 15) / 10.0) ** 2 + ((y - 15) / 4.5) ** 2 <= 1 and y <= 17,
+                [(196, 210, 230, 255), (226, 234, 246, 255), (248, 250, 255, 255)], rnd)
+
+
+def draw_sapling(img, cell, seed):
+    ox, oy = cell[0] * TS, cell[1] * TS
+    _clear(img, cell[0], cell[1], 1, 1)
+    rnd = random.Random(seed)
+    _shadow(img, ox, oy, 16, 28, 6, 2)
+    _fill_shape(img, ox, oy, lambda x, y: 4 <= y <= 27 and abs(x - 16) <= 1 + (y - 4) * 0.33,
+                [(18, 46, 38, 255), (28, 66, 50, 255), (44, 90, 66, 255)], rnd)
+    for y in (6, 7, 13, 14, 20, 21):
+        for x in range(9, 24):
+            p = img.getpixel((ox + x, oy + y))
+            if p[3] and p != OUTLINE:
+                img.putpixel((ox + x, oy + y), (240, 245, 252, 255))
+
+
+def draw_palm(img, cell=(12, 0)):
+    """build 027 florida: a curved coconut palm with ringed trunk and fronds."""
+    import math
+    ox, oy = cell[0] * TS, cell[1] * TS
+    _clear(img, cell[0], cell[1], 2, 4)
+    rnd = random.Random(28)
+    _shadow(img, ox, oy, 30, 118, 14, 4)
+    trunk = [(110, 78, 48, 255), (150, 112, 70, 255), (186, 146, 96, 255)]
+    def tr(x, y):
+        if not 30 <= y <= 118:
+            return False
+        t = (118 - y) / 88.0
+        cx = 26 + 12 * t * t
+        return abs(x - cx) <= 3.6 - 1.2 * t
+    _fill_shape(img, ox, oy, tr, trunk, rnd)
+    for y in range(34, 118, 5):                # trunk rings
+        t = (118 - y) / 88.0
+        cx = 26 + 12 * t * t
+        for x in range(int(cx - 3), int(cx + 4)):
+            p = img.getpixel((ox + x, oy + y))
+            if p[3] and p != OUTLINE:
+                img.putpixel((ox + x, oy + y), (96, 66, 40, 255))
+    top = (38, 28)
+    frond = [(30, 92, 34, 255), (50, 128, 46, 255), (86, 166, 66, 255)]
+    for k, ang in enumerate((-170, -140, -105, -70, -35, -5, 25, 160)):
+        a = math.radians(ang)
+        L = 24 + (k % 3) * 3
+        for i in range(L):
+            t = i / float(L)
+            x = top[0] + math.cos(a) * i
+            y = top[1] + math.sin(a) * i * 0.6 + (t * t) * 14
+            for w in range(-3, 4):
+                xx, yy = int(x), int(y + w * (1.2 - t))
+                if 0 <= xx < 64 and 0 <= yy < 128:
+                    img.putpixel((ox + xx, oy + yy), frond[2] if w < 0 else (frond[1] if w == 0 else frond[0]))
+    for dx, dy in ((-3, 3), (2, 4), (0, 1)):    # coconuts
+        for yy in range(-1, 2):
+            for xx in range(-1, 2):
+                img.putpixel((ox + top[0] + dx + xx, oy + top[1] + dy + yy), (92, 62, 30, 255))
+
+
+def draw_palmetto(img, cell, seed):
+    import math
+    ox, oy = cell[0] * TS, cell[1] * TS
+    _clear(img, cell[0], cell[1], 1, 1)
+    rnd = random.Random(seed)
+    _shadow(img, ox, oy, 16, 28, 10, 3)
+    cols = [(30, 92, 34, 255), (50, 128, 46, 255), (86, 166, 66, 255)]
+    for k in range(9):
+        a = math.radians(-170 + k * 20 + rnd.uniform(-6, 6))
+        for i in range(12):
+            x = 16 + math.cos(a) * i
+            y = 26 + math.sin(a) * i * 0.9
+            for w in (0, 1):
+                if 0 <= x < 32 and 0 <= y + w < 32:
+                    img.putpixel((ox + int(x), oy + int(y) + w), cols[2] if w == 0 and k % 2 else cols[1 - w])
+
+
+def draw_flag(img, cell, seed):
+    """a golf pin: white pole, red flag, a cup ring on a tiny green."""
+    ox, oy = cell[0] * TS, cell[1] * TS
+    _clear(img, cell[0], cell[1], 1, 1)
+    for y in range(-3, 4):
+        for x in range(-9, 10):
+            if (x / 9.5) ** 2 + (y / 3.5) ** 2 <= 1:
+                img.putpixel((ox + 16 + x, oy + 27 + y), (84, 170, 70, 255))
+    for x in range(-2, 3):
+        img.putpixel((ox + 16 + x, oy + 27), (20, 30, 20, 255))
+    for y in range(4, 27):
+        img.putpixel((ox + 16, oy + y), (245, 245, 240, 255))
+        img.putpixel((ox + 17, oy + y), (180, 180, 176, 255))
+    for y in range(4, 12):
+        for x in range(18, 18 + (12 - abs(y - 8) * 2)):
+            if x < 31:
+                img.putpixel((ox + x, oy + y), (220, 40, 40, 255) if y > 5 else (250, 90, 80, 255))
+
+
 def main():
     srcs = {n: Image.open(os.path.join(BASE, 'stsh_%s_atlas.png' % n)).convert('RGBA') for n in NAMES}
+    import sys
+    only = sys.argv[1:]
     for theme, th in THEMES.items():
+        if only and theme not in only:
+            continue
         out = os.path.join(BASE, 'biome', theme)
         os.makedirs(out, exist_ok=True)
         for n in NAMES:
@@ -370,6 +530,18 @@ def main():
                 elif theme == 'ukraine':
                     for i in range(4):
                         draw_sunflower(img, (i, 4), 50 + i)
+                elif theme == 'taiga':
+                    draw_spruce(img)
+                    draw_snowbush(img, (0, 4), 61)
+                    draw_sapling(img, (1, 4), 62)
+                    draw_snowbush(img, (2, 4), 63)
+                    draw_sapling(img, (3, 4), 64)
+                elif theme == 'florida':
+                    draw_palm(img)
+                    draw_palmetto(img, (0, 4), 71)
+                    draw_flag(img, (1, 4), 72)
+                    draw_palmetto(img, (2, 4), 73)
+                    draw_palmetto(img, (3, 4), 74)
             img.save(os.path.join(out, 'stsh_%s_atlas.png' % n))
         print('biome', theme, 'ok')
 

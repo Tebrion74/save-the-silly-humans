@@ -331,7 +331,7 @@ func _open_pad(mode: String) -> void:
 	v.add_theme_constant_override("separation", 8)
 	panel.add_child(v)
 	_pad_title = Label.new()
-	_pad_title.text = "CODE" if mode == "code" else "LEVEL  (91-98 = BOSS 1-8)"
+	_pad_title.text = "CODE" if mode == "code" else "LEVEL  (91-99 = BOSS 1-9, 90 = BOSS 10)"
 	_pad_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_pad_title.add_theme_font_size_override("font_size", 20)
 	v.add_child(_pad_title)
@@ -389,15 +389,25 @@ func _pad_submit() -> void:
 	_close_pad()
 	if mode == "code":
 		_apply_code(t)
-	elif t.is_valid_int() and int(t) >= 91 and int(t) <= 98:
-		# build 025: 91-98 = boss 1-8 (boss 7/8 are not on the title menu)
+	elif t.is_valid_int() and int(t) >= 90 and int(t) <= 99:
+		# build 025: 91-98 = boss 1-8; build 027: 99 = boss 9, 90 = boss 10
+		# (bosses 7-10 are not on the title menu)
 		tainted = true
 		_refresh_tag()
-		_start_boss.call_deferred(int(t) - 90)
+		_start_boss.call_deferred(boss_for_code(int(t)))
 	elif t.is_valid_int() and int(t) >= 1:
 		tainted = true
 		_refresh_tag()
 		_start_level.call_deferred(int(t))
+
+
+## Build 027: level-select boss codes (91-99 = boss 1-9, 90 = boss 10, else 0).
+static func boss_for_code(code: int) -> int:
+	if code == 90:
+		return 10
+	if code >= 91 and code <= 99:
+		return code - 90
+	return 0
 
 
 func _close_pad() -> void:

@@ -213,6 +213,12 @@ func paint_level01() -> void:
 	clear()
 	if not _arena:
 		_setup_theme()
+	elif theme_override != "" and theme_override != "prairie":
+		# build 027: the final boss arenas wear a biome's tiles (taiga / florida)
+		var ats := load("res://assets/tiles/biome/%s/tileset.tres" % theme_override) as TileSet
+		if ats != null:
+			tile_set = ats
+			theme = theme_override
 	_vw = map_width + 1
 	_vh = map_height + 1
 	_forest = _grid()
@@ -603,6 +609,12 @@ func _pick_tree(mix: String) -> Vector2i:
 		"ukraine":
 			# build 025: white birch groves with some oaks
 			return BIRCH if r < 62 else OAKS[r % 3]
+		"taiga":
+			# build 027: snowy spruce (pine cell) with birch stands
+			return PINE if r < 64 else (BIRCH if r < 94 else OAKS[1])
+		"florida":
+			# build 027: palms (pine cell) with a few live oaks
+			return PINE if r < 72 else OAKS[r % 3]
 		"prairie":
 			if level_no > 1 and mix != "pine":
 				# boreal edge: more aspen (birch cell) and spruce (pine)
@@ -713,6 +725,10 @@ func _paint_tint(origin: Vector2i) -> void:
 				warm = Color(1.04, 1.03, 0.9); cool = Color(0.9, 0.95, 0.84)
 			"ukraine":
 				warm = Color(1.08, 1.02, 0.84); cool = Color(0.98, 0.95, 0.82)
+			"taiga":
+				warm = Color(1.0, 1.0, 1.04); cool = Color(0.9, 0.94, 1.0)
+			"florida":
+				warm = Color(1.04, 1.04, 0.92); cool = Color(0.92, 0.98, 0.9)
 	for y in range(map_height):
 		for x in range(map_width):
 			var n := (_noise2.get_noise_2d(x * 0.9 - 30.0, y * 0.9 + 12.0) + 1.0) * 0.5
@@ -739,8 +755,13 @@ func _paint_tint(origin: Vector2i) -> void:
 				# Build 016: sunny checker meadow for the bonus stage
 				col = col * (Color(1.06, 1.04, 0.92) if (x / 3 + y / 3) % 2 == 0 else Color(0.97, 1.0, 0.9))
 				col.a = 1.0
+			elif _arena and f < 0.5 and theme_override == "taiga":
+				# Build 027: Puddin's frozen clearing - plain cold snow, no stripes
+				col = col * Color(0.96, 0.98, 1.0)
+				col.a = 1.0
 			elif _arena and f < 0.5:
 				# Build 015: mown-lawn stripes on the Parliament lawn
+				# (build 027: Rump's fairway reuses them on the florida tiles)
 				col = col * (1.0 if (x / 2) % 2 == 0 else 0.9)
 				col.a = 1.0
 			img.set_pixel(x, y, col)
@@ -1007,6 +1028,19 @@ func _setup_theme() -> void:
 			_ponds_v = [_ponds_v[0], _ponds_v[2]]
 			for w in _woods_v:
 				w["r"] = (w["r"] as Vector2) * 0.8
+		"taiga":
+			# build 027: dense snowy taiga, frozen ponds
+			for w in _woods_v:
+				w["r"] = (w["r"] as Vector2) * 1.15
+			_ponds_v = [_ponds_v[0], _ponds_v[1]]
+		"florida":
+			# build 027: golf links - water hazards, white-sand bunkers, palm stands
+			_ponds_v = [_ponds_v[1], _ponds_v[2]]
+			_sand_blobs = [{"c": Vector2(14, 9), "r": Vector2(3.2, 1.6)}, {"c": Vector2(47, 41), "r": Vector2(3.6, 1.8)},
+				{"c": Vector2(53, 13), "r": Vector2(2.8, 1.5)}, {"c": Vector2(25, 44), "r": Vector2(3.0, 1.4)},
+				{"c": Vector2(36, 6), "r": Vector2(2.6, 1.3)}]
+			for w in _woods_v:
+				w["r"] = (w["r"] as Vector2) * 0.75
 		"norcal":
 			# coastal lagoon with a sandy beach, golden open hills
 			var lag: Dictionary = _ponds_v[2]

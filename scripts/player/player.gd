@@ -17,6 +17,9 @@ var facing: Vector2 = Vector2.RIGHT
 ## Build 014: while filming with the MSM Cam the body (4-way sprite) turns to
 ## the camera's aim (mouse on PC, facing on touch). ZERO = follow movement.
 var aim_override: Vector2 = Vector2.ZERO
+## Build 027: Vladimir Puddin's ARENA SHAKE - while > 0 movement is inverted
+## (left = right, up = down). The HUD shows a countdown banner.
+var invert_time: float = 0.0
 
 ## Build 010: facing tracks movement in 8 directions (snapped to 45°). Touch
 ## whip/grab aim along it. Only updated when input is stronger than this, so
@@ -69,6 +72,9 @@ func _physics_process(delta: float) -> void:
 	)
 	if input_vector == Vector2.ZERO:
 		input_vector = TouchInput.move_vector
+	if invert_time > 0.0:
+		invert_time = maxf(invert_time - delta, 0.0)
+		input_vector = -input_vector
 	update_animation(input_vector)
 	# Compress vertical movement slightly for an isometric feel.
 	var iso_vector := Vector2(
@@ -136,7 +142,7 @@ func get_steer_direction() -> Vector2:
 		return Vector2.ZERO
 	var kb := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if kb.length_squared() > 0.0001:
-		return kb.normalized()
+		return -kb.normalized() if invert_time > 0.0 else kb.normalized()
 	if TouchInput.move_vector.length() >= FACING_MIN_INPUT:
 		return facing
 	return Vector2.ZERO
@@ -208,10 +214,20 @@ func take_damage(amount: int, source_position := Vector2.ZERO) -> void:
 		die()
 
 
+## Build 027: invert movement for `t` seconds (arena shake).
+func invert_controls(t: float) -> void:
+	invert_time = maxf(invert_time, t)
+
+
+func is_inverted() -> bool:
+	return invert_time > 0.0
+
+
 func die() -> void:
 	if _dead:
 		return
 	_dead = true
+	invert_time = 0.0
 	end_grab_ghost()
 	velocity = Vector2.ZERO
 	died.emit()

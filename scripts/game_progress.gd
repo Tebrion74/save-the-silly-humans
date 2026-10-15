@@ -42,6 +42,11 @@ var current_stage: String = ""
 var stage_return_level: int = 0
 ## Which bonus stage this is (1 = after level 1): later ones are harder.
 var bonus_index: int = 1
+## Build 027: the final boss (Donald Rump) was beaten and the ending is due /
+## showing; `endless` = the run went on past the ending (L30+).
+var ending_pending: bool = false
+var endless: bool = false
+var game_cleared: bool = false
 
 
 func _ready() -> void:
@@ -146,6 +151,10 @@ func start_at_stage(stage: String, bonus_n: int = 1) -> String:
 			level = LevelConfig.BOSS7_AFTER_LEVEL
 		"boss8":
 			level = LevelConfig.BOSS8_AFTER_LEVEL
+		"boss9":
+			level = LevelConfig.BOSS9_AFTER_LEVEL
+		"boss10":
+			level = LevelConfig.BOSS10_AFTER_LEVEL
 	current_level = level
 	stage_queue = GameProgressCheck.stages_after(level)
 	stage_return_level = level + 1
@@ -186,6 +195,25 @@ func reset_progress() -> void:
 	current_stage = ""
 	stage_return_level = 0
 	bonus_index = 1
+	ending_pending = false
+	endless = false
+	game_cleared = false
+
+
+## Build 027: the ending's ENDLESS MODE button: on to the level after the final
+## boss (score, hearts and inventory carried). Returns the scene to load.
+func continue_endless() -> String:
+	ending_pending = false
+	endless = true
+	game_cleared = true
+	return finish_stage()
+
+
+## Build 027: the ending's RETURN TO TITLE button.
+func finish_game_to_title() -> void:
+	game_cleared = true
+	commit_high_score()
+	reset_progress()
 
 
 ## Called when a level scene starts: remember the score to restore on retry.

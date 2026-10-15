@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Build 026: funk / groove level music + a punch-up pass for the boss and
+"""Build 026: funk / groove level music (build 027: + taiga, florida and
+the extra-epic boss9 / boss10 themes) + a punch-up pass for the boss and
 bonus tracks. All original, synthesised here (no samples), MIT.
 
     python3 tools/gen_funk.py              -> every level + boss + bonus track
@@ -274,7 +275,40 @@ def surf(m, dur):
     return x * env_adsr(n, 0.004, 0.5, 0.6, 0.06)
 
 
-LEADS = {'fiddle': fiddle, 'harmonica': lambda m, d: reed(m, d, 'harmonica'),
+def steelpan(m, dur):
+    """Build 027: a mellow steel-pan-ish mallet (sine partials 1, 2, 3.01 with
+    fast-decaying overtones) - Florida / Gulf flavour without the shrill top."""
+    n = note_len(dur + 0.35); t = _t(n)
+    f = hz(m)
+    ph = 2 * np.pi * f * t
+    x = np.sin(ph) + 0.45 * np.sin(2 * ph) * np.exp(-t / 0.18) + 0.18 * np.sin(3.01 * ph) * np.exp(-t / 0.07)
+    return x * np.exp(-t / 0.6) * env_adsr(n, 0.002, 9, 1.0, 0.05)
+
+
+def balalaika(m, dur):
+    """Build 027: a tremolo-picked triangle-bodied pluck (re-struck 12x / s)."""
+    n = note_len(dur + 0.15); t = _t(n)
+    f = hz(m) * np.ones(n)
+    rate = 12.0
+    ph = (t * rate) % 1.0
+    cut = 500 + 1500 * np.exp(-ph / 0.08)
+    x = additive(f, cut, 'saw', res=0.2)
+    trem = 0.55 + 0.45 * np.exp(-ph / 0.06)
+    return x * trem * env_adsr(n, 0.002, 0.6, 0.7, 0.06)
+
+
+def choir(m, dur):
+    """Build 027: a dark "aah" choir pad for the epic boss themes (detuned
+    soft saws through a fixed low formant)."""
+    n = note_len(dur + 0.1); t = _t(n)
+    x = 0
+    for dc in (-0.12, 0.0, 0.11):
+        f = hz(m + dc) * (1 + 0.004 * np.sin(2 * np.pi * (5.0 + dc) * t))
+        x = x + additive(f * np.ones(n), 900 * np.ones(n), 'saw', res=0.5)
+    return x / 3 * env_adsr(n, 0.18, 0.5, 0.85, 0.2)
+
+
+LEADS = {'fiddle': fiddle, 'steelpan': steelpan, 'balalaika': balalaika, 'choir': choir, 'harmonica': lambda m, d: reed(m, d, 'harmonica'),
          'accordion': lambda m, d: reed(m, d, 'accordion'), 'steel': steel, 'surf': surf,
          'bouzouki': lambda m, d: pluck(m, d, 2000, 0.3), 'bandura': lambda m, d: pluck(m, d, 2300, 0.45),
          'rhodes': rhodes, 'brass': brass, 'organ': organ}
@@ -445,6 +479,15 @@ BASS = {   # (step, chord token, length steps, kind) kinds: s slap, p pop, g gho
               (8, 'R', 2, 's'), (10, '3', 1, 's'), (11, '5', 1, 's'), (12, '7', 2, 's'), (14, '5', 1, 's'), (15, '8', 1, 'p')],
     'hustle': [(0, 'R', 2, 's'), (2, '8', 1, 'p'), (3, 'R', 1, 'g'), (6, 'R', 1, 's'), (7, '5', 1, 's'), (8, '7', 1, 'p'),
                (10, 'R', 2, 's'), (13, '3', 1, 's'), (14, '5', 1, 's'), (15, '8', 1, 'p')],
+    # build 027
+    'troika': [(0, 'R', 2, 's'), (2, 'R', 1, 'g'), (3, '5', 1, 's'), (4, '8', 1, 'p'), (6, 'R', 2, 's'), (8, '3', 2, 's'),
+               (10, '5', 1, 's'), (11, 'R', 1, 'g'), (12, '7', 2, 's'), (14, '5', 1, 's'), (15, '-1', 1, 'p')],
+    'calypso': [(0, 'R', 3, 's'), (3, '5', 1, 's'), (6, 'R', 1, 'p'), (7, '8', 1, 'p'), (8, '3', 3, 's'), (11, '5', 1, 's'),
+                (14, '6', 1, 's'), (15, '7', 1, 'p')],
+    'gallop': [(0, 'R', 1, 's'), (1, 'R', 1, 'g'), (2, 'R', 1, 's'), (4, 'R', 1, 's'), (5, 'R', 1, 'g'), (6, '8', 1, 'p'),
+               (8, 'R', 1, 's'), (9, 'R', 1, 'g'), (10, 'R', 1, 's'), (12, '5', 1, 's'), (13, '5', 1, 'g'), (14, '7', 1, 's'), (15, '8', 1, 'p')],
+    'tower': [(0, 'R', 2, 's'), (2, 'R', 1, 'g'), (3, 'R', 1, 's'), (4, '8', 1, 'p'), (6, 'R', 1, 's'), (7, 'b2', 1, 's'),
+              (8, 'R', 2, 's'), (10, '8', 1, 'p'), (11, 'R', 1, 's'), (12, '5', 1, 's'), (13, 'b5', 1, 's'), (14, '4', 1, 's'), (15, '-1', 1, 'p')],
 }
 
 DRUMS = {  # K kick, S snare, G ghost, H hat steps (accent list), O open hats, extra
@@ -457,6 +500,11 @@ DRUMS = {  # K kick, S snare, G ghost, H hat steps (accent list), O open hats, e
     'cruise':   dict(K=[0, 3, 8, 11], S=[4, 12], G=[6, 10, 15], H=list(range(16)), O=[7]),
     'stomp':    dict(K=[0, 4, 8, 10, 12], S=[4, 12], G=[7, 15], H=list(range(16)), O=[14], clap=[12]),
     'hustle':   dict(K=[0, 6, 10], S=[4, 12], G=[3, 9, 13], H=list(range(16)), O=[2, 14]),
+    # build 027
+    'troika':   dict(K=[0, 6, 8, 14], S=[4, 12], G=[2, 10, 15], H=list(range(16)), O=[7], clap=[12]),
+    'calypso':  dict(K=[0, 3, 8, 11], S=[4, 12], G=[7, 14], H=list(range(0, 16, 2)), O=[], rim=[0, 3, 6, 10, 12]),
+    'gallop':   dict(K=[0, 2, 4, 8, 10, 12], S=[4, 12], G=[7, 15], H=list(range(16)), O=[14], clap=[4, 12], timp=[0, 8]),
+    'tower':    dict(K=[0, 3, 6, 8, 11, 14], S=[4, 12], G=[2, 9, 15], H=list(range(16)), O=[7, 15], clap=[4, 12], timp=[0, 6, 8]),
 }
 
 COMP = {   # (step, length steps) chord hits per bar
@@ -480,7 +528,7 @@ def render_biome(name, c):
     kit = Kit(c['seed'])
     K = kit.kick(c.get('punch', 1.0)); S = kit.snare(); G = kit.snare(1.6)
     Hc = kit.hat(); Ho = kit.hat(True); CL = kit.clap(); RIM = kit.rim()
-    DOUM = kit.tom(90, 0.25); TEK = kit.tek()
+    DOUM = kit.tom(90, 0.25); TEK = kit.tek(); TIMP = kit.tom(c.get('timp_hz', 62), 0.5)
     dr = DRUMS[c['drums']]
     bass_pat = BASS[c['bass']]
     root = c['root']                    # bass root (MIDI, octave 1-2)
@@ -512,6 +560,9 @@ def render_biome(name, c):
             L.add('drums', b0 + st, DOUM, 0.5)
         for st in dr.get('tek', []):
             L.add('drums', b0 + st, TEK, 0.22)
+        for st in dr.get('timp', []):            # build 027: epic timpani hits
+            if not breakdown or st == 0:
+                L.add('drums', b0 + st, TIMP, 0.55)
         for st in dr['H']:
             acc = 1.0 if st % 4 == 2 else (0.75 if st % 2 == 0 else 0.5)
             L.add('hats', b0 + st, Ho if st in dr['O'] else Hc, 0.075 * acc)
@@ -558,14 +609,23 @@ def render_biome(name, c):
                     sig = pluck(m, d, 2100 if cv == 'banjo' else 1900, 0.18)
                 elif cv == 'surf':
                     sig = surf(m, d)
+                elif cv == 'steelpan':
+                    if j == 2:
+                        continue
+                    sig = steelpan(m, d)
+                elif cv == 'balalaika':
+                    if j:
+                        continue
+                    m = notes[i % len(notes)]
+                    sig = balalaika(m, d)
                 else:
                     sig = clav(m, d)
                 acc = 1.0 if st % 4 == 2 else 0.8
                 L.add('comp', b0 + st, sig, c.get('comp_gain', 0.16) * acc)
         if c.get('pad'):
-            pv = organ if c['pad'] == 'organ' else rhodes
+            pv = {'organ': organ, 'choir': choir}.get(c['pad'], rhodes)
             for m in notes:
-                L.add('pad', b0, pv(m - 12 if m > 60 else m, L.secs(16) * 0.98), 0.06)
+                L.add('pad', b0, pv(m - 12 if m > 60 else m, L.secs(16) * 0.98), c.get('pad_gain', 0.06))
         # ---------------- brass stabs (bombastic)
         stabs = c['stabs_b'] if bar >= 8 else (c['stabs_a'] if bar % 4 == 3 else [])
         if breakdown:
@@ -573,7 +633,7 @@ def render_biome(name, c):
         bnotes = voice(croot + 24, q, None, c.get('brass_centre', 58))
         for st, ln in stabs:
             for m in bnotes:
-                L.add('brass', b0 + st, brass(m, L.secs(ln) * 0.85), 0.11)
+                L.add('brass', b0 + st, brass(m, L.secs(ln) * 0.85), 0.11 * c.get('brass_gain', 1.0))
             L.add('brass', b0 + st, brass(bnotes[0] - 12, L.secs(ln) * 0.85), 0.12)   # low horn
         if fillbar:
             for k, st in enumerate((12, 13, 14, 15)):
@@ -602,7 +662,7 @@ def render_biome(name, c):
     # bus balance (RMS targets ~ drums -10, bass -12, comp -18, lead -17, brass -19, hats -33 dB)
     mix = (get('drums') * 1.0 + get('hats') * 8.0 + get('bass') * 0.42 * (0.75 + 0.25 * duck) +
            comp * 2.4 * duck + get('pad') * 2.0 * duck + get('brass') * 2.8 + lead * 2.0)
-    return finish(mix, LEVEL_LUFS, warm=c.get('warm', 1.0), top=c.get('top', 6200.0))
+    return finish(mix, c.get('lufs', LEVEL_LUFS), warm=c.get('warm', 1.0), top=c.get('top', 6200.0))
 
 
 MIXO = [0, 2, 4, 5, 7, 9, 10]; DOR = [0, 2, 3, 5, 7, 9, 10]; HIJAZ = [0, 1, 4, 5, 7, 8, 10]
@@ -691,6 +751,48 @@ BIOMES = {
         hook=[(0, 0, 2, 7), (0, 2, 2, 8), (0, 4, 2, 9), (0, 6, 2, 10), (0, 8, 4, 11), (0, 12, 2, 10), (0, 14, 2, 9),
               (1, 0, 2, 10), (1, 2, 2, 9), (1, 4, 2, 8), (1, 6, 2, 7), (1, 8, 8, 7)],
         hook_bars=[2, 6, 10], answer_bar=14, answer=[(0, 0, 4, 11), (0, 4, 4, 10), (0, 8, 8, 7)]),
+    # build 027 - L24-26 Puddin / snowy taiga: troika funk, F# harmonic minor, balalaika tremolo + bayan
+    'taiga': dict(title='Troika Trot', bpm=110, swing=0.04, seed=2701, root=30,          # F#1
+        prog=[(0, 'm'), (0, 'm'), (5, 'm'), (0, 'm'), (7, '7'), (5, 'm'), (7, '7'), (0, 'm')],
+        bass='troika', drums='troika', comp='roll', comp_voice='balalaika', comp_gain=0.13, pad='organ',
+        stabs_a=[(8, 2), (12, 2)], stabs_b=[(0, 2), (4, 1), (8, 2), (12, 2)],
+        lead='accordion', lead_tonic=54, scale=[0, 2, 3, 5, 7, 8, 11], lead_gain=0.15,      # F#3 bayan
+        hook=[(0, 0, 2, 4), (0, 2, 2, 3), (0, 4, 2, 2), (0, 6, 2, 1), (0, 8, 4, 0), (0, 12, 4, 4),
+              (1, 0, 2, 5), (1, 2, 2, 4), (1, 4, 2, 3), (1, 6, 2, 2), (1, 8, 8, 4)],
+        hook_bars=[2, 6, 10], answer_bar=14, answer=[(0, 0, 2, 7), (0, 2, 2, 6), (0, 4, 4, 5), (0, 8, 8, 4)]),
+    # build 027 - L27-29 Rump / Florida palms + golf greens: calypso funk, Ab, steel pan + horns
+    'florida': dict(title='Palm Links Shuffle', bpm=96, swing=0.12, seed=2704, root=32,   # Ab1
+        prog=[(0, 'M7'), (0, 'M7'), (5, '9'), (5, '9'), (0, 'M7'), (9, 'm7'), (2, 'm7'), (7, '7')],
+        bass='calypso', drums='calypso', comp='offbeat', comp_voice='steelpan', comp_gain=0.12, pad='rhodes',
+        stabs_a=[(14, 2)], stabs_b=[(2, 1), (6, 2), (10, 1), (14, 2)],
+        lead='steelpan', lead_tonic=56, scale=MAJ, lead_gain=0.2, lead_echo=True,           # Ab3
+        hook=[(0, 0, 2, 4), (0, 2, 1, 5), (0, 3, 3, 4), (0, 6, 2, 2), (0, 8, 2, 0), (0, 10, 2, 2), (0, 12, 4, 4),
+              (1, 0, 2, 5), (1, 2, 2, 7), (1, 4, 4, 5), (1, 8, 8, 4)],
+        hook_bars=[2, 10], answer_bar=6, answer=[(0, 8, 2, 7), (0, 10, 2, 8), (0, 12, 4, 9)]),
+}
+
+# build 027: extra-epic boss themes (same engine, -17 LUFS, timpani + choir)
+EPIC = {
+    # Vladimir Puddin: a galloping cossack-march funk, C# harmonic minor, 136 BPM
+    'boss9': dict(title='Bareback Blizzard', bpm=136, swing=0.0, seed=2709, root=37, lufs=BOSS_LUFS,   # C#2
+        prog=[(0, 'm'), (0, 'm'), (8, 'M'), (7, '7'), (0, 'm'), (5, 'm'), (7, '7'), (7, '7')],
+        bass='gallop', drums='gallop', comp='roll', comp_voice='balalaika', comp_gain=0.12,
+        pad='choir', pad_gain=0.09, brass_gain=1.35, timp_hz=58,
+        stabs_a=[(0, 2), (8, 2)], stabs_b=[(0, 3), (6, 1), (8, 3), (14, 2)],
+        lead='brass', lead_tonic=49, scale=[0, 2, 3, 5, 7, 8, 11], lead_gain=0.22,          # C#3
+        hook=[(0, 0, 3, 4), (0, 3, 1, 3), (0, 4, 4, 4), (0, 8, 2, 5), (0, 10, 2, 4), (0, 12, 4, 3),
+              (1, 0, 2, 2), (1, 2, 2, 3), (1, 4, 4, 1), (1, 8, 8, 0)],
+        hook_bars=[2, 6, 10, 14], answer_bar=12, answer=[(0, 0, 4, 7), (0, 4, 4, 6), (0, 8, 8, 4)], top=6500.0),
+    # Donald Rump: the final boss - a towering gold-brass funk march, G minor, 142 BPM
+    'boss10': dict(title='The Final Round', bpm=142, swing=0.0, seed=2710, root=31, lufs=BOSS_LUFS,   # G1
+        prog=[(0, 'm'), (0, 'm'), (3, 'M'), (1, 'M'), (0, 'm'), (8, 'M'), (7, '7'), (6, 'M')],
+        bass='tower', drums='tower', comp='clav', comp_voice='clav', comp_gain=0.12,
+        pad='choir', pad_gain=0.1, brass_gain=1.5, timp_hz=52, punch=1.2,
+        stabs_a=[(0, 2), (6, 1), (8, 2)], stabs_b=[(0, 3), (3, 1), (6, 2), (8, 3), (11, 1), (14, 2)],
+        lead='brass', lead_tonic=55, scale=[0, 2, 3, 5, 7, 8, 10], lead_gain=0.22,          # G3
+        hook=[(0, 0, 2, 0), (0, 2, 2, 2), (0, 4, 2, 4), (0, 6, 2, 5), (0, 8, 6, 7), (0, 14, 2, 6),
+              (1, 0, 2, 5), (1, 2, 2, 4), (1, 4, 4, 2), (1, 8, 4, 4), (1, 12, 4, 7)],
+        hook_bars=[2, 6, 10, 14], answer_bar=12, answer=[(0, 0, 2, 9), (0, 2, 2, 8), (0, 4, 4, 7), (0, 8, 8, 4)], top=6800.0),
 }
 
 
@@ -771,12 +873,14 @@ if __name__ == '__main__':
     args = sys.argv[1:]
     if args == ['--bosses']:
         punch_up(BOSS_TRACKS); sys.exit()
-    todo = args or (list(BIOMES) + ['--bosses'])
+    todo = args or (list(BIOMES) + list(EPIC) + ['--bosses'])
     for nm in todo:
         if nm == '--bosses':
             punch_up(BOSS_TRACKS)
         elif nm in BOSS_TRACKS:
             punch_up([nm])
+        elif nm in EPIC:
+            write_wav(os.path.join(OUT, 'music_%s.wav' % nm), render_biome(nm, EPIC[nm]))
         else:
             y = render_biome(nm, BIOMES[nm])
             write_wav(os.path.join(OUT, 'music_level.wav' if nm == 'level' else 'music_level_%s.wav' % nm), y)

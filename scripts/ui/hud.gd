@@ -431,6 +431,12 @@ func _process(delta: float) -> void:
 	var pl0: Node = inventory_panel.player if inventory_panel != null else null
 	var pu0: Node = pl0.get_node_or_null("PowerUps") if pl0 != null and is_instance_valid(pl0) else null
 	var arm: int = int(pu0.get("armor")) if pu0 != null and "armor" in pu0 else 0
+	if invert_banner != null:
+		var inv: float = float(pl0.get("invert_time")) if pl0 != null and is_instance_valid(pl0) and "invert_time" in pl0 else 0.0
+		invert_banner.visible = inv > 0.0
+		if inv > 0.0:
+			invert_banner.text = "CONTROLS FLIPPED!  %d" % int(ceilf(inv))
+			invert_banner.modulate.a = 0.6 + 0.4 * absf(sin(inv * 8.0))
 	if arm != hearts.armor:
 		hearts.set_armor(arm)
 	var vs := get_viewport().get_visible_rect().size
@@ -485,6 +491,9 @@ func apply_layout(touch: bool, vs: Vector2) -> void:
 		_place_bonus_bar(touch, vs)
 
 
+var invert_banner: Label
+
+
 func _build_callout(root: Control) -> void:
 	callout = Control.new()
 	callout.name = "Callout"
@@ -509,6 +518,19 @@ func _build_callout(root: Control) -> void:
 	callout_sub.size = Vector2(1000, 40)
 	callout_sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	callout.add_child(callout_sub)
+	# Build 027: "CONTROLS FLIPPED 3..2..1" banner while Puddin's quake inverts them
+	invert_banner = Label.new()
+	invert_banner.name = "InvertBanner"
+	invert_banner.label_settings = PixelFont.settings(4, Color(0.55, 0.85, 1.0))
+	invert_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	invert_banner.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	invert_banner.offset_left = -400
+	invert_banner.offset_right = 400
+	invert_banner.offset_top = -190
+	invert_banner.offset_bottom = -150
+	invert_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	invert_banner.visible = false
+	root.add_child(invert_banner)
 
 
 ## Build 014: big centred callout ("VIRAL!") that pops in and fades out.
@@ -870,6 +892,10 @@ func set_boss_mode(boss_name: String, boss_title: String, hearts_left: int, max_
 			boss_bar.rage_hearts = LevelConfig.BOSS7_RAGE_HEARTS
 		LevelConfig.BOSS8_NAME:
 			boss_bar.rage_hearts = LevelConfig.BOSS8_RAGE_HEARTS
+		LevelConfig.BOSS9_NAME:
+			boss_bar.rage_hearts = LevelConfig.BOSS9_RAGE_HEARTS
+		LevelConfig.BOSS10_NAME:
+			boss_bar.rage_hearts = LevelConfig.BOSS10_RAGE_HEARTS
 	boss_bar.set_hearts(hearts_left, max_hearts, false)
 	$Root.add_child(boss_bar)
 	_build_title_card(boss_name, boss_title)
@@ -1316,8 +1342,17 @@ class HeartBar extends Control:
 	func set_hp(h: int, m: int) -> void:
 		hp = h
 		max_hp = maxi(m, 1)
-		custom_minimum_size = Vector2(per_row() * 30 + (8 + armor * 22 if armor > 0 else 0), 26 * rows())
+		custom_minimum_size = Vector2(per_row() * step() + (8 + shield_cols() * 22 if armor > 0 else 0), 26 * rows())
 		queue_redraw()
+
+	## Build 027: the cap is 16 hearts; above 12 the hearts pack a bit tighter
+	## (2 rows of up to 8 at 26 px) so 16 hearts + armour fit on PC and mobile.
+	func step() -> float:
+		return 30.0 if max_hp <= 12 else 26.0
+
+	## Build 027: with two heart rows, the armour shields stack in two rows too.
+	func shield_cols() -> int:
+		return armor if rows() == 1 else (armor + 1) / 2
 
 	## Build 022: up to 8 hearts in one row; more wrap into two even rows.
 	func per_row() -> int:
@@ -1328,7 +1363,7 @@ class HeartBar extends Control:
 
 	func _slot(i: int) -> Vector2:
 		var pr := per_row()
-		return Vector2((i % pr) * 30, 2 + (i / pr) * 26)
+		return Vector2((i % pr) * step(), 2 + (i / pr) * 26)
 
 	func _draw() -> void:
 		for i in max_hp:
@@ -1357,13 +1392,15 @@ class HeartBar extends Control:
 			var a := 0.45 + 0.45 * absf(sin(_ft * 9.0))
 			draw_rect(Rect2(lo - Vector2(4, 4), Vector2(PX * 9 + 8, PX * 8 + 8)), Color(1.0, 0.95, 0.4, a), false, 3.0)
 			draw_string(ThemeDB.fallback_font, lo + Vector2(PX * 9 + 8, 18), "+1", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1.0, 0.95, 0.4, a))
+		var sc := maxi(shield_cols(), 1)
 		for i in armor:
-			var ox := per_row() * 30.0 + 8.0 + i * 22.0
-			var pts := PackedVector2Array([Vector2(ox, 3), Vector2(ox + 18, 3), Vector2(ox + 18, 12), Vector2(ox + 9, 22), Vector2(ox, 12)])
+			var ox := per_row() * step() + 8.0 + (i % sc) * 22.0
+			var oy := (i / sc) * 26.0
+			var pts := PackedVector2Array([Vector2(ox, 3 + oy), Vector2(ox + 18, 3 + oy), Vector2(ox + 18, 12 + oy), Vector2(ox + 9, 22 + oy), Vector2(ox, 12 + oy)])
 			draw_colored_polygon(pts, Color(0.06, 0.03, 0.08))
-			var inner := PackedVector2Array([Vector2(ox + 3, 6), Vector2(ox + 15, 6), Vector2(ox + 15, 11), Vector2(ox + 9, 18), Vector2(ox + 3, 11)])
+			var inner := PackedVector2Array([Vector2(ox + 3, 6 + oy), Vector2(ox + 15, 6 + oy), Vector2(ox + 15, 11 + oy), Vector2(ox + 9, 18 + oy), Vector2(ox + 3, 11 + oy)])
 			draw_colored_polygon(inner, Color(0.5, 0.78, 1.0))
-			draw_rect(Rect2(ox + 5, 7, 3, 3), Color(0.9, 0.97, 1.0))
+			draw_rect(Rect2(ox + 5, 7 + oy, 3, 3), Color(0.9, 0.97, 1.0))
 
 
 ## Build 015: boss heart bar (Genesis style): name + 10 hearts in a bordered
@@ -1390,7 +1427,15 @@ class BossBar extends Control:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	func bar_size() -> Vector2:
-		return Vector2(maxf(max_hearts * STEP + 24.0, PixelFont.text_width(boss_name, 2) + 70.0), 66.0)
+		return Vector2(maxf(per_row() * STEP + 24.0, PixelFont.text_width(boss_name, 2) + 70.0), 66.0 + (rows() - 1) * 24.0)
+
+	## Build 027: bosses with more than 24 hearts (Puddin 30, Rump 34) wrap the
+	## bar into two even rows so it stays inside the screen.
+	func per_row() -> int:
+		return max_hearts if max_hearts <= 24 else (max_hearts + 1) / 2
+
+	func rows() -> int:
+		return 1 if max_hearts <= 24 else 2
 
 	var rage_hearts: int = LevelConfig.BOSS_RAGE_HEARTS   ## build 018: per boss
 
@@ -1422,9 +1467,10 @@ class BossBar extends Control:
 		var f := PixelFont.get_font()
 		draw_string(f, Vector2(10, 24), "BOSS", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(1.0, 0.38, 0.3))
 		draw_string(f, Vector2(10 + PixelFont.text_width("BOSS ", 2), 24), boss_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(1.0, 0.82, 0.12))
-		var x0 := (sz.x - max_hearts * STEP) * 0.5 + 2.0
+		var pr := per_row()
+		var x0 := (sz.x - pr * STEP) * 0.5 + 2.0
 		for i in max_hearts:
-			var o := Vector2(x0 + i * STEP, 34)
+			var o := Vector2(x0 + (i % pr) * STEP, 34 + (i / pr) * 24)
 			var full := i < hearts
 			var fill := Color(0.92, 0.14, 0.2) if full else Color(0.25, 0.2, 0.3)
 			var shine := Color(1, 0.8, 0.75) if full else Color(0.38, 0.33, 0.45)

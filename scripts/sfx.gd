@@ -404,6 +404,30 @@ static func get_sound(sound_name: String) -> AudioStreamWAV:
 			s = _notes([[1320.0, 0.03], [990.0, 0.05], [660.0, 0.06]], 0.2, 0.25)
 		"armor_on":     # armour plates strapped on: two clunks + a chime
 			s = _notes([[300.0, 0.05], [0.0, 0.03], [300.0, 0.05], [1175.0, 0.08], [1568.0, 0.12]], 0.18, 0.4)
+		"tank":         # build 027 toy tank charge: low rumbling growl
+			var n := int(rate * 0.6)
+			var ph := 0.0
+			for i in n:
+				var u := float(i) / n
+				ph += (lerpf(70.0, 110.0, u) + 12.0 * sin(u * 90.0)) / rate
+				s.append((1.0 if fmod(ph, 1.0) < 0.5 else -1.0) * 0.16 * minf(1.0, u * 8.0) * minf(1.0, (1.0 - u) * 4.0) + rng.randf_range(-0.03, 0.03))
+		"quake":        # build 027 arena shake: a deep wobbling thud
+			var n := int(rate * 0.8)
+			for i in n:
+				var u := float(i) / n
+				var t := float(i) / rate
+				s.append((sin(TAU * (48.0 + 20.0 * sin(t * 30.0)) * t) * 0.35 + rng.randf_range(-0.08, 0.08) * (1.0 - u)) * (1.0 - u))
+		"golf":         # build 027 golf drive: a crisp thwack + whistle
+			s = _notes([[1400.0, 0.015], [700.0, 0.02], [0.0, 0.02], [1900.0, 0.05], [1700.0, 0.06], [1500.0, 0.08]], 0.18, 0.25)
+		"wall":         # build 027 gold wall slams down
+			s = _notes([[110.0, 0.05], [82.0, 0.08], [55.0, 0.14]], 0.3, 0.5)
+		"crowd":        # build 027 red-hat crowd arrives: a cheery murmur
+			var n := int(rate * 0.5)
+			for i in n:
+				var u := float(i) / n
+				s.append(rng.randf_range(-1.0, 1.0) * 0.08 * sin(u * PI) * (0.6 + 0.4 * sin(u * 60.0)))
+		"fired":        # build 027 YOU'RE FIRED!: a two-note brass blast
+			s = _notes([[233.0, 0.12], [0.0, 0.03], [175.0, 0.3]], 0.32, 0.45)
 		_:
 			s = _notes([[880.0, 0.05]])
 	var w := _wav(s, rate)

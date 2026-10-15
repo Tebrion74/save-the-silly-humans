@@ -34,7 +34,7 @@ const ROUND_EXTRA_FROM_LEVEL := 10
 const ROUND_TOTAL_CAP := 24
 const HEARTS_BASE := 5
 const HEART_EVERY_LEVELS := 2
-const HEARTS_CAP := 12   # build 022: was 8 (Robert: unfair cap)
+const HEARTS_CAP := 16   # build 027: was 12 (build 022: was 8)
 
 ## Killer sheep speed multiplier per level (level 1 = 1.0 = build 009 speed).
 const SHEEP_SPEED_STEP := 0.06
@@ -558,6 +558,15 @@ const BOSS7_AFTER_LEVEL := 20
 const BOSS7_SCENE := "res://scenes/levels/Boss7Arena.tscn"
 const BOSS8_AFTER_LEVEL := 23
 const BOSS8_SCENE := "res://scenes/levels/Boss8Arena.tscn"
+## Build 027: boss 9 (Vladimir Puddin) between levels 26 and 27, boss 10
+## (Donald Rump, the FINAL boss) after level 29. Neither is a bonus slot
+## (26 and 29 are 2 mod 3). Beating Rump plays the ending; ENDLESS goes on to L30.
+const BOSS9_AFTER_LEVEL := 26
+const BOSS9_SCENE := "res://scenes/levels/Boss9Arena.tscn"
+const BOSS10_AFTER_LEVEL := 29
+const BOSS10_SCENE := "res://scenes/levels/Boss10Arena.tscn"
+const FINAL_BOSS_AFTER_LEVEL := BOSS10_AFTER_LEVEL
+const ENDING_SCENE := "res://scenes/ui/Ending.tscn"
 
 
 # ---------------------------------------------------------------- build 016 bonus stage
@@ -1032,6 +1041,117 @@ const BOSS8_DRONE_SPEED := 260.0
 const BOSS8_DRONE_BLAST := 44.0
 const BOSS8_DRONE_POINTS := 100                   ## whip a drone out of the air
 
+# ------------------------------------------------------------------ Build 027 bosses
+## Boss 9: VLADIMIR PUDDIN, THE BAREBACK STRONGMAN (cartoon parody): a
+## shirtless judo master on a horse in a frozen taiga arena. Shlaus engine +
+## scripts/boss/finale.gd:
+##   tank   - TANK CHARGE: telegraphed lanes (one through you), then toy tanks roll through
+##   judo   - JUDO THROW: a grab ring locks on you, he pounces; caught = tossed + 1 heart
+##   quake  - ARENA SHAKE: a 1 s warning, then CONTROLS INVERTED for 3 s (+ icicles)
+const BOSS9_NAME := "VLADIMIR PUDDIN"
+const BOSS9_TITLE := "THE BAREBACK STRONGMAN"
+const BOSS9_HEARTS := 30
+const BOSS9_PHASE2_HEARTS := 23
+const BOSS9_PHASE3_HEARTS := 15
+const BOSS9_RAGE_HEARTS := 7
+const BOSS9_PANEL_HEARTS := [23, 15, 7]   ## "PHOTO OP" shield
+const BOSS9_SPEED := 130.0
+const BOSS9_SPEED_RAGE := 162.0
+const BOSS9_ATTACK_GAP := [1.15, 0.98, 0.86, 0.75]   ## 027 tuning: was [1.3, 1.1, 0.95, 0.84]
+const BOSS9_CONDUCT_TELL := [0.4, 0.36, 0.32, 0.28]
+const BOSS9_DELEGATE_TELL := [0.76, 0.7, 0.62, 0.54]
+const BOSS9_SHEEP_COUNT := [1, 2, 2, 3]
+const BOSS9_SHEEP_CAP := [3, 4, 5, 5]
+const BOSS9_ENVELOPES := [5, 6, 7, 8]       ## snowball fan
+const BOSS9_ENVELOPE_SPEED := 345.0
+const BOSS9_ENVELOPE_TELL := [0.56, 0.52, 0.48, 0.44]
+const BOSS9_RESET_TELL := [0.88, 0.82, 0.74, 0.66]
+const BOSS9_RESET_SPEED := 320.0
+const BOSS9_ATTACKS := [
+	{"envelopes": 25, "tank": 35, "judo": 30, "reset": 10},
+	{"envelopes": 18, "tank": 28, "judo": 24, "quake": 16, "sheep": 14},
+	{"envelopes": 14, "tank": 24, "judo": 22, "quake": 16, "sheep": 10, "reset": 14},
+	{"envelopes": 12, "tank": 24, "judo": 22, "quake": 18, "sheep": 8, "reset": 16},
+]
+const BOSS9_COMBO_CHANCE := [0.18, 0.28, 0.4, 0.52]
+const BOSS9_POINTS_PER_HEART := 170
+const BOSS9_DEFEAT_BONUS := 15000
+const BOSS9_HEALTH_BONUS := 480
+const BOSS9_TIME_PAR := 270.0
+## TANK CHARGE: lanes across the arena (one through you), tank rolls after the tell.
+const BOSS9_TANKS := [2, 2, 3, 3]
+const BOSS9_TANK_TELL := [1.0, 0.92, 0.84, 0.76]
+const BOSS9_TANK_SPEED := 560.0
+const BOSS9_TANK_WIDTH := 46.0
+## JUDO THROW: the grab ring tracks you for TRACK s, locks, then he pounces at LOCK.
+const BOSS9_JUDO_TRACK := [0.5, 0.45, 0.4, 0.35]
+const BOSS9_JUDO_LOCK := [0.5, 0.45, 0.4, 0.36]
+const BOSS9_JUDO_RADIUS := 60.0
+const BOSS9_JUDO_TOSS := 240.0
+## ARENA SHAKE: warning, then inverted controls for INVERT_TIME + falling icicles.
+const BOSS9_QUAKE_TELL := 1.0
+const BOSS9_INVERT_TIME := 3.0
+const BOSS9_ICICLES := [2, 3, 5, 6]
+const BOSS9_ICICLE_TELL := 1.1
+const BOSS9_ICICLE_RADIUS := 34.0
+
+## Boss 10: DONALD RUMP, THE FINAL BOSS (cartoon parody of a tycoon golfer).
+## Golf course + gold tower. Shlaus engine + scripts/boss/finale.gd:
+##   drive  - GOLF BALL DRIVES: "FORE!" landing marks, then balls drop on them
+##   walls  - WALL DROP: a shadow, then a gold wall slams down and partitions
+##            the arena for a while (blocks you, him and his shots)
+##   crowd  - RED-HAT CROWD: plain red caps chase you; whip them home
+##   rage   - at RAGE_HEARTS: "YOU'RE FIRED!" - everything faster + a pink-slip ring
+const BOSS10_NAME := "DONALD RUMP"
+const BOSS10_TITLE := "THE FINAL BOSS"
+const BOSS10_HEARTS := 34
+const BOSS10_PHASE2_HEARTS := 26
+const BOSS10_PHASE3_HEARTS := 17
+const BOSS10_RAGE_HEARTS := 8
+const BOSS10_PANEL_HEARTS := [26, 17, 8]   ## "TEE TIME" shield
+const BOSS10_SPEED := 120.0
+const BOSS10_SPEED_RAGE := 168.0
+const BOSS10_ATTACK_GAP := [1.25, 1.05, 0.92, 0.78]
+const BOSS10_CONDUCT_TELL := [0.4, 0.36, 0.32, 0.27]
+const BOSS10_DELEGATE_TELL := [0.74, 0.68, 0.6, 0.52]
+const BOSS10_SHEEP_COUNT := [1, 2, 2, 3]
+const BOSS10_SHEEP_CAP := [3, 4, 5, 5]
+const BOSS10_ENVELOPES := [5, 6, 7, 9]       ## golf-ball fan
+const BOSS10_ENVELOPE_SPEED := 335.0
+const BOSS10_ENVELOPE_TELL := [0.55, 0.5, 0.46, 0.42]
+const BOSS10_RESET_TELL := [0.86, 0.8, 0.72, 0.64]
+const BOSS10_RESET_SPEED := 330.0
+const BOSS10_ATTACKS := [
+	{"envelopes": 25, "drive": 40, "walls": 20, "crowd": 15},
+	{"envelopes": 18, "drive": 30, "walls": 20, "crowd": 18, "reset": 14},
+	{"envelopes": 14, "drive": 26, "walls": 18, "crowd": 18, "reset": 12, "sheep": 12},
+	{"envelopes": 12, "drive": 26, "walls": 16, "crowd": 18, "fired": 18, "sheep": 10},
+]
+const BOSS10_COMBO_CHANCE := [0.14, 0.24, 0.36, 0.52]
+const BOSS10_POINTS_PER_HEART := 200
+const BOSS10_DEFEAT_BONUS := 25000
+const BOSS10_HEALTH_BONUS := 600
+const BOSS10_TIME_PAR := 300.0
+## GOLF BALL DRIVES: landing marks around you (one on you).
+const BOSS10_DRIVES := [3, 4, 5, 6]
+const BOSS10_DRIVE_TELL := [1.05, 0.96, 0.88, 0.8]
+const BOSS10_DRIVE_RADIUS := 36.0
+## WALL DROP: gold wall segments that block for WALL_LIFE seconds.
+const BOSS10_WALLS := [1, 1, 2, 2]
+const BOSS10_WALL_CAP := 3
+const BOSS10_WALL_TELL := [0.9, 0.85, 0.78, 0.7]
+const BOSS10_WALL_LIFE := 7.0
+const BOSS10_WALL_LEN := 220.0
+const BOSS10_WALL_THICK := 26.0
+## RED-HAT CROWD: chasers (1 heart on touch, popped by one whip).
+const BOSS10_CROWD := [3, 4, 5, 6]
+const BOSS10_CROWD_CAP := 8
+const BOSS10_CROWD_SPEED := [92.0, 100.0, 110.0, 122.0]
+const BOSS10_CROWD_LIFE := 11.0
+const BOSS10_CROWD_POINTS := 120
+## YOU'RE FIRED! rage: the pink-slip ring has three gaps; shown once on entry too.
+const BOSS10_FIRED_GAPS := 3
+
 # ------------------------------------------------------------------ Build 025 body armour
 ## ARMOUR power-up: drops only from level ARMOR_FROM_LEVEL (after Shlaus Kwobb).
 ## It absorbs ARMOR_HITS hits before any heart is lost (one plate per hit,
@@ -1042,7 +1162,7 @@ const ARMOR_HITS := 3
 const ARMOR_IFRAMES := 0.6
 const ARMOR_WEIGHT := 7
 
-## Shlaus-engine tuning table for boss `n` (4, 5, 6): every BOSS4_* constant
+## Shlaus-engine tuning table for boss `n` (4-10): every BOSS4_* constant
 ## (prefix stripped), overlaid with the BOSSn_* ones.
 static func boss_cfg(n: int) -> Dictionary:
 	var consts: Dictionary = (load("res://scripts/level_config.gd") as Script).get_script_constant_map()
@@ -1064,14 +1184,17 @@ static func boss_cfg(n: int) -> Dictionary:
 ##   L12-14 pnw (Seattle, before Gill)               L15-17 norcal (before Nancy)
 ##   L18-20 midwest (Illinois corn and farmland, before Rogan)   (build 025)
 ##   L21-23 ukraine (wheat fields and birch groves, before Violentsky)
-##   L24+ cycles all eight, one level each, in that order.
-const THEME_ORDER: Array[String] = ["prairie", "med", "texas", "bavaria", "pnw", "norcal", "midwest", "ukraine"]
+##   L24-26 taiga (snowy Russian birch and spruce, before Puddin)   (build 027)
+##   L27-29 florida (palms and golf greens, before Rump)
+##   L30+ cycles all ten, one level each, in that order (build 027: was L24+, eight).
+const THEME_ORDER: Array[String] = ["prairie", "med", "texas", "bavaria", "pnw", "norcal", "midwest", "ukraine", "taiga", "florida"]
 const THEME_NAMES := {
 	"prairie": "PRAIRIE RANCH", "med": "OLIVE HILLS", "texas": "LONE STAR SCRUB",
 	"bavaria": "ALPINE FOREST", "pnw": "RAINFOREST", "norcal": "GOLDEN COAST",
 	"midwest": "CORN BELT", "ukraine": "WHEAT STEPPE",
+	"taiga": "FROZEN TAIGA", "florida": "PALM LINKS",
 }
-const THEME_CYCLE_FROM := 24
+const THEME_CYCLE_FROM := 30
 
 
 static func theme_for(level: int) -> String:
@@ -1091,7 +1214,11 @@ static func theme_for(level: int) -> String:
 		return "norcal"
 	if level <= BOSS7_AFTER_LEVEL:
 		return "midwest"
-	return "ukraine"
+	if level <= BOSS8_AFTER_LEVEL:
+		return "ukraine"
+	if level <= BOSS9_AFTER_LEVEL:
+		return "taiga"
+	return "florida"
 
 
 # ------------------------------------------------------------------ Build 022

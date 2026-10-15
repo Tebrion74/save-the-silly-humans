@@ -6,7 +6,7 @@
 |---|---|
 | `7474` | God mode |
 | `1974` | Skip the current stage |
-| `2012` | Level select (opens a keypad to pick the level; from build 025, 91-98 jump to bosses 1-8) |
+| `2012` | Level select (opens a keypad to pick the level; from build 025, 91-98 jump to bosses 1-8; from build 027, 99 = boss 9 Vladimir Puddin and 90 = boss 10 Donald Rump, the final boss) |
 | `6969` | Noclip on / off (walk through walls and props) |
 | `0000` | All off (god mode and noclip off) |
 

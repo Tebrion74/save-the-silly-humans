@@ -42,6 +42,10 @@ const TRACKS := {
 	"level_norcal": preload("res://assets/audio/music_level_norcal.wav"),   # build 023
 	"level_midwest": preload("res://assets/audio/music_level_midwest.wav"),   # build 025
 	"level_ukraine": preload("res://assets/audio/music_level_ukraine.wav"),   # build 025
+	"level_taiga": preload("res://assets/audio/music_level_taiga.wav"),   # build 027
+	"level_florida": preload("res://assets/audio/music_level_florida.wav"),   # build 027
+	"boss9": preload("res://assets/audio/music_boss9.wav"),   # build 027 Vladimir Puddin
+	"boss10": preload("res://assets/audio/music_boss10.wav"),   # build 027 Donald Rump (final)
 }
 
 var setting := 0

@@ -305,6 +305,20 @@ class Envelope extends Node2D:
 			draw_line(Vector2(2, -7), Vector2(2, 7), Color(0.92, 0.9, 0.82), 1.5)
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			return
+		if skin == "snowball":   # build 027 Vladimir Puddin
+			draw_circle(Vector2.ZERO, 9.0, Color(0.06, 0.03, 0.08))
+			draw_circle(Vector2.ZERO, 7.5, Color(0.92, 0.96, 1.0))
+			draw_circle(Vector2(-2.5, -2.5), 2.5, Color(1, 1, 1))
+			draw_arc(Vector2.ZERO, 6.0, 0.3, 1.8, 6, Color(0.7, 0.8, 0.92), 1.5)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			return
+		if skin == "golfball":   # build 027 Donald Rump
+			draw_circle(Vector2.ZERO, 8.0, Color(0.06, 0.03, 0.08))
+			draw_circle(Vector2.ZERO, 6.5, Color(1, 1, 1))
+			for dv in [Vector2(-2, -2), Vector2(2, -1), Vector2(-1, 2), Vector2(2.5, 2.5), Vector2(-3, 1)]:
+				draw_circle(dv, 0.9, Color(0.78, 0.8, 0.84))
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			return
 		if skin == "icecream":
 			draw_colored_polygon(PackedVector2Array([Vector2(-9, -2), Vector2(9, -2), Vector2(0, 16)]), Color(0.06, 0.03, 0.08))
 			draw_colored_polygon(PackedVector2Array([Vector2(-7, -1), Vector2(7, -1), Vector2(0, 13)]), Color(0.85, 0.6, 0.3))
@@ -393,6 +407,10 @@ class ResetRing extends Node2D:
 				return Color(1.0, 0.3, 0.75)
 			"applause":   # build 025 Violentsky: a gold standing-ovation ring
 				return Color(1.0, 0.82, 0.2)
+			"quake":      # build 027 Puddin: THE BIG FREEZE, an icy ring
+				return Color(0.55, 0.85, 1.0)
+			"fired":      # build 027 Rump rage: YOU'RE FIRED! pink-slip ring
+				return Color(1.0, 0.45, 0.6)
 		return Color(1.0, 0.25, 0.3)
 
 	func _arcs(r: float, col: Color, w: float) -> void:

@@ -1826,6 +1826,32 @@ They sit 1 dB hotter than the level music (-17 vs -18 LUFS) and keep a little mo
 - The spin/stuck bot passes when run alone (3 events). It is timing-sensitive under heavy parallel load.
 - The web build boots in Chrome and plays L1 with no console errors.
 
+## Build 027: the final two bosses, Frozen Taiga and Palm Links biomes, 16 hearts, the ending
+
+Status: **live** since Oct 15 2026 ~5:40 PM MT (pck sha256 `4bde9887d293d8e4f5255602d4cd5869521acfb2734ef83de8b8e4346ebf2657`).
+
+- **Boss 9: Vladimir Puddin, "The Bareback Strongman"** (after L26, 30 hearts, 3 phases + rage). A good-natured cartoon parody: a shirtless judo strongman on horseback in a frozen taiga clearing with a log lodge. His attacks:
+  - tank charges along telegraphed lanes;
+  - judo grabs (he lunges and tosses you if you're inside the ring);
+  - the ARENA SHAKE, which flips your controls for 3 s after a clear warning, shows a countdown banner and drops icicles;
+  - snowball fans, frost rings and sheep.
+- **Boss 10: Donald Rump, the FINAL boss** (after L29, 34 hearts). A golf links with a gold tower. His attacks:
+  - golf-ball drives onto marked spots;
+  - wall segments that drop in and split the arena;
+  - generic red-cap rally fans that chase you (no slogans; a whip shoos them);
+  - golf-ball fans and rings.
+
+  At 8 hearts he goes into the **YOU'RE FIRED!** rage phase.
+- All art and audio for both bosses is drawn and generated in code (`tools/gen_boss9.py`, `tools/gen_funk.py`). No photos, no tracing.
+- **Biomes:** L24-26 Frozen Taiga (snow, birch and spruce), L27-29 Palm Links (fairways, bunkers, water, palms, pin flags). From L30 all 10 biomes cycle.
+- **Music:** "Troika Trot" (taiga) and "Palm Links Shuffle" (florida) at -18 LUFS. Boss themes "Bareback Blizzard" and "The Final Round" at -17 LUFS.
+- **Hearts:** the cap is raised from 12 to 16. The HUD packs 16 hearts into 2 rows of 8 with the armour shields stacked beside them, on PC and mobile. The boss bar wraps to 2 rows above 24 hearts.
+- **Ending:** after Rump you see the saved humans celebrate with fireworks, then a credits roll, then ENDLESS MODE (continues at L30) or RETURN TO TITLE.
+- **Rules:** dying in a boss fight retries that boss, as before. The new bosses aren't on the title menu. Beta tools are updated (see CHEATS.md).
+- **Tests:**
+  - `tools/_test_027.gd`: 50/50 pass.
+  - The bot (`tools/_bot_027.gd`) shows the difficulty order Violentsky < Puddin < Rump. Good bots won 6/6 against Puddin and 5/6 against Rump.
+
 ## Appendix: project reference notes
 
 These general notes (requirements, controls, gameplay loop, layout, collision layers, TileSet workflow) headed the project README during development. They are kept as they stood at build 014b.
