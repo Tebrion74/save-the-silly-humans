@@ -33,7 +33,7 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [015b](#build-015b) | 2026-10-08 ~09:47 MT | Live | boss only after level 2, harder boss, sound and music everywhere |
 | [016](#build-016) | 2026-10-08 ~13:05 MT | Live | Galaga-style bonus stage, boss 2 Huval Yarheyhey |
 | [017](#build-017) | 2026-10-08 ~16:34 MT | Replaced by 018 | Cantifa: posted gunmen, from level 4 |
-| [018](#build-018) | 2026-10-09 ~00:27 MT (final export 2026-10-11 ~10:42 MT) | Replaced by 019 | bosses 3 and 4: Beorge Kush Jr., Klaus Schwab |
+| [018](#build-018) | 2026-10-09 ~00:27 MT (final export 2026-10-11 ~10:42 MT) | Replaced by 019 | bosses 3 and 4: Beorge Kush Jr., Klaus Schwab (renamed Shlaus Kwobb in 019) |
 | [019](#build-019) | 2026-10-11 ~21:18 MT | Replaced by 020 | WASD stuck-key fix, boss 4 renamed Shlaus Kwobb |
 | [020](#build-020) | 2026-10-11 ~23:39 MT | Replaced by 021 | +hearts, INVINCIBLE star, timed power-ups, reticle, mouse lock, bosses Gill Bates and Nancy Pelotto |
 | [021](#build-021) | 2026-10-12 ~20:59 MT | Replaced by 022 | regional biomes for the regular levels |
@@ -1397,6 +1397,8 @@ Screenshots: `stsh-build017-01-posted.png`, `-02-shooting.png`, `-03-filmed.png`
 **Date:** 2026-10-11 ~10:42 MT  
 **Status:** Replaced by build 019 at ~21:27 MT on 2026-10-11.
 
+> **Name note:** boss 4 was renamed **SHLAUS KWOBB** in [build 019](#build-019). This section keeps the original 018 name, Klaus Schwab.
+
 Everything from 017, plus the changes below. The in-game label reads `BUILD 018`.
 
 Two new good-natured cartoon-parody bosses. All art and audio is original and generated (`tools/gen_boss3.py`, `tools/gen_boss4.py`, `tools/gen_music.py`; `music_boss3.wav`, `music_boss4.wav`; new procedural SFX in `scripts/sfx.gd`). The menu has no boss buttons in release builds. Debug keys and scenarios are gated by `OS.is_debug_build()`. Dying in a boss fight retries that boss with the score you started it with.
@@ -1484,7 +1486,7 @@ Logic suite (renamed 018 suite): **106/106**. Smoke of all 14 scenes: OK. Boss 4
 
 Based on live 019. The in-game label reads `BUILD 020`.
 
-- **Hearts:** start at 5, +1 max heart every 2 levels completed, cap 8 (`LevelConfig.HEARTS_*`, `max_hearts_for`). The HUD flashes "+1" when you earn one.
+- **Hearts:** start at 5, +1 max heart every 2 levels completed, cap 8 (raised to 12 in build 022; `LevelConfig.HEARTS_*`, `max_hearts_for`). The HUD flashes "+1" when you earn one.
 - **Full-heart long whip:** at full hearts the whip has long reach until you take a hit; it comes back whenever you return to full hearts.
 - **Power-ups:** higher drop chances (sheep 0.28, possessed 0.50, Karen 0.85) plus timed map spawns (first at 12 s, then every 20 s, max 2 on the map, 220–650 px from the rancher). There are no timed spawns on boss or bonus stages.
 - **INVINCIBLE (rare, 30 s):** nothing hurts you. Every saveable target (human, possessed, Cantifa, converted, sheep) flashes green. Whip one and it is saved: it flees the rancher, then runs to the safe zone. Combo scoring 200, 400, 800… (4 s window, capped at 102,400), with a counter, rainbow star aura and stings. There's a warning 3 s before it ends.
