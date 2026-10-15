@@ -6,7 +6,7 @@
 
 ▶ **Play it in your browser:** https://savethesillyhumans.org/game.php
 
-Current build: **022** (live since 2026-10-12 ~22:20 MT: up to 12 hearts, faster multi-pop whip in bonus stages; regional biomes since 021) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
+Current build: **023** (built, never deployed live, superseded by 024: music for every biome, humans no longer spin on the spot, Cantifa shoot first and move as a group; live build is 022) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
 
 Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://www.youtube.com/@SaveTheSillyHumans)
 
@@ -18,14 +18,14 @@ Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://
 - **Killer sheep.** They roam, hunt and bite. A sheep den keeps breeding more.
 - **Possessed humans.** Five bites and a silly human turns into a purple hunter. Explode them, or throw them into the safe zone to save them.
 - **Karens (level 3+).** Four possessed humans together become a Karen mob. They chase you, convert humans and shut down the camp.
-- **Cantifa (level 4+, 017).** A cartoon black-bloc mob, not a Karen and not a person you can save. One in five humans spawned is one instead, walking in from off the map. They post just outside the safe zone and the camp and shoot the rancher (telegraphed, dodgeable). Two whip hits or one fire hit drives them off. Filming one sends humans on camera running for safety and enrages Karens.
+- **Cantifa (level 4+, 017).** A cartoon black-bloc mob, not a Karen and not a person you can save. One in five humans spawned is one instead, walking in from off the map. They gather as one group at a post just outside the safe zone or the camp, move from post to post together, and shoot first: as soon as the rancher is in range with a clear line, posted or not (telegraphed, dodgeable; trees and rocks block their shots, since 023). From level 9 more of them come, and more often (cap 6 → 10, one in four humans from level 9, one in three from level 12). Two whip hits or one fire hit drives them off. Filming one sends humans on camera running for safety and enrages Karens.
 - **MSM Cam.** A 1980s shoulder camcorder. Film silly humans to convince them to walk to safety, expose Karens to go VIRAL, or swing it to knock enemies back. Watch the battery.
 - **Power-ups and inventory.** Long Whip, Strong Throw, Whip Shot, Fire Whip, Shockwave, Health, batteries. Power-ups never time out, and your inventory carries into the next level.
 - **Rounds, levels and scoring.** Hit the save target to win, with a Genesis-style HUD and a high score.
 - **Boss battles.** Clear level 2 to face TRUSTIN JUDEAU, Prime Minister of Poutine: 10 hearts, telegraphed poutine attacks that escalate in three phases and a rage mode. Clear level 5 to face **HUVAL YARHEYHEY, Prophet of the Algorithm (016)**: 12 hearts, telegraphed PROGRAMMED SHEEP that split into fast MICRO SHEEP when hit (a bite costs a heart, a micro nibble half a heart), a lecture ray, SYSTEM UPDATEs that speed up his flock, and rage teleports. Clear level 8 to face **BEORGE KUSH JR., The Airstrike Ace (018)**: 15 hearts, radioed-in airstrike marks, strafing jets and carpet bombing; lure him onto his own marks. Clear level 11 to face **SHLAUS KWOBB, Chairman of the Great Reset (018; renamed in 019)**: 18 hearts, hologram delegates of the earlier bosses (film them to dispel them), envelope fans and THE GREAT RESET, an expanding ring with two gaps. Don't touch any boss; dying retries the fight.
 - **Bonus stage (016).** After level 1 and then every 3 levels (4, 7, 10, …): a Galaga-style 45-second challenge stage. Eight waves of flying sheep swoop across the field. Pop them before they leave. 100 per hit, +500 for a whole wave, and PERFECT! SPECIAL BONUS 10000 for all of them. You can't get hurt, and power-ups work without being used up. Each repeat brings more and faster sheep.
 - **Progression.** L1 → bonus → L2 → Trustin → L3 → L4 → bonus → L5 → Huval → L6 → L7 → bonus → L8 → Kush → L9 → L10 → bonus → L11 → Shlaus → L12 → … When a bonus and a boss share a slot, the bonus comes first.
-- **Sound and music (015b, 016).** Generated sound effects for everything (whip, grabs, saves, explosions, cam, bosses, UI) and six original chiptune loops: levels, Trustin, the bonus stage, Huval, Kush and Shlaus. M (or the speaker icon on touch) cycles sound ON / LOW / OFF.
+- **Sound and music (015b, 016).** Generated sound effects for everything (whip, grabs, saves, explosions, cam, bosses, UI) and original chiptune loops: one per regional biome (prairie fiddle hoedown, Mediterranean hijaz, Texas twang, Bavarian oompah accordion, moody Pacific Northwest, NorCal surf-folk; build 023), the bonus stage and every boss. M (or the speaker icon on touch) cycles sound ON / LOW / OFF.
 - **PC and touch controls.** Mouse and keyboard with an aim reticle, or a touch joystick with corner wedges and aim assist.
 
 ## Controls
@@ -110,7 +110,7 @@ All art and audio in this game is **original work, made for this project**:
 - **Sprites:** the rancher, silly humans, possessed humans, Karens and sheep sheets (`assets/characters/`), drawn for the game. The boss, Trustin Judeau (`assets/boss/`), is an invented, good-natured cartoon parody generated by `tools/gen_boss.py` (no real likeness or photos). Boss 2, Huval Yarheyhey, his programmed and micro sheep and the Data Plaza arena (`assets/boss2/`, build 016) are generated the same way by `tools/gen_boss2.py`. Bosses 3 and 4, Beorge Kush Jr. with his jet and flight deck (`assets/boss3/`) and Shlaus Kwobb with the summit hall (`assets/boss4/`), build 018, come from `tools/gen_boss3.py` and `tools/gen_boss4.py`. STSH Pixel Pack v1 → v2 (16-bit) → v3 (build 007, 32-bit).
 - **FX:** whip crack and explosion sheets (`assets/fx/`), plus effects drawn in code (whip lash, reticle, fire, shockwave, camcorder, VIRAL callout).
 - **Terrain and props:** grass, dirt, paths, forest floor, water, trees, rocks, fences and decor (`assets/tiles/`), generated by the Python scripts in `tools/` (`gen_terrain.py`, `gen_props.py`, `artlib.py`) and assembled into the TileSet by `tools/build_tileset.gd`.
-- **Sound:** sound effects are generated procedurally at runtime (`scripts/sfx.gd`). The music loops (`assets/audio/music_level.wav` "Ranch Hand Hustle" and `music_boss.wav` "Question Period", build 015b; `music_bonus.wav` and `music_boss2.wav`, build 016; `music_boss3.wav` and `music_boss4.wav`, build 018) are original chiptunes generated by `tools/gen_music.py`.
+- **Sound:** sound effects are generated procedurally at runtime (`scripts/sfx.gd`). The music loops (`assets/audio/music_level.wav` "Ranch Hand Hustle" and `music_boss.wav` "Question Period", build 015b; `music_bonus.wav` and `music_boss2.wav`, build 016; `music_boss3.wav` and `music_boss4.wav`, build 018; `music_boss5/6.wav`, build 020; `music_level_<biome>.wav` for prairie, med, texas, bavaria, pnw and norcal, build 023) are original chiptunes generated by `tools/gen_music.py`.
 - **Font:** the pixel font is built in code (`scripts/ui/pixel_font.gd`). There are no font files.
 
 The project contains no third-party assets. All assets are covered by the same [MIT licence](LICENSE) as the code.
@@ -118,6 +118,8 @@ The project contains no third-party assets. All assets are covered by the same [
 ## Credits
 
 Created by Robert J. Morris. Published by **Echelon Publishers Group**, Calgary, Alberta.
+
+Code & design assist: Ewan Shepherd, LLM.
 
 ## Licence
 

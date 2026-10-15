@@ -96,6 +96,19 @@ var _seek_last_d: float = INF
 var _detour := Vector2.ZERO
 var _detour_t: float = 0.0
 var _badge: Node2D = null
+## Build 023 anti-spin: sticky threat, steering smoothing, facing hysteresis.
+const STEER_ACCEL := 900.0          ## px/s^2: a full 145 px/s reversal takes ~0.3 s
+const THREAT_KEEP_MULT := 1.3       ## keep fleeing a sheep until 1.3 x flee_range
+const FACE_MARGIN := 1.25           ## other axis must win by 25 % to turn
+const FACE_HOLD := 0.15             ## min seconds between facing changes
+const SETTLE_HOLD := 1.5            ## possessed: don't re-seek a buddy we just reached
+var _threat: Node2D = null
+var _steer_v := Vector2.ZERO
+var _face_t := 0.0
+var _settle_t := 0.0
+var _last_mode := ""
+var _wall_dir := Vector2.ZERO
+var _wall_t := 0.0
 const CONVINCED_MODULATE := Color(0.9, 1.0, 0.82, 1.0)
 
 
@@ -124,6 +137,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if rescued or _dead or exploding:
 		return
+	if _face_t > 0.0:
+		_face_t -= delta
 
 	if _throw_timer > 0.0:
 		_throw_timer -= delta
@@ -149,7 +164,7 @@ func _physics_process(delta: float) -> void:
 
 	var movement := Vector2.ZERO
 	# Build 014: convinced (MSM Cam) / VIRAL stampede humans head for safety.
-	var threat_any := _nearest_sheep()
+	var threat_any := _sticky_threat()
 	if heading_to_safety() and not was_thrown_recently():
 		movement = _safety_movement(delta, threat_any)
 	# Priority: flee sheep > avoid safe zone > wander (silly). Never chase rancher.
@@ -159,7 +174,7 @@ func _physics_process(delta: float) -> void:
 		pass
 	elif threat != null:
 		_pausing = false
-		var away := threat.global_position.direction_to(global_position)
+		var away := _flee_dir(threat)
 		if away.length_squared() < 0.0001:
 			away = wander_direction
 		movement = away * flee_speed
@@ -183,6 +198,7 @@ func _physics_process(delta: float) -> void:
 		movement = wander_direction * wander_speed
 
 	movement.y *= 0.60
+	movement = _steer(movement, delta, _mode_of(movement, threat))
 
 	# Whip shove / throw still applies — this is how you herd them into the zone.
 	if external_velocity.length() > 3.0:
@@ -196,7 +212,7 @@ func _physics_process(delta: float) -> void:
 	velocity = movement
 	update_animation(movement)
 	move_and_slide()
-	_soft_clamp_interior()
+	_after_move()
 
 
 func _physics_possessed(delta: float) -> void:
@@ -240,13 +256,17 @@ func _physics_possessed(delta: float) -> void:
 		velocity += knockback_velocity
 		knockback_velocity = knockback_velocity.lerp(Vector2.ZERO, delta * 7.0)
 
+	if _settle_t > 0.0:
+		_settle_t -= delta
+	var ext := external_velocity if external_velocity.length() > 3.0 else Vector2.ZERO
+	velocity = _wall_detour(_steer(velocity - ext, delta, _hunt_mode), delta, hunt_target) + ext
 	update_animation(velocity)
 	if cantifa_rage > 0.0 and _flash_timer <= 0.0:
 		sprite.modulate = Color(1.45, 0.72, 0.72)
 	elif karen and cantifa_rage <= 0.0 and _flash_timer <= 0.0:
 		sprite.modulate = KAREN_MODULATE
 	move_and_slide()
-	_soft_clamp_interior()
+	_after_move()
 	if was_thrown_recently():
 		_check_thrown_collisions()
 	_check_hunt_attack()
@@ -337,7 +357,10 @@ func _update_hunt_target_and_mode() -> void:
 			return
 		# Nearest buddy that is not already beside us, so pairs keep merging
 		# into bigger groups instead of settling as pairs.
-		var buddy := _nearest_buddy(LevelConfig.KAREN_SEEK_RANGE, LevelConfig.KAREN_SEEK_SETTLE)
+		var buddy: Node2D = null if _settle_t > 0.0 else _nearest_buddy(LevelConfig.KAREN_SEEK_RANGE, LevelConfig.KAREN_SEEK_SETTLE)
+		if buddy == null and _hunt_mode == "seek" and _settle_t <= 0.0:
+			_settle_t = SETTLE_HOLD    # build 023: reached the group - stay, don't wander off and re-seek
+			wander_direction = Vector2.ZERO
 		if buddy != null:
 			hunt_target = buddy
 			_hunt_mode = "seek"
@@ -367,6 +390,12 @@ func _update_hunt_target_and_mode() -> void:
 		_hunt_mode = "interest"
 		return
 
+	# build 023: hysteresis - keep a target that just left the band (no roam/interest flip)
+	if hunt_target != null and is_instance_valid(hunt_target) and _hunt_mode in ["interest", "chase"] \
+			and not ("rescued" in hunt_target and hunt_target.rescued) \
+			and global_position.distance_to(hunt_target.global_position) < interest_range * 1.2:
+		_hunt_mode = "interest"
+		return
 	hunt_target = null
 	_hunt_mode = "roam"
 
@@ -374,6 +403,9 @@ func _update_hunt_target_and_mode() -> void:
 func _hunt_move_toward(node: Node2D, speed: float) -> void:
 	if node == null:
 		_hunt_roam()
+		return
+	if global_position.distance_to(node.global_position) < 10.0:
+		velocity = external_velocity   # build 023: arrived - no overshoot jitter
 		return
 	var direction := global_position.direction_to(node.global_position)
 	var chase_velocity := direction * speed
@@ -415,16 +447,26 @@ func update_animation(movement: Vector2) -> void:
 
 	sprite.play()
 
+	var want := ""
 	if abs(movement.x) > abs(movement.y):
-		if movement.x > 0.0:
-			sprite.animation = "right"
-		else:
-			sprite.animation = "left"
+		want = "right" if movement.x > 0.0 else "left"
 	else:
-		if movement.y > 0.0:
-			sprite.animation = "down"
-		else:
-			sprite.animation = "up"
+		want = "down" if movement.y > 0.0 else "up"
+	var cur := String(sprite.animation)
+	if want == cur:
+		return
+	# build 023: facing hysteresis - no flicker around diagonals / tiny jitters
+	var horiz_now := cur == "left" or cur == "right"
+	var horiz_want := want == "left" or want == "right"
+	if horiz_now != horiz_want and cur in ["left", "right", "up", "down"]:
+		var a := absf(movement.x) if horiz_want else absf(movement.y)
+		var b := absf(movement.y) if horiz_want else absf(movement.x)
+		if a < b * FACE_MARGIN:
+			return
+	if _face_t > 0.0 and cur in ["left", "right", "up", "down"]:
+		return
+	_face_t = FACE_HOLD
+	sprite.animation = want
 
 
 func pick_new_direction() -> void:
@@ -577,12 +619,18 @@ func _physics_karen(delta: float) -> void:
 		target = player
 	if target == null:
 		target = _nearest_in_group("humans", interest_range)
+	if _settle_t > 0.0:
+		_settle_t -= delta
+	var settled := false
 	if target == null:
 		# Nearest buddy that is not already beside us, so pairs keep merging
 		# into bigger groups instead of settling as pairs.
-		var buddy := _nearest_buddy(LevelConfig.KAREN_SEEK_RANGE, LevelConfig.KAREN_SEEK_SETTLE)
+		var buddy: Node2D = null if _settle_t > 0.0 else _nearest_buddy(LevelConfig.KAREN_SEEK_RANGE, LevelConfig.KAREN_SEEK_SETTLE)
 		if buddy != null:
 			target = buddy
+		elif _hunt_mode == "mob" and hunt_target != null and hunt_target.is_in_group("possessed") and _settle_t <= 0.0:
+			_settle_t = SETTLE_HOLD    # build 023: reached the mob - stand with it
+		settled = buddy == null and _settle_t > 0.0
 	# Build 014: Karens love cameras - while filmed (and CAM_KAREN_LINGER s
 	# after) they rush the camera faster, zig-zagging and jittering.
 	if cantifa_rage > 0.0:
@@ -597,7 +645,9 @@ func _physics_karen(delta: float) -> void:
 	hunt_target = target
 	_hunt_mode = "mob" if target != null else "roam"
 	var v := Vector2.ZERO
-	if target != null:
+	if target != null and not loving and (global_position.distance_to(target.global_position) < LevelConfig.KAREN_REACH * 0.95 or _touching(target)):
+		v = Vector2.ZERO          # build 023: on the target - hold, don't overshoot back and forth
+	elif target != null:
 		var fwd := global_position.direction_to(target.global_position)
 		var spd := LevelConfig.karen_speed(_level())
 		if enraged:
@@ -613,8 +663,11 @@ func _physics_karen(delta: float) -> void:
 			v = (fwd + side * zig) * spd
 		else:
 			v = fwd * spd
+	elif settled and not loving:
+		v = Vector2.ZERO
 	else:
 		v = wander_direction * hunt_roam_speed * (LevelConfig.CAM_KAREN_SPEED_MULT if loving else 1.0)
+	var sep := Vector2.ZERO
 	# Karens jostle instead of stacking on one pixel.
 	for k in get_tree().get_nodes_in_group("karens"):
 		if k == self or not is_instance_valid(k):
@@ -622,8 +675,16 @@ func _physics_karen(delta: float) -> void:
 		var off := global_position - (k as Node2D).global_position
 		var d := off.length()
 		if d < LevelConfig.KAREN_SEPARATION and d > 0.01:
-			v += off / d * 70.0 * (1.0 - d / LevelConfig.KAREN_SEPARATION)
+			sep += off / d * 70.0 * (1.0 - d / LevelConfig.KAREN_SEPARATION)
+	if sep.length() > 12.0:      # build 023: deadband - no endless micro-jostle in a mob
+		v += sep
 	v.y *= 0.60
+	if not loving:
+		v = _steer(v, delta, _hunt_mode)   # smoothed (the filmed zig-zag stays sharp)
+	else:
+		_steer_v = v
+		_last_mode = _hunt_mode
+	v = _wall_detour(v, delta, target)
 	velocity = v + external_velocity
 	if external_velocity.length() > 3.0:
 		external_velocity = external_velocity.lerp(Vector2.ZERO, delta * 3.0)
@@ -634,7 +695,7 @@ func _physics_karen(delta: float) -> void:
 	if cantifa_rage > 0.0 and _flash_timer <= 0.0:
 		sprite.modulate = Color(1.45, 0.72, 0.72)
 	move_and_slide()
-	_soft_clamp_interior()
+	_after_move()
 	if was_thrown_recently():
 		_check_thrown_collisions()
 		if exploding:
@@ -988,3 +1049,121 @@ class CamBadge extends Node2D:
 		if h._since_filmed < 0.15 and fmod(_t, 0.5) < 0.3:
 			draw_circle(Vector2(-w * 0.5 - 6, 0), 3.0, out)
 			draw_circle(Vector2(-w * 0.5 - 6, 0), 2.0, Color(1.0, 0.15, 0.12))
+
+
+# ------------------------------------------------------------------ build 023 anti-spin
+
+## Nearest sheep in flee_range; a sheep we are already fleeing stays the threat
+## out to THREAT_KEEP_MULT x flee_range (no in/out flip-flop at the range edge).
+func _sticky_threat() -> Node2D:
+	var t := _nearest_sheep()
+	if t == null and _threat != null and is_instance_valid(_threat) \
+			and not ("exploding" in _threat and _threat.exploding) \
+			and global_position.distance_to(_threat.global_position) < flee_range * THREAT_KEEP_MULT:
+		t = _threat
+	_threat = t
+	return t
+
+
+func _mode_of(movement: Vector2, threat: Node2D) -> String:
+	if heading_to_safety():
+		return "safety"
+	if threat != null:
+		return "flee"
+	if not was_thrown_recently() and _nearest_safe_zone() != null:
+		return "zone"
+	if movement == Vector2.ZERO:
+		return "pause"
+	return "wander"
+
+
+## Rate-limited steering. When a flee / avoid ends, keep walking the same way
+## for a while instead of picking a random (often straight back) direction.
+func _steer(desired: Vector2, delta: float, mode: String) -> Vector2:
+	if (_last_mode == "flee" or _last_mode == "zone") and mode == "wander" or (_last_mode == "flee" and mode == "pause"):
+		if _steer_v.length_squared() > 1.0:
+			var away := _steer_v.normalized()
+			away.y /= 0.60
+			wander_direction = away.normalized()
+			_pausing = false
+			direction_timer = maxf(direction_timer, randf_range(1.2, 1.8))
+			desired = wander_direction * wander_speed
+			desired.y *= 0.60
+	_last_mode = mode
+	_steer_v = _steer_v.move_toward(desired, STEER_ACCEL * delta)
+	return _steer_v
+
+
+## After moving: bounce the wander direction off walls / the map edge so a
+## human never keeps pressing into an obstacle (the slide jitter = "spinning").
+func _after_move() -> void:
+	var before := global_position
+	_soft_clamp_interior()
+	var clamped := before.distance_squared_to(global_position) > 0.25
+	if clamped:
+		var inward := (before.direction_to(global_position))
+		if inward.length_squared() > 0.01 and wander_direction.dot(inward) < 0.2:
+			wander_direction = inward.rotated(randf_range(-0.6, 0.6))
+			_steer_v = _steer_v.slide(-inward) if _steer_v.dot(inward) < 0.0 else _steer_v
+			direction_timer = maxf(direction_timer, 0.9)
+		return
+	if is_on_wall() and not was_thrown_recently():
+		var n := get_wall_normal()
+		if n.length_squared() > 0.01 and wander_direction.dot(n) < 0.0:
+			wander_direction = wander_direction.bounce(n).normalized()
+			direction_timer = maxf(direction_timer, 0.8)
+		if _steer_v.dot(n) < 0.0:
+			_steer_v = _steer_v.slide(n)
+
+
+## Nav-corner fix: a chaser blocked by a wall / tree / fence follows the wall
+## tangent (on the side nearer its target) for a moment instead of pressing
+## into it (where move_and_slide jitter made it look like it was spinning).
+func _wall_detour(v: Vector2, delta: float, target: Node2D) -> Vector2:
+	if _wall_t > 0.0:
+		_wall_t -= delta
+		return _wall_dir * maxf(v.length(), 40.0)
+	if not is_on_wall() or v.length_squared() < 1.0:
+		return v
+	var n := get_wall_normal()
+	if n.length_squared() < 0.01 or v.normalized().dot(n) > -0.2:
+		return v
+	var tan := Vector2(-n.y, n.x)
+	var goal := target.global_position - global_position if target != null and is_instance_valid(target) else v
+	if tan.dot(goal) < 0.0:
+		tan = -tan
+	_wall_dir = (tan + n * 0.25).normalized()
+	_wall_t = 0.7
+	return _wall_dir * v.length()
+
+
+## Build 023: flee the whole pack (inverse-distance sum of every sheep in
+## range), not just the nearest one, which flipped between two sheep. Near the
+## map edge add a pull back inside so a cornered human slides out sideways.
+func _flee_dir(threat: Node2D) -> Vector2:
+	var acc := Vector2.ZERO
+	for s in get_tree().get_nodes_in_group("sheep"):
+		if not is_instance_valid(s) or not s is Node2D or ("exploding" in s and s.exploding):
+			continue
+		var off: Vector2 = global_position - (s as Node2D).global_position
+		var d := off.length()
+		if d < flee_range * THREAT_KEEP_MULT and d > 0.5:
+			acc += off / (d * d)
+	if acc.length_squared() < 1e-10:
+		acc = threat.global_position.direction_to(global_position)
+	var dir := acc.normalized()
+	var root := get_tree().get_first_node_in_group("level_controller")
+	var layer = root.get_node_or_null("Ground") if root != null else null
+	if layer != null and layer.has_method("is_interior_local"):
+		var local: Vector2 = layer.to_local(global_position)
+		if not layer.is_interior_local(layer.local_pos_to_local_cell(local), 4):
+			var inside: Vector2 = layer.to_global(layer.clamp_to_interior(local, 6))
+			dir = (dir + global_position.direction_to(inside) * 0.8).normalized()
+	return dir
+
+
+func _touching(node: Node) -> bool:
+	for i in get_slide_collision_count():
+		if get_slide_collision(i).get_collider() == node:
+			return true
+	return false

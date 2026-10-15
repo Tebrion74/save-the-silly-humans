@@ -38,6 +38,7 @@ Times are Mountain Time (Calgary). Build times come from when each source zip wa
 | [020](#build-020) | 2026-10-11 ~23:39 MT | Replaced by 021 | +hearts, INVINCIBLE star, timed power-ups, reticle, mouse lock, bosses Gill Bates and Nancy Pelotto |
 | [021](#build-021) | 2026-10-12 ~20:59 MT | Replaced by 022 | regional biomes for the regular levels |
 | [022](#build-022) | 2026-10-12 ~22:12 MT | Live | up to 12 hearts, faster multi-pop whip in bonus stages |
+| [023](#build-023) | 2026-10-14 ~11:25 MT | Built, never deployed live (superseded by 024) | biome music, spinning-humans fix, Cantifa shoot first and congregate |
 
 ## Prototypes (before build 001)
 <a id="build-000prototype"></a>
@@ -1586,6 +1587,62 @@ The difficulty ladder is still in order (Shlaus < Gill < Nancy), but the late bo
 
 ### Web build
 `/workspace/web-beta-022/`, `?v=022`. `index.pck` is 6,150,824 bytes, sha256 `354aa2a98cb00eda45d9594084d731c5b192b35f8bb0785e8d863935b7d8e457`. `index.js` and `index.wasm` are identical to 021. No `game.html` on the server any more; the deploy only touches `game.php` and `/beta/`. **LIVE** 2026-10-12 ~22:20 MT on https://savethesillyhumans.org/game.php, deployed manually by Robert. Live `index.pck` sha256 `354aa2a98cb00eda45d9594084d731c5b192b35f8bb0785e8d863935b7d8e457`. Rollback copy of the 021 site: `~/rollback-021` on the server.
+
+## Build 023: biome music, spinning-humans fix, Cantifa shoot first and congregate
+<a id="build-023"></a>
+
+**Date:** 2026-10-14 ~11:25 MT  
+**Status:** Built, never deployed live (superseded by 024). The live site went straight from 022 to 024.
+
+Based on live 022. The in-game label reads `BUILD 023`.
+
+### Music per biome
+Six new original loops from `tools/gen_music.py` (same NES-style synth: pulse lead, thin pulse comp, triangle bass, noise drums; 8-bit mono 22.05 kHz, a whole number of bars so they loop seamlessly). Each is loudness-matched to the old level loop.
+
+| Biome | Track | Flavour |
+|---|---|---|
+| prairie (L1-2) | `music_level_prairie.wav` | fiddle hoedown, D mixolydian, 128 BPM, sliding lead |
+| med (L3-5) | `music_level_med.wav` | hijaz (Phrygian dominant) scale, plucked oud-like lead, darbuka pattern, 112 BPM |
+| texas (L6-8) | `music_level_texas.wav` | twangy bent lead, train-beat shuffle, A major pentatonic, 120 BPM |
+| bavaria (L9-11) | `music_level_bavaria.wav` | oompah polka, tremolo accordion chords, tuba bass, 140 BPM |
+| pnw (L12-14) | `music_level_pnw.wav` | moody D dorian, slow echoing arpeggios, 96 BPM |
+| norcal (L15-17) | `music_level_norcal.wav` | surf-folk, tremolo-picked lead, spring echo, 150 BPM |
+
+From L18 the music follows the biome cycle. Bonus stages and bosses keep their tracks. The bus layout and the M / speaker sound toggle are unchanged.
+
+### Bug fix: humans spinning on the spot
+**Root cause:** steering decisions had no hysteresis, so humans flip-flopped between targets. A human fleeing a sheep left `flee_range`, went back to wandering (often straight back toward the sheep), re-entered range and fled again, sometimes every frame. Fleeing "the nearest sheep" also flipped between two sheep. Possessed humans and Karens did the same at the buddy-settle and interest-range boundaries, and overshot back and forth on a target. The facing animation followed every tiny direction change, so all of this looked like spinning. Chasers pressing into a wall (nav corners) and humans walking into the map edge made it worse.
+
+**Fix (`scripts/humans/human.gd`):**
+- a sheep being fled stays the threat until 1.3 × flee range
+- humans flee the whole pack (inverse-distance sum), with a pull back inside near the edge
+- when a flee or zone-avoid ends, the human keeps walking away for 1.2-1.8 s
+- rate-limited steering (900 px/s²)
+- facing hysteresis (the other axis must win by 25 %, minimum 0.15 s between turns)
+- possessed humans and Karens hold for 1.5 s when they reach their mob, keep an interest target out to 1.2 × range, and stop on the target instead of overshooting
+- a separation deadband for Karens
+- wall-follow detours for chasers
+- wander bounces off walls and the map edge
+
+**Test:** `tools/_spin_023.gd` plays 90 s of each biome (L1, 3, 6, 9, 12, 15) and flags SPIN (8+ facing changes in 2 s with under 32 px of travel) and STUCK (wants to move for 3 s, travels under 12 px at under 35 % of intended speed). Same detector, 3 seeds: 022 had 628 events (worst level 65-131); 023 had 9 (worst level ≤ 2, PASS).
+
+### Cantifa
+- **They shoot first:** they fire whenever the rancher is in range with a clear line of sight (trees, rocks and walls block it), posted or on the move. Being filmed is no longer needed. The 0.25 s tell, cooldown and spread are unchanged.
+- **They congregate:** the whole group shares one rally post (picked nearest the rancher when it forms) and stands in a formation ring around it, outside the zone keep-out rings. Every 20 s, once everyone has arrived, the group moves to another post together. Reinforcements enter from the edge nearest the rally post and follow walls around obstacles.
+- **More of them later on:** unchanged up to L8. Cap 6 at L9, rising by 1 every 2 levels to 10 at L17+. Spawn ratio 1 in 5 → 1 in 4 (L9-11) → 1 in 3 (L12+). A Cantifa still only replaces a human when the save target stays reachable.
+- **Bot check** (`_lvlbot_020`, L4-18, 112 runs, 022 vs 023): 0 rancher deaths in either build, and average end HP is within 0.5 of 022. Wins 43/56 → 38/56, all at L10+. Every loss was the bot's existing possessed-human weakness making the target unreachable, not a death.
+
+### Other
+- Internal beta tools updated.
+
+### Tests
+`_test_023` 44/44, `_spin_023` PASS (3 seeds), `_test_022` 38/38, `_maps_021` 432/432.
+
+### Screenshots
+`stsh-build023-01-cantifa-group-firing.png`, `stsh-build023-02-spin-fix-proof.png`.
+
+### Web build
+`/workspace/web-beta-023/`, `?v=023`. `index.pck` is 10,418,176 bytes (+4.1 MB of music), sha256 `6bbe3b428f2eaf200581843eb24b3601aaae138bad98c0e17a1fa5b45761b283`. `index.js` and `index.wasm` are identical to 022. The deploy only touches `game.php` and `/beta/`; the rollback copy goes to `~/rollback-022`.
 
 ## Appendix: project reference notes
 

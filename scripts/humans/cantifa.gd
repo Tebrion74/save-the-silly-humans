@@ -30,6 +30,12 @@ var knockback_velocity := Vector2.ZERO
 var _throw_timer := 0.0
 var _rng := RandomNumberGenerator.new()
 var sprite: AnimatedSprite2D
+## Build 023: wall-follow detour + stuck fallback while walking to the rally post
+var _wall_dir := Vector2.ZERO
+var _wall_t := 0.0
+var _stuck_t := 0.0
+var _stuck_from := Vector2.ZERO
+var _ghost_t := 0.0
 
 func _ready() -> void:
 	_rng.randomize()
@@ -96,6 +102,7 @@ func _physics_process(delta: float) -> void:
 		flash_t -= delta
 	var v := _desired_velocity()
 	v = _separate(v)
+	v = _detour(v, delta)
 	v.y *= 0.6
 	if external_velocity.length() > 3.0:
 		v += external_velocity
@@ -112,6 +119,8 @@ func _physics_process(delta: float) -> void:
 	_keep_out_of_zones()
 	if arriving and global_position.distance_to(post_pos) < 48.0:
 		arriving = false
+	if level != null and level.has_method("cantifa_group_tick"):
+		level.cantifa_group_tick(self, delta)
 	_try_shoot(delta)
 	_animate()
 	queue_redraw()
@@ -185,7 +194,8 @@ func posted() -> bool:
 func _aim_dir() -> Vector2:
 	# While filmed they turn toward the camera (the rancher) and may shoot.
 	var player := get_tree().get_first_node_in_group("player") as Node2D
-	if filmed_t > 0.0 and player != null:
+	# build 023: they turn on the rancher as soon as he is in range (not only when filmed)
+	if player != null and (filmed_t > 0.0 or global_position.distance_to(player.global_position) <= LevelConfig.cantifa_range(_level_num())):
 		var to := global_position.direction_to(player.global_position)
 		if to.length_squared() > 0.01:
 			return to
@@ -195,10 +205,9 @@ func _aim_dir() -> Vector2:
 
 
 func _try_shoot(_delta: float) -> void:
-	if fleeing or scatter_timer > 0.0 or arriving or _throw_timer > 0.0:
-		windup = -1.0
-		return
-	if not posted() and filmed_t <= 0.0:
+	# build 023: they shoot FIRST: in range + clear line of sight is enough,
+	# posted or on the move (not while scattered, thrown or still off-map)
+	if fleeing or scatter_timer > 0.0 or _throw_timer > 0.0 or not _on_map():
 		windup = -1.0
 		return
 	var player := get_tree().get_first_node_in_group("player") as Node2D
@@ -211,9 +220,7 @@ func _try_shoot(_delta: float) -> void:
 	if dist > LevelConfig.cantifa_range(lv) or dist < 36.0:
 		windup = -1.0
 		return
-	var aim := _aim_dir()
-	var ang := absf(rad_to_deg(aim.angle_to(to)))
-	if ang > LevelConfig.CANTIFA_CONE_DEG * 0.5 and filmed_t <= 0.0:
+	if not _clear_line(player):
 		windup = -1.0
 		return
 	if windup >= 0.0:
@@ -371,3 +378,56 @@ func _draw() -> void:
 	var tip := aim * 28.0
 	draw_line(aim * 16.0, tip, Color(1.0, 0.85, 0.3, 0.9), 3.0)
 	draw_circle(tip, 5.0, Color(1.0, 0.9, 0.4, 0.85))
+
+
+## Build 023: nothing solid (trees, rocks, walls, the camp) between us and the target.
+func _clear_line(target: Node2D) -> bool:
+	var space := get_world_2d().direct_space_state
+	var q := PhysicsRayQueryParameters2D.create(global_position, target.global_position, LevelConfig.CANTIFA_LOS_MASK)
+	var ex: Array[RID] = [get_rid()]
+	if target is CollisionObject2D:
+		ex.append((target as CollisionObject2D).get_rid())
+	q.exclude = ex
+	var hit := space.intersect_ray(q)
+	return hit.is_empty() or hit.get("collider") == target
+
+
+func _on_map() -> bool:
+	if level == null:
+		return true
+	var layer = level.get_node_or_null("Ground")
+	if layer == null or not layer.has_method("is_interior_local"):
+		return true
+	return layer.is_interior_local(layer.local_pos_to_local_cell(layer.to_local(global_position)), 1)
+
+
+func _detour(v: Vector2, delta: float) -> Vector2:
+	if _ghost_t > 0.0:
+		_ghost_t -= delta
+		if _ghost_t <= 0.0:
+			collision_mask |= 1
+	if not arriving and global_position.distance_to(post_pos) < 60.0:
+		_stuck_t = 0.0
+		return v
+	# stuck fallback: barely moved in 2.5 s -> hop the obstacle (ghost through World for 1.2 s)
+	_stuck_t += delta
+	if _stuck_t > 2.5:
+		if global_position.distance_to(_stuck_from) < 40.0 and v.length() > 20.0:
+			collision_mask &= ~1
+			_ghost_t = 1.2
+		_stuck_t = 0.0
+		_stuck_from = global_position
+	if _wall_t > 0.0:
+		_wall_t -= delta
+		return _wall_dir * maxf(v.length(), 60.0)
+	if not is_on_wall() or v.length_squared() < 1.0:
+		return v
+	var n := get_wall_normal()
+	if v.normalized().dot(n) > -0.2:
+		return v
+	var tan := Vector2(-n.y, n.x)
+	if tan.dot(post_pos - global_position) < 0.0:
+		tan = -tan
+	_wall_dir = (tan + n * 0.25).normalized()
+	_wall_t = 0.7
+	return _wall_dir * v.length()

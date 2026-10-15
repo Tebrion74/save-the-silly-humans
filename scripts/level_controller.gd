@@ -196,7 +196,7 @@ func _ready() -> void:
 
 	state.mark_setup_complete()
 	_refresh_hud()
-	Sfx.music(self, "level")   # build 015b
+	Sfx.music(self, level_music_track())   # build 015b; build 023: per biome
 
 	# Wait until physics transforms match placed positions, then unlock rescues.
 	_unlock_rescues_after_physics.call_deferred()
@@ -869,7 +869,7 @@ func cantifa_roll_replaces() -> bool:
 		return false
 	if state.spawned_humans >= state.total_humans:
 		return false
-	return cantifa_rng.randi() % LevelConfig.CANTIFA_SPAWN_EVERY == 0
+	return cantifa_rng.randi() % LevelConfig.cantifa_spawn_every(level_number) == 0
 
 
 func _roll_initial_cantifa(humans: Array) -> void:
@@ -907,7 +907,21 @@ func spawn_cantifa_from_edge() -> Node:
 	return c
 
 
+## Build 023: reinforcements enter from the edge nearest the group's rally
+## post (best of a few random edge points), so the group forms up quickly.
 func _cantifa_edge_point() -> Vector2:
+	if _cantifa_rally.is_empty() or _live_cantifa().is_empty():
+		return _cantifa_edge_point_raw()
+	var best := _cantifa_edge_point_raw()
+	var rp: Vector2 = _cantifa_rally["pos"]
+	for i in 5:
+		var p := _cantifa_edge_point_raw()
+		if p.distance_to(rp) < best.distance_to(rp):
+			best = p
+	return best
+
+
+func _cantifa_edge_point_raw() -> Vector2:
 	var layer = get_node_or_null("Ground")
 	if layer == null or not layer.has_method("tile_center"):
 		return Vector2.ZERO
@@ -972,32 +986,116 @@ func _outside(p: Vector2, center: Vector2, dist: float) -> Vector2:
 	return center + dir * dist
 
 
-func _assign_cantifa_post(c: Cantifa) -> void:
+## Build 023: Cantifa congregate. The whole group shares ONE rally post
+## (picked nearest the rancher when the group forms) and stands in a tight
+## formation around it; every CANTIFA_REGROUP_EVERY s the group moves together
+## to the next post. Slots stay outside the zone keep-out rings.
+var _cantifa_rally: Dictionary = {}
+var _cantifa_regroup_t := 0.0
+var _cantifa_leader_id := 0
+
+
+func _live_cantifa() -> Array:
+	var out: Array = []
+	for o in get_tree().get_nodes_in_group("cantifa"):
+		if is_instance_valid(o) and not o.is_queued_for_deletion() and not ("fleeing" in o and o.fleeing):
+			out.append(o)
+	return out
+
+
+func _pick_rally(exclude_pos := Vector2.INF) -> Dictionary:
 	var posts := cantifa_posts()
+	if posts.is_empty():
+		return {}
+	var p := get_tree().get_first_node_in_group("player") as Node2D
+	var ref: Vector2 = p.global_position if p != null else (posts[0]["pos"] as Vector2)
 	var best: Dictionary = {}
 	var best_d := INF
 	for post in posts:
-		var taken := false
-		for other in get_tree().get_nodes_in_group("cantifa"):
-			if other == c or not is_instance_valid(other):
-				continue
-			if (other as Node2D).global_position.distance_to(post["pos"]) < 28.0 or ("post_pos" in other and (other.post_pos as Vector2).distance_to(post["pos"]) < 8.0):
-				taken = true
-				break
-		if taken:
+		if exclude_pos != Vector2.INF and (post["pos"] as Vector2).distance_to(exclude_pos) < 8.0:
 			continue
-		var d: float = c.global_position.distance_to(post["pos"])
+		var d: float = ref.distance_to(post["pos"])
 		if d < best_d:
 			best_d = d
 			best = post
-	if best.is_empty() and not posts.is_empty():
-		best = posts[cantifa_rng.randi() % posts.size()]
-	if best.is_empty():
+	return best if not best.is_empty() else posts[0]
+
+
+func cantifa_slot_pos(k: int, rally: Dictionary) -> Vector2:
+	var center: Vector2 = rally["pos"]
+	var off := Vector2.ZERO
+	if k > 0:
+		var ring := 1 if k <= 6 else 2
+		var n := 6 if ring == 1 else 12
+		var idx := (k - 1) % 6 if ring == 1 else (k - 7) % 12
+		off = Vector2.from_angle(TAU * float(idx) / float(n) + 0.3) * LevelConfig.CANTIFA_SLOT_R * ring
+		off.y *= 0.7
+	var pos := center + off
+	# keep the slot out of the safe-zone / camp keep-out rings
+	var safe := get_node_or_null("Entities/SafeZone") as Node2D
+	var camp := get_node_or_null("Entities/HumanCamp") as Node2D
+	for z in [[safe, LevelConfig.CANTIFA_SAFE_KEEP_OUT], [camp, LevelConfig.CANTIFA_CAMP_KEEP_OUT]]:
+		if z[0] != null:
+			var zo: Vector2 = pos - (z[0] as Node2D).global_position
+			var need: float = float(z[1]) + 14.0
+			if zo.length() < need:
+				pos = (z[0] as Node2D).global_position + (zo.normalized() if zo.length() > 1.0 else Vector2.RIGHT) * need
+	var layer = get_node_or_null("Ground")
+	if layer != null and layer.has_method("clamp_to_interior"):
+		var local: Vector2 = layer.to_local(pos)
+		if not layer.is_interior_local(layer.local_pos_to_local_cell(local), 2):
+			pos = layer.to_global(layer.clamp_to_interior(local, 3))
+	return pos
+
+
+func _assign_cantifa_post(c: Cantifa) -> void:
+	var live := _live_cantifa()
+	if _cantifa_rally.is_empty() or live.size() <= 1:
+		_cantifa_rally = _pick_rally()
+		_cantifa_regroup_t = 0.0
+	if _cantifa_rally.is_empty():
 		c.post_pos = c.global_position
 		c.post_face = Vector2.DOWN
 		return
-	c.post_pos = best["pos"]
-	c.post_face = best["face"]
+	_reslot_cantifa()
+
+
+## Everyone gets the next free formation slot around the shared rally post.
+func _reslot_cantifa() -> void:
+	var live := _live_cantifa()
+	live.sort_custom(func(a, b): return a.get_instance_id() < b.get_instance_id())
+	for k in live.size():
+		live[k].post_pos = cantifa_slot_pos(k, _cantifa_rally)
+		live[k].post_face = _cantifa_rally["face"]
+
+
+## Called by every Cantifa each physics frame; only the first one ticks.
+func cantifa_group_tick(c: Node, delta: float) -> void:
+	var live := _live_cantifa()
+	if live.is_empty():
+		return
+	var lead: Node = live[0]
+	for o in live:
+		if o.get_instance_id() < lead.get_instance_id():
+			lead = o
+	if c != lead:
+		return
+	if _cantifa_leader_id != lead.get_instance_id():
+		_cantifa_leader_id = lead.get_instance_id()
+		_reslot_cantifa()          # a member left: close up the formation
+	_cantifa_regroup_t += delta
+	if _cantifa_regroup_t < LevelConfig.CANTIFA_REGROUP_EVERY:
+		return
+	for o in live:
+		if o.arriving:
+			return             # wait until the group has gathered
+	_cantifa_regroup_t = 0.0
+	if live.size() < 2:
+		return
+	_cantifa_rally = _pick_rally(_cantifa_rally.get("pos", Vector2.INF))
+	_reslot_cantifa()
+	for o in live:
+		o.arriving = true         # travel together at arrival speed
 
 
 func on_cantifa_driven_off(c: Node2D) -> void:
@@ -1210,3 +1308,10 @@ func _refresh_hud() -> void:
 	_on_rescued_changed(state.rescued_humans, state.total_humans)
 	_on_health_ui(state.player_health, state.player_max_health)
 	_refresh_live_counts()
+
+
+## Build 023: each regional biome has its own level loop.
+func level_music_track() -> String:
+	var g = get_node_or_null("Ground")
+	var th := String(g.theme) if g != null and "theme" in g else LevelConfig.theme_for(level_number)
+	return "level_" + th if th != "" else "level"

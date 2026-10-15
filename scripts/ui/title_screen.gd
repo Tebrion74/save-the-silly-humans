@@ -8,7 +8,8 @@ extends Control
 ## Mouse emulation from touch is off, so touches are hit-tested by hand.
 
 const GAME_SCENE := "res://scenes/Main.tscn"
-const BUILD_LABEL := "BUILD 022"
+const BUILD_LABEL := "BUILD 023"
+const CREDIT_ASSIST := "CODE & DESIGN ASSIST: EWAN SHEPHERD, LLM"
 const COPYRIGHT := "© 2026 ECHELON PUBLISHERS GROUP"
 const HORIZON := 440.0
 const TITLE_SHADER := preload("res://assets/shaders/title_text.gdshader")
@@ -397,6 +398,7 @@ func _build_menu() -> void:
 	var hi := int(progress.high_score) if progress != null and "high_score" in progress else 0
 	_hiscore_label.text = "HI-SCORE %08d" % hi
 	add_child(_hiscore_label)
+	add_child(_small_label(CREDIT_ASSIST, 16, Vector2(0, 668), Vector2(1280, 24), HORIZONTAL_ALIGNMENT_CENTER))
 	add_child(_small_label(COPYRIGHT, 16, Vector2(0, 690), Vector2(1280, 24), HORIZONTAL_ALIGNMENT_CENTER))
 	add_child(_small_label(BUILD_LABEL, 16, Vector2(1080, 690), Vector2(180, 24), HORIZONTAL_ALIGNMENT_RIGHT))
 	_build_howto()

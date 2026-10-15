@@ -31,6 +31,12 @@ const TRACKS := {
 	"boss4": preload("res://assets/audio/music_boss4.wav"),   # build 018: Summit Waltz
 	"boss5": preload("res://assets/audio/music_boss5.wav"),   # build 020: Blue Screen Boogie
 	"boss6": preload("res://assets/audio/music_boss6.wav"),   # build 020: Order in the House
+	"level_prairie": preload("res://assets/audio/music_level_prairie.wav"),   # build 023
+	"level_med": preload("res://assets/audio/music_level_med.wav"),   # build 023
+	"level_texas": preload("res://assets/audio/music_level_texas.wav"),   # build 023
+	"level_bavaria": preload("res://assets/audio/music_level_bavaria.wav"),   # build 023
+	"level_pnw": preload("res://assets/audio/music_level_pnw.wav"),   # build 023
+	"level_norcal": preload("res://assets/audio/music_level_norcal.wav"),   # build 023
 }
 
 var setting := 0

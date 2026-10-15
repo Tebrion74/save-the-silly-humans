@@ -86,7 +86,9 @@ func _physics_process(delta: float) -> void:
 			delta * 7.0
 		)
 
+	_noclip_pre()
 	move_and_slide()
+	_noclip_post()
 
 
 func update_animation(input_vector: Vector2) -> void:
@@ -204,3 +206,53 @@ func die() -> void:
 	end_grab_ghost()
 	velocity = Vector2.ZERO
 	died.emit()
+
+
+# ------------------------------------------------------------------ build 023 internal tool
+const WORLD_BIT := 1   ## physics layer 1 "World": trees, rocks, water, walls
+
+func _noclip_on() -> bool:
+	var bt := get_node_or_null("/root/BetaTools")
+	return bt != null and "noclip" in bt and bt.noclip
+
+
+var _noclip_from := Vector2.ZERO
+
+func _bounds_ground():
+	var lc := get_tree().get_first_node_in_group("level_controller")
+	var g = lc.get_node_or_null("Ground") if lc != null else null
+	return g if g != null and g.has_method("is_interior_local") else null
+
+
+func _inside(g, p: Vector2) -> bool:
+	return g.is_interior_local(g.local_pos_to_local_cell(g.to_local(p)), 0)
+
+
+func _noclip_pre() -> void:
+	# no bounds known (no Ground) -> never noclip, so you can't leave the arena
+	if _noclip_on() and _bounds_ground() != null:
+		collision_mask &= ~WORLD_BIT
+	else:
+		collision_mask |= WORLD_BIT
+	_noclip_from = global_position
+
+
+## No environment collision, but the arena / map bounds still apply: a step
+## that leaves the playable rectangle is undone (per axis, so you slide along it).
+func _noclip_post() -> void:
+	if not _noclip_on():
+		return
+	var g = _bounds_ground()
+	if g == null or _inside(g, global_position):
+		return
+	var to := global_position
+	var from := _noclip_from
+	if not _inside(g, from):
+		global_position = g.to_global(g.clamp_to_interior(g.to_local(from), 0))
+		return
+	if _inside(g, Vector2(to.x, from.y)):
+		global_position = Vector2(to.x, from.y)
+	elif _inside(g, Vector2(from.x, to.y)):
+		global_position = Vector2(from.x, to.y)
+	else:
+		global_position = from

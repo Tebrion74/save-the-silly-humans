@@ -7,6 +7,7 @@ const HOLD_SECONDS := 2.0
 const BUFFER_TIMEOUT := 2.5
 
 var god := false
+var noclip := false
 ## Any tool used since the last fresh START: the high score is not saved.
 var tainted := false
 
@@ -58,18 +59,18 @@ func _ready() -> void:
 
 
 func is_active() -> bool:
-	return god
+	return god or noclip
 
 
 ## A fresh START clears the taint unless a tool is still on.
 func on_new_run() -> void:
-	tainted = god
+	tainted = god or noclip
 	_refresh_tag()
 
 
 func _refresh_tag() -> void:
-	_tag.visible = god or tainted
-	_tag.text = "CHEAT ON" if god else "CHEATED"
+	_tag.visible = god or noclip or tainted
+	_tag.text = "CHEAT ON" if (god or noclip) else "CHEATED"
 
 
 # ------------------------------------------------------------------ input
@@ -167,8 +168,13 @@ func _apply_code(code: String) -> void:
 		"2012":
 			tainted = true
 			_open_pad("level")
+		"6969":
+			noclip = not noclip
+			tainted = true
+			_toast("NOCLIP ON" if noclip else "NOCLIP OFF")
 		"0000":
 			god = false
+			noclip = false
 			_toast("CHEATS OFF")
 			_restore_normal.call_deferred()
 		_:

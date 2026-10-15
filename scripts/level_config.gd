@@ -162,7 +162,17 @@ static func cantifa_enabled(level: int) -> bool:
 static func cantifa_cap(level: int) -> int:
 	if not cantifa_enabled(level):
 		return 0
-	return mini(CANTIFA_CAP_BASE + (level - CANTIFA_MIN_LEVEL) / 2, CANTIFA_CAP_MAX)
+	if level <= CANTIFA_RAMP_FROM:
+		return mini(CANTIFA_CAP_BASE + (level - CANTIFA_MIN_LEVEL) / 2, CANTIFA_CAP_MAX)
+	# build 023: +1 every 2 levels above L8, up to CANTIFA_CAP_LATE
+	return mini(CANTIFA_CAP_MAX - 1 + (level - CANTIFA_RAMP_FROM + 1) / 2, CANTIFA_CAP_LATE)
+
+
+## Build 023: 1 in N human-spawn rolls become Cantifa (5 up to L8, 4 for L9-11, 3 from L12).
+static func cantifa_spawn_every(level: int) -> int:
+	if level <= CANTIFA_RAMP_FROM:
+		return CANTIFA_SPAWN_EVERY
+	return maxi(CANTIFA_SPAWN_EVERY - 1 - (level - CANTIFA_RAMP_FROM - 1) / 3, CANTIFA_SPAWN_EVERY_MIN)
 
 
 static func cantifa_range(level: int) -> float:
@@ -967,3 +977,12 @@ static func theme_for(level: int) -> String:
 ## Bonus stages: whip cooldown x0.5 and one crack pops every sheep it overlaps.
 const BONUS_WHIP_COOLDOWN_MULT := 0.5
 const BONUS_MULTI_TIP_RADIUS := 44.0
+
+
+# ------------------------------------------------------------------ Build 023 Cantifa
+const CANTIFA_RAMP_FROM := 8          ## caps / spawn ratio ramp above this level
+const CANTIFA_CAP_LATE := 10
+const CANTIFA_SPAWN_EVERY_MIN := 3
+const CANTIFA_LOS_MASK := 1           ## environment layer: trees, rocks, walls block the shot
+const CANTIFA_SLOT_R := 36.0          ## formation ring spacing at the shared rally post
+const CANTIFA_REGROUP_EVERY := 20.0   ## the whole group moves to another post together

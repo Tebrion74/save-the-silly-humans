@@ -480,10 +480,177 @@ def boss6_theme():
     s.write(os.path.join(OUT, 'music_boss6.wav'))
 
 
+# ---------------------------------------------------------------- build 023 biome themes
+def _tone_x(s, step, length, m, vol, duty=0.5, trem=0.0, trem_hz=7.0, bend=0.0, vib=0.0, decay=0.0, wave_='pulse'):
+    """Pulse/triangle with optional tremolo (accordion / surf), a bend-in
+    from `bend` semitones (fiddle slide / twang) and vibrato."""
+    n = int(s.step * length)
+    if n <= 0:
+        return
+    t = np.arange(n) / RATE
+    f = hz(m) * np.ones(n)
+    if bend:
+        f = f * 2 ** ((bend * np.exp(-t * 28.0)) / 12.0)
+    if vib:
+        f = f * (1.0 + vib * np.sin(2 * np.pi * 5.8 * t) * np.clip(t / 0.12 - 0.4, 0, 1))
+    ph = np.cumsum(f / RATE) % 1.0
+    if wave_ == 'pulse':
+        sig = np.where(ph < duty, 1.0, -1.0)
+    else:
+        sig = np.round((1.0 - 4.0 * np.abs(ph - 0.5)) * 7.5) / 7.5
+    env = np.ones(n)
+    a = min(n, 50)
+    env[:a] = np.linspace(0, 1, a)
+    r = min(n, 260)
+    env[-r:] *= np.linspace(1, 0, r)
+    if decay:
+        env *= np.exp(-t * decay)
+    if trem:
+        env *= 1.0 - trem * (0.5 + 0.5 * np.sin(2 * np.pi * trem_hz * t))
+    s._place(step * s.step, sig * env * vol)
+
+
+def _echo(s, delay_steps, gain, taps=2):
+    d = int(s.step * delay_steps)
+    src = s.mix.copy()
+    for k in range(1, taps + 1):
+        sh = np.zeros_like(src)
+        sh[d * k:] = src[:-d * k] if d * k < len(src) else 0
+        # wrap the tail so the loop stays seamless
+        sh[:d * k] += src[-d * k:] * 0.0
+        s.mix += np.roll(src, d * k) * (gain ** k)
+
+
+def biome_theme(name, cfg):
+    """Generic regional loop: chord progression + scale-constrained melody
+    (seeded, so it is reproducible), regional lead timbre, bass and drums."""
+    s = Song(cfg['bpm'], cfg['bars'])
+    s.rng = np.random.default_rng(cfg['seed'])
+    rng = np.random.default_rng(cfg['seed'] + 1)
+    scale = cfg['scale']                       # semitone offsets from tonic
+    tonic = midi(cfg['tonic'])
+    prog = cfg['prog']                         # list of (degree index, kind)
+    rhythms = cfg['rhythms']                   # list of [(step, len)]
+    motifs = []
+    for k in range(4):                         # 4 motifs reused AABA-style
+        rh = rhythms[k % len(rhythms)]
+        deg = int(rng.integers(4, 8))
+        mot = []
+        for (st, ln) in rh:
+            deg = int(np.clip(deg + rng.choice([-2, -1, -1, 0, 1, 1, 2]), 2, 11))
+            mot.append((st, ln, deg))
+        motifs.append(mot)
+    form = cfg.get('form', [0, 1, 0, 2, 0, 1, 3, 2])
+    def note(deg, octv=0):
+        o, d = divmod(deg, len(scale))
+        return tonic + 12 * (o + octv) + scale[d]
+    for bar in range(cfg['bars']):
+        base = bar * 16
+        dg, kind = prog[bar % len(prog)]
+        root = note(dg, -1)
+        tones = chord_tones(root, kind)
+        mot = motifs[form[bar % len(form)]]
+        for st, ln, deg in mot:
+            m = note(deg + dg % 2, 1)
+            cfg['lead'](s, base + st, ln, m)
+        cfg['comp'](s, base, tones, kind)
+        cfg['bass'](s, base, root, kind)
+        cfg['drums'](s, base, bar)
+    if cfg.get('echo'):
+        _echo(s, *cfg['echo'])
+    m = s.mix / max(1e-9, np.abs(s.mix).max()) * 0.92
+    rms = float(np.sqrt((m ** 2).mean()))
+    s.write(os.path.join(OUT, 'music_level_%s.wav' % name), peak=min(0.92, 0.92 * 0.24 / max(rms, 1e-6)))
+
+
+def _drums_basic(kick, snare, hats, vol=1.0):
+    def f(s, base, bar):
+        for i in range(16):
+            if i in kick:
+                s.kick(base + i, 0.5 * vol)
+            if i in snare:
+                s.snare(base + i, 0.28 * vol)
+            if i in hats:
+                s.hat(base + i, 0.10 * vol)
+        if bar % 4 == 3:
+            for i in (13, 14, 15):
+                s.snare(base + i, 0.18 * vol)
+    return f
+
+
+MAJ = [0, 2, 4, 5, 7, 9, 11]
+MIXO = [0, 2, 4, 5, 7, 9, 10]
+DORIAN = [0, 2, 3, 5, 7, 9, 10]
+HIJAZ = [0, 1, 4, 5, 7, 8, 10]          # Phrygian dominant
+AEOL = [0, 2, 3, 5, 7, 8, 10]
+MAJPENT = [0, 2, 4, 7, 9]
+
+BIOMES = {
+    # fiddle-and-guitar prairie hoedown, D mixolydian-ish, 128 BPM
+    'prairie': dict(bpm=128, bars=16, seed=2301, tonic='D4', scale=MIXO,
+        prog=[(0, 'maj'), (3, 'maj'), (0, 'maj'), (4, 'maj')],
+        rhythms=[[(0, 2), (2, 1), (3, 1), (4, 2), (6, 2), (8, 3), (11, 1), (12, 2), (14, 2)],
+                 [(0, 1), (1, 1), (2, 2), (4, 4), (8, 2), (10, 2), (12, 4)]],
+        lead=lambda s, st, ln, m: _tone_x(s, st, ln, m, 0.17, duty=0.25, bend=-1.0, vib=0.008),
+        comp=lambda s, b, t, k: [s.tone(b + i, 1, t[(i // 2) % 3] + 12, 0.055, duty=0.5, decay=14) for i in range(0, 16, 2)],
+        bass=lambda s, b, r, k: [s.tone(b + i * 4, 2, r + (0 if i % 2 == 0 else 7) - 12, 0.34, wave_='tri') for i in range(4)],
+        drums=_drums_basic((0, 8), (4, 12), (2, 6, 10, 14))),
+    # Mediterranean: hijaz scale, oud-like plucked lead, darbuka-ish pattern
+    'med': dict(bpm=112, bars=16, seed=2302, tonic='E4', scale=HIJAZ,
+        prog=[(0, 'maj'), (0, 'maj'), (1, 'maj'), (0, 'maj'), (6, 'min'), (5, 'maj'), (1, 'maj'), (0, 'maj')],
+        rhythms=[[(0, 1), (1, 1), (2, 1), (3, 1), (4, 2), (6, 2), (8, 1), (9, 1), (10, 2), (12, 4)],
+                 [(0, 3), (3, 1), (4, 1), (5, 1), (6, 2), (8, 4), (12, 2), (14, 2)]],
+        lead=lambda s, st, ln, m: (_tone_x(s, st, ln, m, 0.16, duty=0.35, decay=5.0, bend=0.6),
+                                   _tone_x(s, st, 0.5, m + 12, 0.05, duty=0.125, decay=30)),
+        comp=lambda s, b, t, k: [_tone_x(s, b + i, 8, t[0] + 12, 0.035, wave_='tri') for i in (0, 8)],
+        bass=lambda s, b, r, k: [s.tone(b + i, 1 if i % 4 else 2, r - 12 + (7 if i == 6 else 0), 0.32, wave_='tri') for i in (0, 3, 6, 8, 11, 14)],
+        drums=_drums_basic((0, 6, 8), (4, 11, 12), (2, 3, 7, 10, 14, 15))),
+    # Texas: twangy bent lead over a train-beat shuffle, A major pentatonic
+    'texas': dict(bpm=120, bars=16, seed=2303, tonic='A3', scale=MAJPENT,
+        prog=[(0, 'maj'), (0, 'maj'), (2, 'maj'), (0, 'maj'), (3, 'maj'), (2, 'maj'), (0, 'maj'), (3, 'maj')],
+        rhythms=[[(0, 2), (3, 1), (4, 2), (6, 1), (7, 1), (8, 4), (12, 2), (14, 2)],
+                 [(0, 1), (1, 1), (2, 2), (6, 2), (8, 2), (10, 1), (11, 1), (12, 4)]],
+        lead=lambda s, st, ln, m: _tone_x(s, st, ln, m, 0.18, duty=0.18, bend=-2.0, decay=2.5),
+        comp=lambda s, b, t, k: [s.tone(b + i, 1, t[1] + 12, 0.05, duty=0.25, decay=20) for i in (2, 6, 10, 14)],
+        bass=lambda s, b, r, k: [s.tone(b + i * 4, 2, r - 12 + [0, 7, 12, 7][i], 0.34, wave_='tri') for i in range(4)],
+        drums=_drums_basic((0, 8), (4, 12), tuple(range(1, 16, 2)) + (2, 6, 10, 14), 0.9)),
+    # Bavaria: oompah waltz-feel polka, accordion tremolo chords, tuba bass
+    'bavaria': dict(bpm=140, bars=16, seed=2304, tonic='F4', scale=MAJ,
+        prog=[(0, 'maj'), (4, 'maj'), (4, 'maj'), (0, 'maj'), (3, 'maj'), (0, 'maj'), (4, 'maj'), (0, 'maj')],
+        rhythms=[[(0, 2), (2, 2), (4, 2), (6, 2), (8, 4), (12, 4)],
+                 [(0, 1), (1, 1), (2, 2), (4, 1), (5, 1), (6, 2), (8, 2), (10, 2), (12, 4)]],
+        lead=lambda s, st, ln, m: _tone_x(s, st, ln, m, 0.15, duty=0.5, trem=0.35, trem_hz=6.0),
+        comp=lambda s, b, t, k: [[_tone_x(s, b + i, 2, x + 12, 0.035, duty=0.5, trem=0.4, trem_hz=6.0) for x in t] for i in (4, 12)],
+        bass=lambda s, b, r, k: [s.tone(b + i * 8, 3, r - 12 + (0 if i == 0 else 7), 0.40, wave_='tri') for i in range(2)],
+        drums=_drums_basic((0, 8), (4, 12), (4, 12), 0.8)),
+    # Pacific Northwest: moody, rainy D dorian, slow, echoing arpeggios
+    'pnw': dict(bpm=96, bars=16, seed=2305, tonic='D4', scale=DORIAN,
+        prog=[(0, 'min'), (0, 'min'), (5, 'maj'), (3, 'maj'), (0, 'min'), (6, 'maj'), (3, 'maj'), (4, 'min')],
+        rhythms=[[(0, 6), (6, 2), (8, 6), (14, 2)], [(0, 4), (4, 4), (8, 8)]],
+        lead=lambda s, st, ln, m: _tone_x(s, st, ln, m, 0.13, wave_='tri', vib=0.006),
+        comp=lambda s, b, t, k: [s.tone(b + i, 2, t[i // 2 % 3] + 12 + (12 if i % 8 == 6 else 0), 0.06, duty=0.25, decay=6) for i in range(0, 16, 2)],
+        bass=lambda s, b, r, k: s.tone(b, 16, r - 12, 0.30, wave_='tri'),
+        drums=_drums_basic((0, 10), (8,), (2, 6, 10, 14), 0.6),
+        echo=(3, 0.35, 2)),
+    # Northern California: surf-folk, tremolo-picked lead + spring echo
+    'norcal': dict(bpm=150, bars=16, seed=2306, tonic='E4', scale=MIXO,
+        prog=[(0, 'maj'), (0, 'maj'), (3, 'maj'), (3, 'maj'), (4, 'maj'), (3, 'maj'), (0, 'maj'), (4, 'maj')],
+        rhythms=[[(0, 2), (2, 2), (4, 4), (8, 2), (10, 2), (12, 4)],
+                 [(0, 4), (4, 2), (6, 2), (8, 6), (14, 2)]],
+        lead=lambda s, st, ln, m: _tone_x(s, st, ln, m, 0.15, duty=0.25, trem=0.7, trem_hz=14.0, bend=-0.5),
+        comp=lambda s, b, t, k: [s.tone(b + i, 1, t[0] + 12, 0.05, duty=0.5, decay=18) for i in (2, 3, 6, 10, 11, 14)],
+        bass=lambda s, b, r, k: [s.tone(b + i * 2, 2, r - 12 + [0, 0, 7, 0, 10, 0, 7, 12][i], 0.30, wave_='tri') for i in range(8)],
+        drums=_drums_basic((0, 3, 8, 11), (4, 12), tuple(range(0, 16, 2))),
+        echo=(1.5, 0.3, 1)),
+}
+
+
 if __name__ == '__main__':
     import sys
     os.makedirs(OUT, exist_ok=True)
     tracks = {'level': level_theme, 'boss': boss_theme, 'bonus': bonus_theme, 'boss2': boss2_theme,
               'boss3': boss3_theme, 'boss4': boss4_theme, 'boss5': boss5_theme, 'boss6': boss6_theme}
+    for _b in BIOMES:   # build 023: 'level_prairie' ... 'level_norcal'
+        tracks['level_' + _b] = (lambda b=_b: biome_theme(b, BIOMES[b]))
     for name in (sys.argv[1:] or list(tracks)):
         tracks[name]()
