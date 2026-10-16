@@ -88,6 +88,9 @@ const SLOT_SHEEP_SPAWNER := Vector2i(8, 10)
 const MIN_HUMAN_SAFE_CHEBYSHEV := 12
 
 
+var cameo_director: CameoDirector = null
+
+
 func _ready() -> void:
 	add_to_group("level_controller")
 	rescues_unlocked = false
@@ -109,6 +112,11 @@ func _ready() -> void:
 		pickups_layer.name = "Pickups"
 		entities_node.add_child(pickups_layer)
 	_build_secrets.call_deferred()   # build 024 (regular levels only)
+	# Build 030: random cameo sub-bosses (regular levels only; see CameoDirector).
+	cameo_director = CameoDirector.new()
+	cameo_director.name = "CameoDirector"
+	cameo_director.level = self
+	add_child(cameo_director)
 	var rancher := get_node_or_null("Entities/Player")
 	if rancher != null:
 		weapons = Weapons.new()

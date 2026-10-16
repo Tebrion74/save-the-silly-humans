@@ -2025,3 +2025,28 @@ On first run, `scripts/world/terrain_painter.gd` paints both if `Ground` is empt
 - **Phone-sized reticle.** Touch reticle is about twice as large, three-pass (near-black outline, white halo, bright fill), bright yellow with no target / green on a sure hit, gentle pulse, never fades; a chevron beside the rancher and a dotted guide show the snapped whip direction on every biome.
 - **Joystick.** Radius 100 -> 115 px (knob 44), ticks on all 8 directions, the active aim sector lit and an arrow on the rim.
 - Tests: tools/_test_029.gd 12/12 (stick sweep, equal sectors, no-lag snap, release drift, simulated two-thumb touch diagonal whip in 4 diagonals, empty-field lash angle, reticle direction, PC keyboard diagonal); 028 suites 36/36 + 31/31.
+
+## Build 030
+
+**Built 2026-10-15 ~20:20 MT, live ~20:44 MT · cameo sub-bosses**
+
+- Live pck sha256 `f4efa771684ca96a804c492ba2beb6acdbedaa5406826d42f6f9deb4bb70f35b`; server rollback copy of 029 in `~/rollback-029`.
+
+Based on live 029 (`86da4ae`). Robert called it "030b"; the repo's `b` suffix means a re-cut of an existing build (009b, 014b, 015b), and there was no 030 yet, so this is **030**. The in-game label reads `BUILD 030`, and the web export is cache-busted with `v=030`.
+
+- **Surprise cameos.** Good-natured tech-mogul parodies drop into regular levels at random (from L2; first roll 20-40 s into the round, then every 45-75 s with a 70% chance; one at a time; never in boss or bonus stages). Each stays about 15 s, drops in from the sky, quips in speech bubbles and flies off.
+  - **Eelon Tusk** (ally, "Chief Rocket Officer"): rocket boost (x1.35 speed for 8 s) and a STARLINK STRIKE from orbit every 2.6 s on the sheep nearest the rancher.
+  - **Jeff Bozos** (wild card, "Two-Hour Drone Delivery"): three parcels by drone. 60% loot (walk over it for a power-up), 40% bombs with a 2.4 s fuse (1 heart if you're close; it also pops sheep). Whip a bomb to defuse it: +100.
+  - **Sam Altmann** (wild card, "Prompt Engineer of Destiny"): a chatbot drone. 55% helpful (an arrow to the nearest hidden chamber, zaps nearby sheep); otherwise it's confidently wrong (points at a random spot, "TREASURE! 100%", and its zaps miss).
+  - **Mark Zuckerbot** (foe, "Lord of the Metaverse"): a mini-fight. Fires slow LIKE bubbles (1 heart); 6 whip hits unplug him: +50 a hit, +1500 for the win.
+- **Attract mode:** a SURPRISE CAMEOS lineup page after MEET THE VILLAINS, and a third score-table page (- SURPRISE CAMEOS -).
+- **Music:** four short funk stingers (`tools/gen_funk.py --stingers`: Tusk E mixolydian launch riff, Bozos F delivery shuffle, Altmann D dorian synth-bass, Zuckerbot C minor robotic riff). Deep bass (95-98% of energy below 250 Hz, 0.1-0.2% at 1-3 kHz), peak -1 dBFS. The level music ducks under them.
+- **Art:** `tools/gen_cameos.py` (shared boss painter, 4 frames of 96x112 each). Generic cartoon features only: no logos, photos, tracing or likeness.
+- **Cheat `3030`:** CAMEO PARTY (back-to-back cameos every 6 s from L1, cycling the roster). `0000` turns it off as well. Other cheats unchanged.
+- **Deferred:** player summoning of cameos (summon tokens or pickups) is saved for the RPG spinoff. In 030 cameos only appear at random.
+- 029 mobile controls are unchanged (`_test_029` 12/12).
+- **Tests:**
+  - `tools/_test_030.gd` 28/28: cheat and attract checks, director gating (L1 off, L2 on, boss stage off), 30 random rolls -> 20 cameos with all 4 ids, every ability, a Zuckerbot fight with the real whip, crates, chatbot both ways, lifetimes.
+  - Level bot `tools/_lvlbot_030.gd`: L2/L5/L8 won with cameos off and on. Party runs saw all four, no script errors.
+  - Earlier suites: `_test_029` 12/12, `_test_028` 36/36 (`_test_028` now clears a saved top-10 before its no-high-score check), `_test_028_hs` 31/31, `_test_027` 62/62.
+

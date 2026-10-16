@@ -1238,3 +1238,36 @@ const CANTIFA_REGROUP_EVERY := 20.0   ## the whole group moves to another post t
 
 # ------------------------------------------------------------------ Build 024 hidden chambers
 const SECRET_SCORE := 750
+
+
+# ------------------------------------------------------------------ Build 030 cameo sub-bosses
+## Tech-mogul parody cameos drop into regular levels at random (never boss or
+## bonus stages). One at a time, CAMEO_LIFE seconds each, with speech-bubble
+## quips. Player summoning is deferred to the RPG spinoff.
+const CAMEO_FROM_LEVEL := 2
+const CAMEO_FIRST_DELAY := Vector2(20.0, 40.0)   ## s after the round starts
+const CAMEO_GAP := Vector2(45.0, 75.0)           ## s between cameos
+const CAMEO_CHANCE := 0.7                        ## each roll actually spawns one
+const CAMEO_LIFE := 15.0
+const CAMEO_PARTY_GAP := 6.0                     ## cheat 3030: back-to-back cameos
+## Eelon Tusk (ally)
+const TUSK_BOOST_MULT := 1.35
+const TUSK_BOOST_TIME := 8.0
+const TUSK_STRIKE_EVERY := 2.6
+const TUSK_STRIKE_RANGE := 460.0
+## Jeff Bozos (wild): delivery-drone crates
+const BOZOS_CRATES := 3
+const BOZOS_BOMB_CHANCE := 0.4
+const BOZOS_FUSE := 2.4
+const BOZOS_BLAST_RADIUS := 84.0
+const POINTS_DEFUSE := 100                       ## whip a bomb crate before it blows
+## Sam Altmann (wild): chatbot drone
+const ALTMANN_HELPFUL_CHANCE := 0.55
+const ALTMANN_ZAP_EVERY := 2.4
+const ALTMANN_ZAP_RANGE := 280.0
+## Mark Zuckerbot (foe): mini-fight
+const ZUCK_HP := 6
+const ZUCK_SHOT_EVERY := 1.7
+const ZUCK_SHOT_SPEED := 175.0
+const POINTS_ZUCKERBOT := 1500
+const POINTS_CAMEO_HIT := 50

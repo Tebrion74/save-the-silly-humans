@@ -879,10 +879,70 @@ def punch_up(names):
         write_wav(os.path.join(OUT, 'music_%s.wav' % nm), y)
 
 
+# ------------------------------------------------------------------ build 030 cameo stingers
+# Short (~3 s) one-shot funk stingers for the cameo sub-bosses: a slap/synth
+# bass riff + kick/snare + a low brass stab or two, ending on a held chord.
+# Same master chain (warm, 1-4 kHz dip, peak -1 dBFS), nothing above ~C5.
+STINGERS = {
+    # Eelon Tusk (ally): rising "launch" riff, E mixolydian, 120 BPM
+    'tusk':   dict(bpm=120, root=28, seed=3001, bass='slap', riff=[(0, 0, 2), (2, 7, 2), (4, 10, 2), (6, 12, 2), (8, 14, 2), (10, 16, 6)],
+                   stabs=[(8, [4, 7, 10]), (12, [4, 7, 12])], lead=52),
+    # Jeff Bozos (wild): bouncy delivery shuffle, F, 108 BPM
+    'bozos':  dict(bpm=108, root=29, seed=3002, bass='slap', riff=[(0, 0, 1), (2, 0, 1), (3, 12, 1), (4, 10, 2), (6, 7, 2), (8, 5, 2), (10, 7, 6)],
+                   stabs=[(4, [0, 4, 7]), (10, [-2, 2, 5]), (12, [0, 4, 7])], lead=53),
+    # Sam Altmann (wild): synth bass "thinking" pattern, D dorian, 100 BPM
+    'altmann': dict(bpm=100, root=26, seed=3003, bass='synth', riff=[(0, 0, 3), (3, 3, 1), (4, 5, 3), (7, 7, 1), (8, 10, 2), (10, 9, 2), (12, 7, 4)],
+                   stabs=[(8, [0, 3, 7]), (12, [2, 5, 9])], lead=50),
+    # Mark Zuckerbot (foe): heavy robotic minor riff, C minor, 126 BPM
+    'zuckerbot': dict(bpm=126, root=24, seed=3004, bass='synth', riff=[(0, 0, 2), (2, 0, 1), (3, 3, 1), (4, 0, 2), (6, 6, 2), (8, 5, 2), (10, 3, 2), (12, 0, 4)],
+                   stabs=[(0, [0, 3, 7]), (6, [6, 10, 13]), (12, [0, 3, 7])], lead=48),
+}
+
+
+def render_stinger(name, c):
+    step = 60.0 / c['bpm'] / 4.0
+    total = int(step * 16 * SR + 1.6 * SR)
+    mix = np.zeros(total)
+    def put(st, sig, g):
+        a = int(st * step * SR)
+        b = min(total, a + len(sig))
+        mix[a:b] += sig[:b - a] * g
+    kit = Kit(c['seed'])
+    K = kit.kick(1.15); S = kit.snare()
+    for st in (0, 6, 8, 10, 14):
+        put(st, K, 0.9)
+    for st in (4, 12):
+        put(st, S, 0.55)
+    put(15, S, 0.3)
+    for st, off, ln in c['riff']:
+        m = c['root'] + off
+        sig = bass_slap(m, ln * step, pop=off >= 12) if c['bass'] == 'slap' else bass_synth(m, ln * step)
+        put(st, sig, 0.55)
+    for st, chord in c['stabs']:
+        last = st == c['stabs'][-1][0]
+        ln = 0.9 if last else step * 2
+        for iv in chord:
+            m = c['lead'] + iv
+            while m > 72:
+                m -= 12
+            put(st, brass(m, ln), 0.16)
+    y = finish(mix, -16.5, warm=1.0, top=6000.0)
+    fade = int(0.25 * SR)
+    y[-fade:] *= np.linspace(1, 0, fade)
+    return y
+
+
+def write_stingers(names=None):
+    for nm in (names or list(STINGERS)):
+        write_wav(os.path.join(OUT, 'stinger_%s.wav' % nm), render_stinger(nm, STINGERS[nm]))
+
+
 BOSS_TRACKS = ['boss', 'bonus', 'boss2', 'boss3', 'boss4', 'boss5', 'boss6', 'boss7', 'boss8']
 
 if __name__ == '__main__':
     args = sys.argv[1:]
+    if args == ['--stingers']:
+        write_stingers(); sys.exit()
     if args == ['--bosses']:
         punch_up(BOSS_TRACKS); sys.exit()
     todo = args or (list(BIOMES) + list(EPIC) + ['--bosses'])

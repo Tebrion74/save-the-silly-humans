@@ -23,6 +23,8 @@ var _tag: Label
 var _pad: Control
 var _pad_display: Label
 var _pad_title: Label
+## Build 030: cheat 3030 - cameo sub-bosses back to back (CameoDirector).
+var cameo_party := false
 var _pad_mode := "code"   # "code" | "level"
 var _pad_text := ""
 var _pad_prev_paused := false
@@ -173,9 +175,15 @@ func _apply_code(code: String) -> void:
 			noclip = not noclip
 			tainted = true
 			_toast("NOCLIP ON" if noclip else "NOCLIP OFF")
+		"3030":
+			# Build 030: CAMEO PARTY - cameos back to back, from level 1
+			cameo_party = not cameo_party
+			tainted = true
+			_toast("CAMEO PARTY ON" if cameo_party else "CAMEO PARTY OFF")
 		"0000":
 			god = false
 			noclip = false
+			cameo_party = false
 			_toast("CHEATS OFF")
 			_restore_normal.call_deferred()
 		_:

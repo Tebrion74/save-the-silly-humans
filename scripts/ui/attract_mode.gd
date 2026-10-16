@@ -61,6 +61,15 @@ static func score_rows(page: int) -> Array:
 			["chest", "HIDDEN TREASURE", str(LevelConfig.SECRET_SCORE)],
 			["flag", "LEVEL CLEAR", "%d +%d/SURVIVOR" % [_pts("CLEAR_BONUS_FLAT"), _pts("CLEAR_BONUS_PER_SURVIVOR")]],
 		]
+	if page == 2:   # build 030 cameos
+		return [
+			["cam_zuckerbot", "ZUCKERBOT HIT", str(LevelConfig.POINTS_CAMEO_HIT)],
+			["cam_zuckerbot", "ZUCKERBOT UNPLUGGED", str(LevelConfig.POINTS_ZUCKERBOT)],
+			["crate", "BOMB CRATE DEFUSED", str(LevelConfig.POINTS_DEFUSE)],
+			["cam_tusk", "STARLINK STRIKE", "%d / SHEEP" % _pts("POINTS_SHEEP")],
+			["cam_altmann", "CHATBOT ZAP", "%d OR OOPS" % _pts("POINTS_SHEEP")],
+			["cam_bozos", "DELIVERY CRATE", "LOOT OR BOOM"],
+		]
 	return [
 		["invincible", "STAR COMBO", "%d x2 x2 x2..." % LevelConfig.STAR_COMBO_BASE],
 		["powerup", "POWER-UPS", "POWER, NOT POINTS"],
@@ -75,7 +84,7 @@ static func score_rows(page: int) -> Array:
 
 ## Page list for one cycle. "title" = overlay hidden (the real title shows).
 func pages() -> Array:
-	var p: Array = ["title", "villains0", "villains1", "villains2", "score0", "score1"]
+	var p: Array = ["title", "villains0", "villains1", "villains2", "cameos", "score0", "score1", "score2"]
 	if high_score() > 0 or not table().is_empty():
 		p.append("hiscore")
 	return p
@@ -202,7 +211,9 @@ func _draw() -> void:
 	if not title_under:
 		draw_rect(Rect2(0, 0, 1280, 720), Color(0.02, 0.02, 0.07, 1.0))
 		_draw_scanlines()
-		if page.begins_with("villains"):
+		if page == "cameos":
+			_draw_cameos()
+		elif page.begins_with("villains"):
 			_draw_villains(int(page.right(1)))
 		elif page.begins_with("score"):
 			_draw_score(int(page.right(1)))
@@ -303,7 +314,7 @@ func _wrap(s: String, cx: float, w: float, y: float, size: int, col: Color) -> f
 
 func _draw_score(pg: int) -> void:
 	_header("SCORE TABLE", Color(0.35, 0.85, 1.0))
-	_center("- THE RANCH -" if pg == 0 else "- SPECIALS AND BOSSES -", 132, 20, Color(0.85, 0.9, 1.0))
+	_center(["- THE RANCH -", "- SPECIALS AND BOSSES -", "- SURPRISE CAMEOS -"][pg], 132, 20, Color(0.85, 0.9, 1.0))
 	var rows := score_rows(pg)
 	for r in rows.size():
 		if _page_t < 0.3 + r * ROW_EVERY:
@@ -342,6 +353,15 @@ func _sprite(tex: Texture2D, c: Vector2, sc: float, mod := Color.WHITE, cap := 5
 
 
 func _icon(k: String, c: Vector2) -> void:
+	if k.begins_with("cam_"):   # build 030: cameo head
+		var t := _sheet(String(Cameo.ROSTER[k.substr(4)]["sheet"]))
+		draw_texture_rect_region(t, Rect2(c - Vector2(30, 34), Vector2(60, 60)), Rect2(18, 4, 60, 60))
+		return
+	if k == "crate":
+		draw_rect(Rect2(c.x - 22, c.y - 18, 44, 36), Color(0.1, 0.06, 0.04))
+		draw_rect(Rect2(c.x - 20, c.y - 16, 40, 32), Color(1.0, 0.35, 0.25) if fmod(_t, 0.6) < 0.3 else Color(0.78, 0.55, 0.28))
+		draw_rect(Rect2(c.x - 3, c.y - 16, 6, 32), Color(0.9, 0.82, 0.6))
+		return
 	match k:
 		"human":
 			_sprite(_frame_of(_human, "down"), c, 2.0)
@@ -434,3 +454,29 @@ func _draw_hiscore() -> void:
 		_text(String(e.get("i", "...")), Vector2(400, y), 30, col)
 		_text("%08d" % int(e.get("s", 0)), Vector2(560, y), 30, col)
 		_text("ALL CLEAR" if bool(e.get("c", false)) and int(e.get("l", 0)) <= LevelConfig.BOSS10_AFTER_LEVEL + 1 else "L%d" % int(e.get("l", 1)), Vector2(910, y), 30, col)
+
+
+## Build 030: SURPRISE CAMEOS lineup (all four, with their role).
+func _draw_cameos() -> void:
+	_header("SURPRISE CAMEOS", Color(1.0, 0.8, 0.25))
+	var n := Cameo.ORDER.size()
+	var slot_w := 1280.0 / n
+	for j in n:
+		var id: String = Cameo.ORDER[j]
+		var info: Dictionary = Cameo.ROSTER[id]
+		var appear := 0.35 + j * 0.45
+		if _page_t < appear:
+			continue
+		var cx := slot_w * (j + 0.5)
+		var pop := clampf((_page_t - appear) / 0.25, 0.0, 1.0)
+		var top := 140.0 + (1.0 - pop) * 40.0
+		var frame := int(_t * 3.0) % 2
+		draw_texture_rect_region(_sheet(String(info["sheet"])), Rect2(cx - 96.0, top, 192.0, 224.0), Rect2(frame * 96, 0, 96, 112), Color(1, 1, 1, pop))
+		var y := top + 224.0 + 40.0
+		var role: String = info["role"]
+		var rc: Color = {"ally": Color(0.45, 1.0, 0.45), "foe": Color(1.0, 0.35, 0.3), "wild": Color(1.0, 0.85, 0.25)}[role]
+		_text({"ally": "ALLY", "foe": "FOE", "wild": "WILD CARD"}[role], Vector2(cx - slot_w * 0.5, y), 20, rc, HORIZONTAL_ALIGNMENT_CENTER, slot_w)
+		var ty := _wrap(String(info["name"]), cx, slot_w, y + 36.0, 30, Color(1.0, 0.86, 0.2))
+		_wrap(String(info["title"]), cx, slot_w, ty + 2.0, 20, Color(0.85, 0.9, 1.0))
+	if _page_t > 2.2:
+		_center("THEY DROP IN AT RANDOM. HELP OR HINDRANCE?", 640, 20, Color(1.0, 0.6, 0.9))

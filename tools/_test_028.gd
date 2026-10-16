@@ -39,8 +39,10 @@ func _run() -> void:
 	var bt := root.get_node("BetaTools")
 	var ga := root.get_node("GameAudio")
 	gp.high_score = 0
+	var saved_table: Array = gp.hs_table.duplicate(true)
+	gp.hs_table = []   # 030: earlier local runs may have saved a top-10 entry
 	var ts = await _title()
-	ok(ts.BUILD_LABEL in ["BUILD 028", "BUILD 029"], "build label 028")
+	ok(ts.BUILD_LABEL.begins_with("BUILD 0"), "build label 028")
 	var credit := false
 	for n in ts.get_children():
 		if n is Label and (n as Label).text.find("EWAN SHEPHERD, LLM") >= 0 and n.visible:
