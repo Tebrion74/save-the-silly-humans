@@ -670,6 +670,8 @@ func set_converted(count: int) -> void:
 ## won=true shows NEXT LEVEL; otherwise PLAY AGAIN (retry the same level).
 ## `breakdown` comes from level_controller.score_breakdown().
 func show_end(won: bool, message: String, breakdown: Dictionary = {}) -> void:
+	if not won:
+		InitialsEntry.maybe_show.call_deferred(self)   # build 028: top-10 initials on game over
 	end_panel.visible = true
 	level_label.visible = false
 	objective_label.visible = false
@@ -1013,6 +1015,8 @@ func is_title_card_showing() -> bool:
 ## Boss end screen. Won: BOSS DEFEATED! + PLAY AGAIN (rematch) and CONTINUE
 ## (next level). Lost: GAME OVER + PLAY AGAIN (restarts the boss fight).
 func show_boss_end(won: bool, message: String, breakdown: Dictionary = {}) -> void:
+	if not won:
+		InitialsEntry.maybe_show.call_deferred(self)   # build 028
 	end_panel.visible = true
 	level_label.visible = false
 	objective_label.visible = false

@@ -46,6 +46,7 @@ const TRACKS := {
 	"level_florida": preload("res://assets/audio/music_level_florida.wav"),   # build 027
 	"boss9": preload("res://assets/audio/music_boss9.wav"),   # build 027 Vladimir Puddin
 	"boss10": preload("res://assets/audio/music_boss10.wav"),   # build 027 Donald Rump (final)
+	"title": preload("res://assets/audio/music_title.wav"),   # build 028 title / attract theme
 }
 
 var setting := 0

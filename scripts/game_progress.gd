@@ -20,6 +20,15 @@ var level_start_score: int = 0
 var high_score: int = 0
 ## True when the last round end beat the stored high score.
 var new_high_score: bool = false
+## Build 028: arcade TOP-10 table, saved in SAVE_PATH (user:// = IndexedDB on
+## web). Each entry: {"i": "ABC", "s": score, "l": level reached, "c": game
+## cleared}. Best first; a tie keeps the older entry above.
+const HS_SIZE := 10
+const HS_LETTERS := "ABCDEFGHIJKLMNOPQRSTUVWXYZ.-"
+var hs_table: Array = []
+## Build 028: the table entry this run already made (one entry per run; a later
+## game over in the same run only raises that entry). -1 = none yet.
+var run_entry: int = -1
 ## Build 014: the rancher's inventory (PowerUps.to_dict()) carried into the
 ## level being played, and what it was when the level started (retry).
 var inventory: Dictionary = {}
@@ -198,6 +207,7 @@ func reset_progress() -> void:
 	ending_pending = false
 	endless = false
 	game_cleared = false
+	run_entry = -1
 
 
 ## Build 027: the ending's ENDLESS MODE button: on to the level after the final
@@ -255,6 +265,7 @@ func commit_high_score() -> bool:
 func save_high_score() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("scores", "high_score", high_score)
+	cfg.set_value("scores", "top10", hs_table)
 	var err := cfg.save(SAVE_PATH)
 	if err != OK:
 		push_warning("GameProgress: could not save high score (%d)" % err)
@@ -262,8 +273,109 @@ func save_high_score() -> void:
 
 func load_high_score() -> void:
 	var cfg := ConfigFile.new()
+	hs_table = []
 	if cfg.load(SAVE_PATH) == OK:
 		high_score = maxi(int(cfg.get_value("scores", "high_score", 0)), 0)
+		var t: Variant = cfg.get_value("scores", "top10", [])
+		if t is Array:
+			for e in t:
+				if e is Dictionary and e.has("s"):
+					hs_table.append({"i": _clean_initials(String(e.get("i", "???"))), "s": maxi(int(e.get("s", 0)), 0),
+						"l": int(e.get("l", 1)), "c": bool(e.get("c", false)), "id": int(e.get("id", 0))})
+		_sort_table()
+	if not hs_table.is_empty():
+		high_score = maxi(high_score, int(hs_table[0]["s"]))
+
+
+# ------------------------------------------------------------------ build 028 top-10
+
+static func _clean_initials(t: String) -> String:
+	var out := ""
+	for ch in t.to_upper():
+		if HS_LETTERS.contains(ch) and out.length() < 3:
+			out += ch
+	while out.length() < 3:
+		out += "."
+	return out
+
+
+func _sort_table() -> void:
+	# stable: equal scores keep their order (older above)
+	var idx: Array = []
+	for i in hs_table.size():
+		idx.append([hs_table[i], i])
+	idx.sort_custom(func(a, b): return int(a[0]["s"]) > int(b[0]["s"]) or (int(a[0]["s"]) == int(b[0]["s"]) and int(a[1]) < int(b[1])))
+	hs_table = []
+	for x in idx:
+		hs_table.append(x[0])
+	if hs_table.size() > HS_SIZE:
+		hs_table.resize(HS_SIZE)
+
+
+func run_is_cheated() -> bool:
+	var bt := get_node_or_null("/root/BetaTools")
+	return bt != null and bool(bt.tainted)
+
+
+## True when `points` would make the top 10 (never for cheated runs).
+func qualifies(points: int) -> bool:
+	if points <= 0 or run_is_cheated():
+		return false
+	if hs_table.size() < HS_SIZE:
+		return true
+	return points > int(hs_table[HS_SIZE - 1]["s"])
+
+
+func _find_run_entry() -> int:
+	if run_entry < 0:
+		return -1
+	for i in hs_table.size():
+		if int(hs_table[i].get("id", 0)) == run_entry:
+			return i
+	return -1
+
+
+## Game over / the ending: does this run need the INITIALS screen now?
+## (Only once per run; afterwards a better score just raises the run's entry.)
+func needs_initials() -> bool:
+	if run_is_cheated():
+		return false
+	if _find_run_entry() >= 0:
+		update_run_entry(score, current_level)
+		return false
+	return qualifies(score)
+
+
+## Insert an entry; returns its rank (0-based) or -1 if it did not make it.
+func submit_initials(initials: String, points: int = -1, level: int = -1, cleared: bool = false) -> int:
+	if points < 0:
+		points = score
+	if level < 0:
+		level = current_level
+	if not qualifies(points):
+		return -1
+	var id := 1
+	for e in hs_table:
+		id = maxi(id, int(e.get("id", 0)) + 1)
+	run_entry = id
+	hs_table.append({"i": _clean_initials(initials), "s": points, "l": level, "c": cleared or game_cleared, "id": id})
+	_sort_table()
+	high_score = maxi(high_score, int(hs_table[0]["s"]))
+	save_high_score()
+	return _find_run_entry()
+
+
+## A later game over in the same run: raise the run's own entry.
+func update_run_entry(points: int, level: int) -> void:
+	var i := _find_run_entry()
+	if i < 0 or run_is_cheated() or points <= int(hs_table[i]["s"]):
+		return
+	hs_table[i]["s"] = points
+	hs_table[i]["l"] = level
+	hs_table[i]["c"] = bool(hs_table[i]["c"]) or game_cleared
+	_sort_table()
+	high_score = maxi(high_score, points)
+	save_high_score()
 
 
 func secret_claimed(id: String) -> bool:

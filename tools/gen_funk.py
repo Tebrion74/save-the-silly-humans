@@ -793,6 +793,18 @@ EPIC = {
         hook=[(0, 0, 2, 0), (0, 2, 2, 2), (0, 4, 2, 4), (0, 6, 2, 5), (0, 8, 6, 7), (0, 14, 2, 6),
               (1, 0, 2, 5), (1, 2, 2, 4), (1, 4, 4, 2), (1, 8, 4, 4), (1, 12, 4, 7)],
         hook_bars=[2, 6, 10, 14], answer_bar=12, answer=[(0, 0, 2, 9), (0, 2, 2, 8), (0, 4, 4, 7), (0, 8, 8, 4)], top=6800.0),
+    # build 028: title / attract-mode theme. Anthemic arcade hook on brass over
+    # slap bass, Bb mixolydian-major, 112 BPM, low-mid focus.
+    'title': dict(title='Silly Humans Anthem', bpm=112, swing=0.06, seed=2801, root=34, lufs=-17.5,   # Bb1
+        prog=[(0, 'M'), (0, 'M'), (5, 'M'), (5, 'M'), (9, 'm'), (7, 'M'), (5, 'M'), (7, '7')],
+        bass='slap16', drums='funk', comp='clav', comp_voice='clav', comp_gain=0.13,
+        pad='choir', pad_gain=0.06, brass_gain=1.3, punch=1.1,
+        stabs_a=[(0, 2), (6, 1), (10, 2)], stabs_b=[(0, 2), (3, 1), (6, 2), (10, 1), (12, 2), (14, 1)],
+        lead='brass', lead_tonic=58, scale=[0, 2, 4, 5, 7, 9, 10], lead_gain=0.2,          # Bb3
+        hook=[(0, 0, 2, 0), (0, 2, 2, 4), (0, 4, 4, 7), (0, 8, 2, 6), (0, 10, 2, 7), (0, 12, 4, 9),
+              (1, 0, 3, 8), (1, 3, 1, 7), (1, 4, 4, 5), (1, 8, 2, 4), (1, 10, 2, 5), (1, 12, 4, 7)],
+        hook_bars=[0, 4, 8, 12], answer_bar=14,
+        answer=[(0, 0, 2, 9), (0, 2, 2, 7), (0, 4, 2, 9), (0, 6, 2, 11), (0, 8, 8, 7)], top=6200.0),
 }
 
 

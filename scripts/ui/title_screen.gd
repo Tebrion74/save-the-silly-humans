@@ -8,7 +8,7 @@ extends Control
 ## Mouse emulation from touch is off, so touches are hit-tested by hand.
 
 const GAME_SCENE := "res://scenes/Main.tscn"
-const BUILD_LABEL := "BUILD 027"
+const BUILD_LABEL := "BUILD 028"
 const CREDIT_ASSIST := "CODE & DESIGN ASSIST: EWAN SHEPHERD, LLM"
 const COPYRIGHT := "© 2026 ECHELON PUBLISHERS GROUP"
 const HORIZON := 440.0
@@ -31,11 +31,14 @@ var _parade: Array = []
 var _stars: Array = []
 var _clouds: Array = []
 var _rng := RandomNumberGenerator.new()
+## Build 028: arcade attract mode + the idle clock that starts it.
+var attract: AttractMode
+var idle_t: float = 0.0
 
 
 func _ready() -> void:
 	add_to_group("title_screen")
-	Sfx.music(self, "")   # build 015b: the title is quiet; music starts in a level
+	Sfx.music(self, "title")   # build 028: "Silly Humans Anthem" on the title + attract mode (015b-027: silent)
 	# Build 014b: the gameplay reticle hides the OS pointer; menus always get it back.
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -49,6 +52,8 @@ func _ready() -> void:
 	_build_parade()
 	_build_title()
 	_build_menu()
+	attract = AttractMode.new()
+	add_child(attract)
 	_flash = ColorRect.new()
 	_flash.color = Color(0, 0, 0, 1)
 	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -69,7 +74,56 @@ func _ready() -> void:
 
 # ------------------------------------------------------------------ input
 
+## Build 028: true when this event should wake the title (attract mode off,
+## idle clock reset). Mouse motion counts only past a small jitter.
+func _wakes(event: InputEvent) -> bool:
+	if event is InputEventMouseMotion:
+		return (event as InputEventMouseMotion).relative.length() > 3.0
+	if event is InputEventKey or event is InputEventJoypadButton:
+		return event.is_pressed()
+	if event is InputEventMouseButton or event is InputEventScreenTouch:
+		return event.is_pressed()
+	if event is InputEventScreenDrag:
+		return true
+	if event is InputEventJoypadMotion:
+		return absf((event as InputEventJoypadMotion).axis_value) > 0.4
+	return false
+
+
+## Build 028: drop attract mode at once (any input).
+func wake() -> void:
+	idle_t = 0.0
+	if attract != null and attract.active:
+		attract.stop()
+
+
+func is_attract_showing() -> bool:
+	return attract != null and attract.active and attract.visible
+
+
 func _input(event: InputEvent) -> void:
+	if _wakes(event):
+		var was_showing := is_attract_showing()
+		wake()
+		if was_showing:
+			# the first input only dismisses the attract screen. Touches still go
+			# to BetaTools (long-press keypad), and digit keys are left for the
+			# cheat-code buffer.
+			if event is InputEventScreenTouch:
+				var t0 := event as InputEventScreenTouch
+				TouchInput.note_touch(t0.index, t0.pressed, false)
+				var bt0 := get_node_or_null("/root/BetaTools")
+				if bt0 != null and t0.index == 0:
+					bt0.note_title_touch(t0.pressed, t0.position)
+				get_viewport().set_input_as_handled()
+			elif event is InputEventKey:
+				var kk: int = (event as InputEventKey).keycode
+				var digit := (kk >= KEY_0 and kk <= KEY_9) or (kk >= KEY_KP_0 and kk <= KEY_KP_9)
+				if not digit:
+					get_viewport().set_input_as_handled()
+			elif event is InputEventMouseButton:
+				get_viewport().set_input_as_handled()
+			return
 	if event is InputEventScreenTouch:
 		var t := event as InputEventScreenTouch
 		TouchInput.note_touch(t.index, t.pressed, false)
@@ -620,6 +674,17 @@ func _build_parade() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	# Build 028: idle -> attract mode (not while HOW TO PLAY, the keypad or a start is open)
+	var bt := get_node_or_null("/root/BetaTools")
+	var pad_open: bool = bt != null and "_pad" in bt and bt._pad != null
+	if _starting or is_howto_open() or pad_open or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		idle_t = 0.0
+		if attract != null and attract.active:
+			attract.stop()
+	elif attract != null and not attract.active:
+		idle_t += delta
+		if idle_t >= AttractMode.IDLE_SECONDS:
+			attract.start()
 	if _title_box:
 		_title_box.position.y = sin(_t * 1.7) * 5.0
 	if _press_label:

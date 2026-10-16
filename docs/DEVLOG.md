@@ -1852,6 +1852,28 @@ Status: **live** since Oct 15 2026 ~5:40 PM MT (pck sha256 `4bde9887d293d8e4f525
   - `tools/_test_027.gd`: 50/50 pass.
   - The bot (`tools/_bot_027.gd`) shows the difficulty order Violentsky < Puddin < Rump. Good bots won 6/6 against Puddin and 5/6 against Rump.
 
+## Build 028: arcade attract mode, title theme, top-10 high scores
+
+Status: **live** since Oct 15 2026 ~6:25 PM MT (pck sha256 `458810cc333adb406e9c8bad236cf6cff6bec1a3ed35983b0c36d968923a5d50`). Based on 027; no gameplay changes.
+
+- **Attract mode** (`scripts/ui/attract_mode.gd`). After 10 s idle on the title, the screen cycles every 7 s with a venetian-blind shutter:
+  1. the title with PRESS START;
+  2. MEET THE VILLAINS, three pages covering all 10 bosses, each with its sprite, name, title and level slot;
+  3. SCORE TABLE, two Galaga-style pages (sprite, dotted leader, points). The values are read from the game's own constants: human saved 200, possessed saved 200 / whipped 50, sheep 50, Karen 100, Cantifa 75, hidden treasure 750, level clear 500 +100 per survivor, star combo 200 x2 x2..., power-ups "power, not points", bonus sheep 100 / wave 500 / perfect 10000, programmed / micro sheep 50 / 25, UFO / drone 300 / 100, rally fan 120, boss hearts 100-200, boss defeat 2500-25000;
+  4. HIGH SCORES, the top-10 table (shown only when scores exist).
+
+  Any key, click, tap, mouse move or gamepad input returns to the plain title at once. That first input never starts the game. Digit keys still reach the code buffer, and touches still reach the logo long-press keypad. Attract mode never starts while HOW TO PLAY or the keypad is open. The credit line stays on the title.
+- **Title theme** "Silly Humans Anthem" (`tools/gen_funk.py title`): Bb, 112 BPM, slap bass, brass hook, clav, -17.5 LUFS, seamless loop. It plays on the title and through attract mode, and the sound setting (M / speaker icon) mutes it like everything else.
+- **Top-10 high scores** (`GameProgress.hs_table`, saved with the high score in `user://stsh_save.cfg`, which is IndexedDB on web).
+  - Entries hold 3-letter initials, score, level reached and an ALL CLEAR flag.
+  - On a game over (levels and bosses) or after the ending, a qualifying score opens the arcade INITIALS screen (`scripts/ui/initials_entry.gd`).
+    - PC: UP/DOWN or W/S cycle the letter, LEFT/RIGHT move, typing a letter fills the slot, ENTER confirms.
+    - Touch: tap the arrows and OK.
+  - The screen swallows input, so the game-over keys don't fire underneath it.
+  - One entry per run: a later game over in the same run raises that entry instead of asking again.
+  - Runs that used beta tools never qualify.
+- **Tests:** `tools/_test_028.gd` (36 checks) and `tools/_test_028_hs.gd` (31 checks) all pass. The 027 suite and older ones fail only on the build-label check.
+
 ## Appendix: project reference notes
 
 These general notes (requirements, controls, gameplay loop, layout, collision layers, TileSet workflow) headed the project README during development. They are kept as they stood at build 014b.

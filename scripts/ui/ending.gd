@@ -82,6 +82,7 @@ func _ready() -> void:
 	var sc: int = int(gp.score) if gp != null and "score" in gp else 0
 	if gp != null and gp.has_method("commit_high_score"):
 		gp.commit_high_score()
+	InitialsEntry.maybe_show.call_deferred(self, true)   # build 028: top-10 initials after the final win
 	var hi: int = int(gp.high_score) if gp != null and "high_score" in gp else sc
 	_score = _label("FINAL SCORE  %d     BEST  %d" % [sc, maxi(hi, sc)], 3, Color(0.75, 1.0, 0.75), Vector2(0, 190))
 	_hint = _label("PRESS ANY KEY OR TAP TO CONTINUE", 2, Color(0.85, 0.9, 1.0, 0.8), Vector2(0, 676))
@@ -211,7 +212,8 @@ func _button(text: String, tip: String) -> Button:
 
 func _process(delta: float) -> void:
 	_t += delta
-	_phase_t += delta
+	if not InitialsEntry.is_open(get_tree()):   # build 028: hold the beat while initials are entered
+		_phase_t += delta
 	_sky.t = _t
 	_sky.fireworks = phase == "celebrate" or phase == "credits"
 	_sky.queue_redraw()
