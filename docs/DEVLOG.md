@@ -1852,18 +1852,6 @@ Status: **live** since Oct 15 2026 ~5:40 PM MT (pck sha256 `4bde9887d293d8e4f525
   - `tools/_test_027.gd`: 50/50 pass.
   - The bot (`tools/_bot_027.gd`) shows the difficulty order Violentsky < Puddin < Rump. Good bots won 6/6 against Puddin and 5/6 against Rump.
 
-## Build 029
-
-**Built 2026-10-15 ~19:30 MT, live ~19:50 MT · mobile touch controls (PC unchanged)**
-
-- Live pck sha256 `472e0af31295efcf67650940dbeafc9d7577d214502ca0a4cbb040790ec62af9`; server rollback copy of 028 in `~/rollback-028`.
-
-- **8-way touch aim from the real stick angle.** Facing and the whip snap to the nearest of 8 equal 45-degree sectors of the joystick's live analog angle, re-evaluated every frame (diagonals are exactly as wide as cardinals; 4 degree hysteresis only at sector edges to stop jitter). Below 30% deflection the facing is kept, so the thumb drifting back to centre on release never flicks the aim.
-- **Whip fires in the snapped direction.** Touch aim assist now only picks targets inside the snapped 45-degree sector (was a 55-degree half-cone), so the lash always goes the way the stick points.
-- **Phone-sized reticle.** Touch reticle is about twice as large, three-pass (near-black outline, white halo, bright fill), bright yellow with no target / green on a sure hit, gentle pulse, never fades; a chevron beside the rancher and a dotted guide show the snapped whip direction on every biome.
-- **Joystick.** Radius 100 -> 115 px (knob 44), ticks on all 8 directions, the active aim sector lit and an arrow on the rim.
-- Tests: tools/_test_029.gd 12/12 (stick sweep, equal sectors, no-lag snap, release drift, simulated two-thumb touch diagonal whip in 4 diagonals, empty-field lash angle, reticle direction, PC keyboard diagonal); 028 suites 36/36 + 31/31.
-
 ## Build 028: arcade attract mode, title theme, top-10 high scores
 
 Status: **live** since Oct 15 2026 ~6:25 PM MT (pck sha256 `458810cc333adb406e9c8bad236cf6cff6bec1a3ed35983b0c36d968923a5d50`). Based on 027; no gameplay changes.
@@ -2025,3 +2013,15 @@ On first run, `scripts/world/terrain_painter.gd` paints both if `Ground` is empt
 - Whip targeting is forgiving along the aim ray, not only near the cursor.
 - Sheep AI: `attention_range` **160** (5 tiles) for chase/attack; `interest_range` **256** (8 tiles) for soft approach; prefer humans over player in attention range.
 - No multiplayer.
+
+## Build 029
+
+**Built 2026-10-15 ~19:30 MT, live ~19:50 MT · mobile touch controls (PC unchanged)**
+
+- Live pck sha256 `472e0af31295efcf67650940dbeafc9d7577d214502ca0a4cbb040790ec62af9`; server rollback copy of 028 in `~/rollback-028`.
+
+- **8-way touch aim from the real stick angle.** Facing and the whip snap to the nearest of 8 equal 45-degree sectors of the joystick's live analog angle, re-evaluated every frame (diagonals are exactly as wide as cardinals; 4 degree hysteresis only at sector edges to stop jitter). Below 30% deflection the facing is kept, so the thumb drifting back to centre on release never flicks the aim.
+- **Whip fires in the snapped direction.** Touch aim assist now only picks targets inside the snapped 45-degree sector (was a 55-degree half-cone), so the lash always goes the way the stick points.
+- **Phone-sized reticle.** Touch reticle is about twice as large, three-pass (near-black outline, white halo, bright fill), bright yellow with no target / green on a sure hit, gentle pulse, never fades; a chevron beside the rancher and a dotted guide show the snapped whip direction on every biome.
+- **Joystick.** Radius 100 -> 115 px (knob 44), ticks on all 8 directions, the active aim sector lit and an arrow on the rim.
+- Tests: tools/_test_029.gd 12/12 (stick sweep, equal sectors, no-lag snap, release drift, simulated two-thumb touch diagonal whip in 4 diagonals, empty-field lash angle, reticle direction, PC keyboard diagonal); 028 suites 36/36 + 31/31.
