@@ -15,6 +15,8 @@ extends Node2D
 ## favours a small angle over a short distance (0..1).
 const AIM_ASSIST_CONE_DEG := 55.0
 const AIM_ASSIST_RANGE := 220.0
+## Build 029: touch assist half-cone = half a 45-degree sector.
+const TOUCH_ASSIST_CONE_DEG := 22.5
 const AIM_ASSIST_ANGLE_WEIGHT := 0.55
 
 var cooldown := 0.0
@@ -298,14 +300,16 @@ func fire_grab_throw() -> void:
 func _touch_assist(owner_position: Vector2, facing_dir: Vector2) -> Node2D:
 	if not TouchInput.active:
 		return null
-	return find_assist_target(owner_position, facing_dir)
+	# Build 029: assist only inside the snapped 45-degree sector, so the lash
+	# always goes the way the stick points.
+	return find_assist_target(owner_position, facing_dir, TOUCH_ASSIST_CONE_DEG)
 
 
 ## Score = angle off facing (normalised to the cone) * AIM_ASSIST_ANGLE_WEIGHT
 ## + distance (normalised to range) * (1 - weight). Lowest score wins.
-func find_assist_target(owner_position: Vector2, facing_dir: Vector2) -> Node2D:
+func find_assist_target(owner_position: Vector2, facing_dir: Vector2, cone_deg: float = AIM_ASSIST_CONE_DEG) -> Node2D:
 	var fwd := facing_dir.normalized() if facing_dir.length_squared() > 0.0001 else Vector2.RIGHT
-	var half_cone := deg_to_rad(AIM_ASSIST_CONE_DEG)
+	var half_cone := deg_to_rad(cone_deg)
 	var best: Node2D = null
 	var best_score := INF
 	for candidate in get_tree().get_nodes_in_group("whippable"):

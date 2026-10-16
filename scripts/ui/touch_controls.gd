@@ -15,7 +15,7 @@ extends Control
 ##  - While the round is over, touches only hit PLAY AGAIN / NEXT LEVEL.
 
 ## ---- Sensitivity / layout hooks -------------------------------------------
-const JOYSTICK_RADIUS := 100.0
+const JOYSTICK_RADIUS := 115.0   ## build 029: was 100
 ## Deflection below JOYSTICK_DEADZONE (fraction of radius) is ignored; above it
 ## the vector is multiplied by JOYSTICK_SENSITIVITY and clamped to 1, so full
 ## speed arrives at ~1/JOYSTICK_SENSITIVITY (≈70%) deflection.
@@ -28,7 +28,7 @@ const JOYSTICK_CENTER_FROM_BOTTOM_LEFT := TouchLayout.JOY_CENTER_FROM_BOTTOM_LEF
 ## (below the weapon wedge).
 const JOYSTICK_GRAB_RADIUS_MULT := 1.6
 const JOYSTICK_GRAB_SCREEN_FRAC := 0.4
-const KNOB_RADIUS := 40.0
+const KNOB_RADIUS := 44.0
 const BUTTON_FLASH_TIME := 0.18
 const OUT := Color(0.06, 0.03, 0.08)
 
@@ -335,11 +335,21 @@ func _draw_joystick() -> void:
 	draw_circle(c, JOYSTICK_RADIUS, Color(0.05, 0.08, 0.06, 0.28 if active else 0.2))
 	draw_arc(c, JOYSTICK_RADIUS, 0.0, TAU, 64, Color(1, 1, 1, 0.6 if active else 0.38), 3.0, true)
 	draw_arc(c, JOYSTICK_RADIUS * 0.55, 0.0, TAU, 48, Color(1, 1, 1, 0.12), 1.5, true)
-	# direction ticks
-	for i in 4:
-		var a := float(i) * PI * 0.5
-		var d := Vector2(cos(a), sin(a))
-		draw_line(c + d * (JOYSTICK_RADIUS - 16.0), c + d * (JOYSTICK_RADIUS - 6.0), Color(1, 1, 1, 0.3), 2.0, true)
+	# Build 029: 8 equal 45-degree aim sectors. Ticks on every direction and
+	# the sector the rancher currently faces (= where the whip cracks) lit.
+	var p := _player()
+	var f: Vector2 = p.get("facing") if p != null and "facing" in p else Vector2.RIGHT
+	var fa := f.angle()
+	var pts := PackedVector2Array([c + Vector2.from_angle(fa - PI / 8.0) * KNOB_RADIUS * 0.9])
+	for k in 9:
+		pts.append(c + Vector2.from_angle(fa - PI / 8.0 + k * PI / 32.0) * (JOYSTICK_RADIUS - 4.0))
+	pts.append(c + Vector2.from_angle(fa + PI / 8.0) * KNOB_RADIUS * 0.9)
+	draw_colored_polygon(pts, Color(1.0, 0.85, 0.3, 0.32 if active else 0.18))
+	for i in 8:
+		var d := Vector2.from_angle(float(i) * PI * 0.25)
+		draw_line(c + d * (JOYSTICK_RADIUS - 18.0), c + d * (JOYSTICK_RADIUS - 6.0), Color(1, 1, 1, 0.35), 2.0, true)
+	var tip := c + f * (JOYSTICK_RADIUS + 14.0)
+	draw_colored_polygon(PackedVector2Array([tip, tip - f * 18.0 + f.orthogonal() * 10.0, tip - f * 18.0 - f.orthogonal() * 10.0]), Color(1.0, 0.85, 0.3, 0.9 if active else 0.55))
 	var knob := _joy_knob if active else c
 	draw_circle(knob + Vector2(0, 3), KNOB_RADIUS, Color(0, 0, 0, 0.18))
 	draw_circle(knob, KNOB_RADIUS, Color(1, 1, 1, 0.55 if active else 0.32))

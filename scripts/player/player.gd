@@ -112,7 +112,13 @@ func update_animation(input_vector: Vector2) -> void:
 	if aim_override.length_squared() <= 0.0001:
 		_set_dir_animation(input_vector)
 
-	if input_vector.length() >= FACING_MIN_INPUT:
+	if TouchInput.active and input_vector == TouchInput.move_vector:
+		# Build 029: touch facing = nearest of 8 EQUAL 45-degree sectors to the
+		# stick's real-time analog angle, re-evaluated every frame (light
+		# TOUCH_SNAP_HYST_DEG hysteresis only at sector boundaries).
+		if input_vector.length() >= TOUCH_FACING_MIN_INPUT:
+			facing = snap_8_hyst(input_vector, facing, TOUCH_SNAP_HYST_DEG)
+	elif input_vector.length() >= FACING_MIN_INPUT:
 		facing = snap_8(input_vector)
 
 
@@ -124,6 +130,23 @@ func _set_dir_animation(v: Vector2) -> void:
 		anim = "down" if v.y > 0.0 else "up"
 	if sprite.animation != anim:
 		sprite.animation = anim
+
+
+## Build 029 touch: stick magnitude needed to re-aim (below = keep facing, so
+## the thumb relaxing toward the centre on release never flicks the aim).
+const TOUCH_FACING_MIN_INPUT := 0.3
+const TOUCH_SNAP_HYST_DEG := 4.0
+
+
+## Nearest 45-degree sector, but stay on `current` while the stick is within
+## 22.5 + hyst degrees of it (stops jitter exactly on a boundary only).
+static func snap_8_hyst(v: Vector2, current: Vector2, hyst_deg: float) -> Vector2:
+	var s := snap_8(v)
+	if s == current or current.length_squared() < 0.5:
+		return s
+	if absf(current.angle_to(v)) <= deg_to_rad(22.5 + hyst_deg):
+		return current
+	return s
 
 
 ## Nearest of the 8 compass directions (unit length).

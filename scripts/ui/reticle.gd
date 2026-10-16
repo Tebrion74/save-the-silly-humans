@@ -165,7 +165,7 @@ func _eval_whip(touch: bool, mouse_world: Vector2) -> Dictionary:
 	if touch:
 		# Mirrors Whip.fire_whip on touch: assist cone first, then the ray.
 		var dir := _facing()
-		var target: Node2D = whip.find_assist_target(origin, dir)
+		var target: Node2D = whip.find_assist_target(origin, dir, whip.TOUCH_ASSIST_CONE_DEG)
 		if target == null:
 			target = whip.find_target(origin, origin + dir * 240.0, dir)
 		var pos := origin + dir * reach
@@ -313,8 +313,8 @@ func _draw() -> void:
 	var touch: bool = TouchInput.active
 	var green: bool = info["green"]
 	var col: Color = LevelConfig.RETICLE_GREEN if green else LevelConfig.RETICLE_RED
-	if touch:   # 019 colours on touch
-		col = Color(0.46, 1.0, 0.40) if green else Color(0.72, 0.33, 0.31)
+	if touch:   # build 029: bright, high-contrast colours on touch
+		col = Color(0.35, 1.0, 0.3) if green else TOUCH_IDLE_COL
 	var alpha := LevelConfig.RETICLE_ALPHA
 	var sp: Vector2
 	if touch:
@@ -322,9 +322,9 @@ func _draw() -> void:
 		sp = tp["sp"]
 		if not green and not debug_bright:
 			var k := clampf(_touch_hold / 0.3, 0.0, 1.0)
-			alpha *= lerpf(LevelConfig.RETICLE_TOUCH_IDLE_ALPHA, 1.0, k)
+			alpha *= lerpf(0.8, 1.0, k)   # build 029: never fades out on touch
 		if tp["under"]:
-			alpha *= 0.4
+			alpha *= 0.55
 	else:
 		sp = MouseAim.screen_pos()
 	if info["reach_pos"] != null:
@@ -365,25 +365,52 @@ func _draw_reticle(c: Vector2, scale_k: float, col: Color, alpha: float) -> void
 	draw_rect(Rect2(c - Vector2(1, 1), Vector2(2, 2)), fill)
 
 
-## Touch keeps the 019 crosshair exactly (mobile is unchanged in 020).
+## Build 029: phone-sized touch reticle. Big ring + arms, three passes
+## (thick near-black outline, white halo, bright fill), gentle idle pulse, and
+## a chevron by the rancher + dotted guide showing the snapped whip direction,
+## so it reads on every biome (snow, sand, grass, fairway).
+const TOUCH_RET_R := 22.0
+const TOUCH_RET_ARM := 13.0
+const TOUCH_IDLE_COL := Color(1.0, 0.86, 0.18)   # bright yellow when no target
 func _draw_reticle_touch(c: Vector2, scale_k: float, col: Color, alpha: float) -> void:
-	var r := roundf(11.0 * scale_k)
-	var arm := roundf(7.0 * scale_k)
-	var gap := LevelConfig.RETICLE_GAP
-	var th := 2.0
-	var out := Color(LevelConfig.RETICLE_OUTLINE, alpha * 0.9 * 0.92)
-	var fill := Color(col, alpha * 0.92)
-	var seg := 16
-	# Dark outline pass, then colour pass (pixel look: no antialiasing).
-	draw_arc(c, r, 0.0, TAU, seg, out, th + 2.0, false)
+	scale_k *= 1.0 + 0.08 * (0.5 + 0.5 * sin(_t * 5.0))
+	var r := roundf(TOUCH_RET_R * scale_k)
+	var arm := roundf(TOUCH_RET_ARM * scale_k)
+	var out := Color(0.04, 0.02, 0.06, alpha)
+	var halo := Color(1, 1, 1, alpha * 0.95)
+	var fill := Color(col, alpha)
+	var dir: Vector2 = info.get("dir", Vector2.RIGHT)
+	var o := to_screen(info.get("origin", Vector2.ZERO))
+	if dir.length_squared() > 0.0001:
+		dir = dir.normalized()
+		# dotted guide from the rancher toward the reticle
+		var L := o.distance_to(c)
+		var dd := 70.0
+		while dd < L - r - 8.0:
+			var p := o + dir * dd
+			draw_rect(Rect2(p - Vector2(4, 4), Vector2(8, 8)), out)
+			draw_rect(Rect2(p - Vector2(2, 2), Vector2(4, 4)), fill)
+			dd += 22.0
+		# chevron just outside the rancher
+		var tip := o + dir * 58.0
+		var n := dir.orthogonal()
+		var chev := PackedVector2Array([tip, tip - dir * 20.0 + n * 14.0, tip - dir * 12.0, tip - dir * 20.0 - n * 14.0])
+		var big := PackedVector2Array()
+		var cc := (chev[0] + chev[1] + chev[2] + chev[3]) / 4.0
+		for q in chev:
+			big.append(cc + (q - cc) * 1.45)
+		draw_colored_polygon(big, out)
+		draw_colored_polygon(chev, fill)
 	var arms := [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN]
-	for a in arms:
-		_arm_rect(c, a, r - gap, r + arm, th + 2.0, out)
-	draw_rect(Rect2(c - Vector2(2, 2), Vector2(4, 4)), out)
-	draw_arc(c, r, 0.0, TAU, seg, fill, th, false)
-	for a in arms:
-		_arm_rect(c, a, r - gap + 1.0, r + arm - 1.0, th, fill)
-	draw_rect(Rect2(c - Vector2(1, 1), Vector2(2, 2)), fill)
+	for pass_i in 3:
+		var w: float = [9.0, 6.0, 3.0][pass_i]
+		var cc2: Color = [out, halo, fill][pass_i]
+		var inset: float = [0.0, 1.0, 2.0][pass_i]
+		draw_arc(c, r, 0.0, TAU, 32, cc2, w, true)
+		for a2 in arms:
+			_arm_rect(c, a2, r - 6.0 + inset, r + arm - inset, w, cc2)
+	draw_circle(c, 5.0, out)
+	draw_circle(c, 3.0, fill)
 
 
 func _arm_rect(c: Vector2, dir: Vector2, from: float, to: float, th: float, col: Color) -> void:

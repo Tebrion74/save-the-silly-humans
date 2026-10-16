@@ -6,7 +6,7 @@
 
 ▶ **Play it in your browser:** https://savethesillyhumans.org/game.php
 
-Current build: **028** (live since 2026-10-15 ~18:25 MT: arcade attract mode on the title, the title theme "Silly Humans Anthem" and top-10 high scores with 3-letter initials) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
+Current build: **029** (live since 2026-10-15 ~19:50 MT: mobile touch controls with 8-way aim from the live stick angle, reliable diagonal whips and a large high-contrast touch reticle) ([release notes and downloads](https://github.com/Tebrion74/save-the-silly-humans/releases)) · Engine: **Godot 4.7.2** · Published by **Echelon Publishers Group** (Calgary, Alberta)
 
 Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://www.youtube.com/@SaveTheSillyHumans)
 
@@ -35,7 +35,7 @@ Watch on [Rumble](https://rumble.com/c/SaveTheSillyHumans) · [YouTube](https://
 - **Attract mode (028).** Leave the title idle for 10 s and it cycles like an arcade cabinet, one screen every 7 s with a blind-wipe transition: the title with PRESS START, MEET THE VILLAINS (all ten bosses with name, title and level), a Galaga-style SCORE TABLE with every point value in the game, and the HIGH SCORES table. Any key, click, tap or pad button returns to the title at once.
 - **Top-10 high scores (028).** A game over (or the ending) with a top-10 score opens an arcade initials screen: on PC, UP/DOWN or W/S pick the letter, LEFT/RIGHT move, type letters directly, ENTER confirms; on touch, tap the arrows and OK. Each entry keeps initials, score and the level reached, and the table is saved on your device (browser storage on the web), so it survives reloads. One entry per run; runs that used the beta testing tools don't count.
 - **HUD (025).** Two compact cards: hearts and armour with your score, level and time on the left; SAVED and the crowd counters on the right. Power-up icons with timers sit underneath. "SECRET FOUND!" shows clear of the score on PC and mobile.
-- **PC and touch controls.** Mouse and keyboard with an aim reticle, or a touch joystick with corner wedges and aim assist.
+- **PC and touch controls.** Mouse and keyboard with an aim reticle, or a touch joystick with corner wedges and aim assist. Since 029 touch aim snaps to 8 equal directions from the stick's live angle (diagonal whips are as easy as straight ones), with a large high-contrast reticle and direction chevron.
 
 ## Bosses
 
